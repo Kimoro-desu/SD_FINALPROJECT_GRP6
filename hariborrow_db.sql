@@ -31,6 +31,7 @@ CREATE TABLE `assets` (
   `Asset_ID` int(11) NOT NULL,
   `Lender_ID` int(10) DEFAULT NULL,
   `asset_name` varchar(50) DEFAULT NULL,
+  -- CONSTANT_VAR_AVAILABILITY: 'Available', 'Borrowed', 'Maintenance'
   `availability` varchar(50) DEFAULT NULL,
   `time_created` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -77,7 +78,8 @@ CREATE TABLE `users` (
   `first_name` varchar(50) DEFAULT NULL,
   `middle_name` varchar(50) DEFAULT NULL,
   `last_name` varchar(50) DEFAULT NULL,
-  `password_hash` varchar(50) DEFAULT NULL,
+  `password_hash` varchar(255) DEFAULT NULL,
+  -- CONSTANT_VAR_ROLE: 'Admin', 'Borrower', 'Lender'
   `user_role` varchar(50) DEFAULT NULL,
   `plm_email` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
