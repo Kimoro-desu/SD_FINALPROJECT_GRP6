@@ -10,15 +10,18 @@ class Database
     private $password = ""; // Default XAMPP password is empty
     public $conn;
 
-    // CONSTANT_VAR_ROLE: 'Admin', 'Borrower', 'Lender'
+    // CONSTANT_VAR_ROLE: 'Admin', 'Borrower', 'Lender', 'Staff', 'Researcher'
     const ROLE_ADMIN = 'Admin';
     const ROLE_BORROWER = 'Borrower';
     const ROLE_LENDER = 'Lender';
+    const ROLE_STAFF = 'Staff';
+    const ROLE_RESEARCHER = 'Researcher';
 
-    // CONSTANT_VAR_AVAILABILITY: 'Available', 'Borrowed', 'Maintenance'
+    // CONSTANT_VAR_AVAILABILITY: 'Available', 'Borrowed', 'Maintenance', 'Pending'
     const AVAILABILITY_AVAILABLE = 'Available';
     const AVAILABILITY_BORROWED = 'Borrowed';
     const AVAILABILITY_MAINTENANCE = 'Maintenance';
+    const AVAILABILITY_PENDING = 'Pending';
 
     // CONSTANT_VAR_REQUEST_STATUS: 'Pending', 'Approved', 'Rejected', 'Returned'
     const STATUS_PENDING = 'Pending';
