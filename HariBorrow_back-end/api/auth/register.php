@@ -7,7 +7,7 @@ header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Include database config
-require_once '../../config/Database.php';
+require_once '../../config/database.php';
 
 use Config\Database;
 

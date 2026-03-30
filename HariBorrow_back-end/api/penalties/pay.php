@@ -4,8 +4,8 @@ header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: PUT");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 
-require_once '../../config/Database.php';
-require_once '../../utils/JwtHelper.php';
+require_once '../../config/database.php';
+require_once '../../utils/jwt_helper.php';
 
 use Config\Database;
 use Utils\JwtHelper;
