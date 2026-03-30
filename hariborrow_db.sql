@@ -31,6 +31,8 @@ CREATE TABLE `assets` (
   `Asset_ID` int(11) NOT NULL,
   `Lender_ID` int(10) DEFAULT NULL,
   `asset_name` varchar(50) DEFAULT NULL,
+  `asset_type` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL,
   `availability` varchar(50) DEFAULT NULL,
   `time_created` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
