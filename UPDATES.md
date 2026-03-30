@@ -6,3 +6,6 @@ hariborrow_db.sql:
 HariBorrow_back-end
     Created folder and added JwtHelper.php & Database.php 
     Based contents of HariBorrow_back-end from 'front-end' branch
+2026-03-30 back-end-php
+hariborrow_db.sql:
+    Removed Line 34 & 81 comments.
