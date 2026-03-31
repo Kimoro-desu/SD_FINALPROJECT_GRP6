@@ -46,8 +46,10 @@ try {
     if ($num > 0) {
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
             // Reconstruct the lender's full name if available
-            $lender_name = ($row['first_name'] || $row['last_name']) 
-                ? trim($row['first_name'] . ' ' . $row['last_name']) 
+            $first = isset($row['first_name']) ? $row['first_name'] : '';
+            $last = isset($row['last_name']) ? $row['last_name'] : '';
+            $lender_name = ($first !== '' || $last !== '') 
+                ? trim($first . ' ' . $last) 
                 : "System Default";
 
             array_push($assets_arr, [

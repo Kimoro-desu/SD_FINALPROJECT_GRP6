@@ -22,8 +22,7 @@ $database = new Database();
 $db = $database->getConnection();
 
 // Get the Authorization header
-$headers = apache_request_headers();
-$authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+$authHeader = JwtHelper::getAuthorizationHeader();
 
 // Validate JWT presence and format (Bearer <token>)
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {

@@ -15,8 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$headers = apache_request_headers();
-$authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+$authHeader = JwtHelper::getAuthorizationHeader();
 
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     $jwt = $matches[1];

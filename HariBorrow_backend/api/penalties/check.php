@@ -17,8 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // A smart endpoint that can be called by a CRON job or manually by Staff
 // We still protect it so only Admins/Lenders/Staff can trigger a global sweep manually
-$headers = apache_request_headers();
-$authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+$authHeader = JwtHelper::getAuthorizationHeader();
 
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     $jwt = $matches[1];
