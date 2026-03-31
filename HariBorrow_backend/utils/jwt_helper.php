@@ -3,9 +3,27 @@ namespace Utils;
 
 class JwtHelper
 {
-    // A secure secret key for signing the tokens
-    // NOTE: In production, this should be moved to an environment variable (.env)
-    private static $secret_key = "HariBorrow_Super_Secret_Key_2026!";
+    // Check env first, fallback to hardcoded
+    private static function getSecretKey()
+    {
+        return getenv('JWT_SECRET') ?: "Alanterngiveslightsoquietanddim.Yetmistandhazeengulfthefields.Islifeasgivenquitesogrim?Blinkonce,nothinghaschanged.";
+    }
+
+    /**
+     * Get header Authorization securely across different server environments
+     */
+    public static function getAuthorizationHeader()
+    {
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            return trim($_SERVER["HTTP_AUTHORIZATION"]);
+        } elseif (function_exists('apache_request_headers')) {
+            $requestHeaders = apache_request_headers();
+            if (isset($requestHeaders['Authorization'])) {
+                return trim($requestHeaders['Authorization']);
+            }
+        }
+        return '';
+    }
 
     /**
      * Generate a JSON Web Token (JWT)
@@ -23,7 +41,7 @@ class JwtHelper
         $base64UrlPayload = self::base64UrlEncode(json_encode($payload));
 
         // Create the signature using HMAC-SHA256
-        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, self::$secret_key, true);
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, self::getSecretKey(), true);
         $base64UrlSignature = self::base64UrlEncode($signature);
 
         // Combine all three parts
@@ -50,7 +68,7 @@ class JwtHelper
         $signatureProvided = $tokenParts[2];
 
         // Re-create the signature to verify its authenticity
-        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, self::$secret_key, true);
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, self::getSecretKey(), true);
         $base64UrlSignature = self::base64UrlEncode($signature);
 
         // Verify the provided signature matches our re-created signature
