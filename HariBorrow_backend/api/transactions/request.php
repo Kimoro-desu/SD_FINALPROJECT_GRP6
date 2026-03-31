@@ -15,8 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$headers = apache_request_headers();
-$authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+$authHeader = JwtHelper::getAuthorizationHeader();
 
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     $jwt = $matches[1];
@@ -64,22 +63,6 @@ if (!empty($data->asset_id)) {
         $borrower_id = $decodedData['id'];
         $request_status = Database::STATUS_PENDING;
 
-        $check_query = "SELECT availability FROM assets WHERE Asset_ID = :asset_id FOR UPDATE";
-        $check_stmt = $db->prepare($check_query);
-        $check_stmt->bindParam(':asset_id', $asset_id);
-        $check_stmt->execute();
-        
-        if ($check_stmt->rowCount() == 0) {
-            throw new \Exception("Asset does not exist.");
-        }
-        
-        $asset_row = $check_stmt->fetch(\PDO::FETCH_ASSOC);
-        if ($asset_row['availability'] !== Database::AVAILABILITY_AVAILABLE) {
-            $db->rollBack();
-            http_response_code(409); // 409 Conflict
-            die(json_encode(["message" => "Asset is no longer available.", "status" => "error"]));
-        }
-
         $insert_query = "INSERT INTO transactions (asset_id, borrower_id, request_status) 
                          VALUES (:asset_id, :borrower_id, :request_status)";
         $insert_stmt = $db->prepare($insert_query);
@@ -101,10 +84,10 @@ if (!empty($data->asset_id)) {
         http_response_code(201);
         echo json_encode(["message" => "Borrow request submitted successfully. Pending approval.", "status" => "success"]);
 
-    } catch (\PDOException $e) {
+    } catch (\Exception $e) {
         $db->rollBack();
         http_response_code(500);
-        echo json_encode(["message" => "Database error: " . $e->getMessage(), "status" => "error"]);
+        echo json_encode(["message" => "Error: " . $e->getMessage(), "status" => "error"]);
     }
 } else {
     http_response_code(400);
