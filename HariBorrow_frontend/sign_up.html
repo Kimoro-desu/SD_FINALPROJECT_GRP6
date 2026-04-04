@@ -624,7 +624,7 @@
         </div>
 
         <div class="form-foot">
-          Already registered? <a href="login.html">Sign in here</a>
+          Already registered? <a href="index.html">Sign in here</a>
         </div>
       </div>
 
@@ -736,7 +736,7 @@
             <div class="success-detail-item"><i class="ph ph-shield-check"></i> Your data is encrypted and secure</div>
           </div>
 
-          <button class="btn-login-now" onclick="window.location.href='login.html'"><span>Go to Sign In</span></button>
+          <button class="btn-login-now" onclick="window.location.href='index.html'"><span>Go to Sign In</span></button>
         </div>
 
         <div class="form-foot" style="margin-top: 24px;">
@@ -749,6 +749,9 @@
 </div>
 
 <script>
+  // UPDATE THIS URL TO MATCH YOUR LOCAL PHP SERVER ROOT (e.g. if HariBorrow_backend is in htdocs)
+  const API_BASE_URL = "http://localhost/HariBorrow_backend/api";
+
   /* ── Mouse ambient glow ── */
   const glow = document.getElementById('glow');
   document.addEventListener('mousemove', e => {
@@ -954,7 +957,7 @@
   }
 
   /* ── Final submission ── */
-  function submitRegistration() {
+  async function submitRegistration() {
     if (!document.getElementById('termsCheck').checked) {
       showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please agree to the Terms & Conditions before proceeding.', 'err');
       return;
@@ -968,17 +971,35 @@
     btn.querySelector('span').textContent = 'Submitting…';
     btn.disabled = true;
 
-    // Simulate API call
-    setTimeout(() => {
-      // Hide progress bar and tracker for success screen
-      document.getElementById('progressFill').parentElement.style.display = 'none';
-      document.querySelectorAll('.step-track-item').forEach(i => { i.classList.remove('step-active','step-done'); i.classList.add('step-done'); });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.status === 'success') {
+          // Hide progress bar and tracker for success screen
+          document.getElementById('progressFill').parentElement.style.display = 'none';
+          document.querySelectorAll('.step-track-item').forEach(i => { i.classList.remove('step-active','step-done'); i.classList.add('step-done'); });
 
-      const cur = document.getElementById('step3');
-      cur.classList.remove('active');
-      currentStep = 4;
-      document.getElementById('step4').classList.add('active');
-    }, 1500);
+          const cur = document.getElementById('step3');
+          cur.classList.remove('active');
+          currentStep = 4;
+          document.getElementById('step4').classList.add('active');
+      } else {
+          showAlert('<i class="ph ph-warning-circle"></i> &nbsp;' + (data.message || 'Registration failed.'), 'err');
+          btn.querySelector('span').textContent = 'Submit Registration';
+          btn.disabled = false;
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Failed to connect to the server.', 'err');
+      btn.querySelector('span').textContent = 'Submit Registration';
+      btn.disabled = false;
+    }
   }
 </script>
 </body>

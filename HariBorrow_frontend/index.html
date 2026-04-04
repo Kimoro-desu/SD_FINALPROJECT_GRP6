@@ -535,6 +535,9 @@
 </div>
 
 <script>
+  // UPDATE THIS URL TO MATCH YOUR LOCAL PHP SERVER ROOT (e.g. if HariBorrow_backend is in htdocs)
+  const API_BASE_URL = "http://localhost/HariBorrow_backend/api";
+
   // Mouse Glow
   const glow = document.getElementById('glow');
   document.addEventListener('mousemove', (e) => {
@@ -570,26 +573,65 @@
     el.className = 'alert ' + type;
   }
 
-  // Form Submission Simulation
-  function handleAuth(e, btnId) {
+  // Handle Authentication with Backend
+  async function handleAuth(e, btnId) {
     e.preventDefault();
     const btn = document.getElementById(btnId);
     const textSpan = btn.querySelector('span');
     const originalText = textSpan.textContent;
     
-    textSpan.textContent = 'Processing...';
+    // We only wired up the login form here. The signup in this file doesn't have all required fields.
+    if (btnId === 'signupBtn') {
+        showAlert('Please use the dedicated Registration Page to sign up.', 'err');
+        setTimeout(() => { window.location.href = 'sign_up.html'; }, 2000);
+        return;
+    }
+
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    textSpan.textContent = 'Authenticating...';
     btn.disabled = true;
 
-    setTimeout(() => {
-      showAlert('✦ Action successful. Connecting to secure server...', 'ok');
-      // setTimeout(() => { window.location.href = 'dashboard.php'; }, 1200);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
       
-      // Reset button for demo purposes
-      setTimeout(() => {
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        showAlert('✦ Action successful. Connecting to secure server...', 'ok');
+        
+        // Store JWT token and user info
+        localStorage.setItem('hb_token', data.token);
+        localStorage.setItem('hb_user', JSON.stringify(data.user));
+
+        // Redirect based on role
+        setTimeout(() => { 
+            if (data.user.role === 'student' || data.user.role === 'faculty') {
+                window.location.href = 'borrower_lender_dashboard.html'; 
+            } else if (data.user.role === 'admin' || data.user.role === 'staff') {
+                window.location.href = 'admin_dashboard.html'; 
+            } else {
+                window.location.href = 'borrower_lender_dashboard.html'; 
+            }
+        }, 1200);
+      } else {
+        showAlert('Error: ' + (data.message || 'Invalid credentials.'), 'err');
         textSpan.textContent = originalText;
         btn.disabled = false;
-      }, 2000);
-    }, 1200);
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert('Error connecting to the backend server. Is your PHP server running?', 'err');
+      textSpan.textContent = originalText;
+      btn.disabled = false;
+    }
   }
 </script>
 
