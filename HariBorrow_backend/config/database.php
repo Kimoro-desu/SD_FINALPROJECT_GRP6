@@ -10,10 +10,10 @@ class Database
     private $password = ""; // Default XAMPP password is empty
     public $conn;
 
-    // CONSTANT_VAR_ROLE: 'Admin', 'Borrower', 'Lender', 'Staff', 'Researcher'
+    // CONSTANT_VAR_ROLE: 'admin', 'student', 'faculty', 'staff', 'researcher'
     const ROLE_ADMIN = 'Admin';
-    const ROLE_BORROWER = 'Borrower';
-    const ROLE_LENDER = 'Lender';
+    const ROLE_STUDENT = 'Student';
+    const ROLE_FACULTY = 'Faculty';
     const ROLE_STAFF = 'Staff';
     const ROLE_RESEARCHER = 'Researcher';
 
