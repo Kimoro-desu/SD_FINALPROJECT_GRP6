@@ -1,569 +1,652 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HariBorrow — Asset Catalog</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@phosphor-icons/web"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HariBorrow — Asset Catalog</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="js/auth_guard.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  :root {
-    --bg-deep:      #030304;
-    --glass:        rgba(15, 15, 20, 0.45);
-    --glass-heavy:  rgba(10, 10, 13, 0.75);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --gold:         #E5C07B;
-    --gold-light:   #FCEBAF;
-    --gold-dark:    #A68A48;
-    --gold-dim:     rgba(229, 192, 123, 0.1);
-    --gold-glow:    rgba(229, 192, 123, 0.25);
-    --text-1:       #FFFFFF;
-    --text-2:       #A39E93;
-    --text-3:       #6B665A;
-    --green:        #4ade80;
-    --green-dim:    rgba(74, 222, 128, 0.1);
-    --red:          #f87171;
-    --red-dim:      rgba(248, 113, 113, 0.1);
-    --blue:         #60a5fa;
-    --blue-dim:     rgba(96, 165, 250, 0.1);
-  }
+    :root {
+      --bg-deep: #030304;
+      --glass: rgba(15, 15, 20, 0.45);
+      --glass-heavy: rgba(10, 10, 13, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --gold: #E5C07B;
+      --gold-light: #FCEBAF;
+      --gold-dark: #A68A48;
+      --gold-dim: rgba(229, 192, 123, 0.1);
+      --gold-glow: rgba(229, 192, 123, 0.25);
+      --text-1: #FFFFFF;
+      --text-2: #A39E93;
+      --text-3: #6B665A;
+      --green: #4ade80;
+      --green-dim: rgba(74, 222, 128, 0.1);
+      --red: #f87171;
+      --red-dim: rgba(248, 113, 113, 0.1);
+      --blue: #60a5fa;
+      --blue-dim: rgba(96, 165, 250, 0.1);
+    }
 
-  html, body { min-height: 100vh; width: 100vw; overflow-x: hidden; font-family: 'Outfit', sans-serif; background-color: var(--bg-deep); color: var(--text-1); }
-  ::-webkit-scrollbar { width: 6px; background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 10px; }
+    html,
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      overflow-x: hidden;
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-deep);
+      color: var(--text-1);
+    }
 
-  .bg-mesh { position: fixed; inset: 0; z-index: 0; background-image: url('bg-aesthetic.jpg'); background-size: cover; background-position: center; opacity: 0.15; background-color: var(--bg-deep); background-blend-mode: overlay; }
-  .ambient-glow { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(600px circle at var(--mouse-x,50%) var(--mouse-y,50%), rgba(229,192,123,0.06), transparent 50%); z-index: 9999; mix-blend-mode: screen; }
+    ::-webkit-scrollbar {
+      width: 6px;
+      background: transparent;
+    }
 
-  /* ── NAV ── */
-  .top-nav {
-    position: fixed; top: 0; left: 0; width: 100%; height: 80px;
-    background: var(--glass-heavy); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid var(--glass-border);
-    display: flex; align-items: center; justify-content: space-between; padding: 0 5%; z-index: 100;
-  }
-  .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-  .nav-logo-slot {
-    width: 40px; height: 40px; border-radius: 8px;
-    border: 1px dashed rgba(229,192,123,0.4); display: flex; align-items: center; justify-content: center;
-    color: var(--gold-dark); font-size: 11px; background: var(--gold-dim);
-  }
-  .nav-logo-slot img { width: 40px; height: 40px; object-fit: contain; filter: brightness(1.3) sepia(100%) hue-rotate(35deg) saturate(2.5); display: none; }
-  .nav-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; background: linear-gradient(135deg,#FFF 0%,var(--gold-light) 50%,var(--gold-dark) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.02em; }
-  .nav-right { display: flex; align-items: center; gap: 16px; }
-  .nav-back { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: 30px; color: var(--text-2); font-family: 'Outfit', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.3s; text-decoration: none; }
-  .nav-back:hover { border-color: var(--gold); color: var(--gold); }
-  .profile-menu { position: relative; }
-  .profile-btn { display: flex; align-items: center; gap: 12px; background: transparent; border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: 30px; color: var(--text-1); font-family: 'Outfit', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.3s; }
-  .profile-btn:hover { border-color: var(--gold); background: var(--gold-dim); }
-  .profile-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--gold-dark); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: var(--bg-deep); }
-  .dropdown { position: absolute; top: 120%; right: 0; width: 220px; background: rgba(15,15,20,0.85); backdrop-filter: blur(24px); border: 1px solid var(--glass-border); border-radius: 12px; padding: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.16,1,0.3,1); }
-  .dropdown.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
-  .drop-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; background: transparent; border: none; color: var(--text-2); font-family: 'Outfit', sans-serif; font-size: 13px; text-align: left; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-  .drop-item i { font-size: 18px; color: var(--gold); opacity: 0.7; }
-  .drop-item:hover { background: var(--gold-dim); color: var(--gold-light); }
-  .drop-item:hover i { opacity: 1; }
-  .drop-divider { height: 1px; background: var(--glass-border); margin: 6px 0; }
-  .drop-item.logout { color: #ff6b7a; }
-  .drop-item.logout i { color: #ff6b7a; }
-  .drop-item.logout:hover { background: rgba(220,53,69,0.1); }
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-3);
+      border-radius: 10px;
+    }
 
-  /* ── PAGE LAYOUT ── */
-  .page { position: relative; z-index: 10; padding: 100px 5% 60px; max-width: 1400px; margin: 0 auto; }
 
-  /* ── PAGE HEADER ── */
-  .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; gap: 16px; animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both; }
-  .page-header-left h1 { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 500; line-height: 1.1; }
-  .page-header-left p { font-size: 13px; color: var(--text-2); font-weight: 300; margin-top: 6px; }
-  .my-borrows-btn { display: flex; align-items: center; gap: 8px; background: var(--glass); border: 1px solid var(--glass-border); padding: 10px 20px; border-radius: 30px; color: var(--text-2); font-family: 'Outfit', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.3s; }
-  .my-borrows-btn:hover { border-color: var(--gold); color: var(--gold); }
-  .badge-count { background: var(--gold); color: var(--bg-deep); padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 15% 50%, rgba(229, 192, 123, 0.05), transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(166, 138, 72, 0.07), transparent 50%),
+        var(--bg-deep);
+      animation: pulseBg 15s ease-in-out infinite alternate;
+    }
 
-  /* ── TOOLBAR ── */
-  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
-  .search-wrap { position: relative; flex: 1; min-width: 220px; }
-  .search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: 18px; pointer-events: none; }
-  .search-input { width: 100%; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; padding: 11px 16px 11px 42px; color: var(--text-1); font-family: 'Outfit', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; }
-  .search-input::placeholder { color: var(--text-3); }
-  .search-input:focus { border-color: rgba(229,192,123,0.4); }
-  .filter-select { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; padding: 11px 36px 11px 14px; color: var(--text-2); font-family: 'Outfit', sans-serif; font-size: 13px; outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B665A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; transition: border-color 0.2s; }
-  .filter-select:focus { border-color: rgba(229,192,123,0.4); color: var(--text-1); }
+    @keyframes pulseBg {
+      0% {
+        transform: scale(1);
+      }
 
-  /* ── CATALOG GRID ── */
-  .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
+      100% {
+        transform: scale(1.05);
+      }
+    }
 
-  .asset-card {
-    background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--glass-border);
-    border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 0;
-    transition: all 0.35s cubic-bezier(0.16,1,0.3,1); position: relative; overflow: hidden; cursor: pointer;
-  }
-  .asset-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, var(--gold-dim), transparent 65%); opacity: 0; transition: opacity 0.35s; }
-  .asset-card:hover { transform: translateY(-6px); border-color: rgba(229,192,123,0.3); box-shadow: 0 16px 36px rgba(0,0,0,0.35), 0 0 18px rgba(229,192,123,0.08); }
-  .asset-card:hover::before { opacity: 1; }
-  .asset-card.unavailable { opacity: 0.55; cursor: not-allowed; }
-  .asset-card.unavailable:hover { transform: none; border-color: var(--glass-border); box-shadow: none; }
-  .asset-card.unavailable::before { display: none; }
+    .ambient-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
+      z-index: 9999;
+      mix-blend-mode: screen;
+    }
 
-  .card-icon { width: 52px; height: 52px; border-radius: 12px; background: var(--gold-dim); border: 1px solid rgba(229,192,123,0.15); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--gold); margin-bottom: 18px; position: relative; z-index: 1; }
-  .card-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; color: var(--text-1); margin-bottom: 4px; position: relative; z-index: 1; }
-  .card-id { font-size: 11px; color: var(--text-3); margin-bottom: 14px; position: relative; z-index: 1; }
+    /* ── NAV ── */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 80px;
+      background: var(--glass-heavy);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%;
+      z-index: 100;
+    }
 
-  .card-meta { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; position: relative; z-index: 1; }
-  .card-meta-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
-  .card-meta-row i { font-size: 15px; color: var(--text-3); width: 16px; flex-shrink: 0; }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
 
-  .card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--glass-border); position: relative; z-index: 1; margin-top: auto; }
 
-  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; letter-spacing: 0.04em; }
-  .badge-available   { background: var(--green-dim); color: var(--green);  border: 1px solid rgba(74,222,128,0.2); }
-  .badge-borrowed    { background: var(--red-dim);   color: var(--red);    border: 1px solid rgba(248,113,113,0.2); }
-  .badge-pending     { background: var(--blue-dim);  color: var(--blue);   border: 1px solid rgba(96,165,250,0.2); }
-  .badge-maintenance { background: rgba(251,191,36,0.1); color: #fbbf24;   border: 1px solid rgba(251,191,36,0.2); }
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .nav-logo {
+      height: 56px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 10px rgba(229, 192, 123, 0.4)) brightness(1.2) contrast(1.3) saturate(1.4);
+      transition: transform 0.3s ease, filter 0.3s ease;
+    }
 
-  .request-btn { display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, var(--gold-light), var(--gold-dark)); border: none; padding: 8px 16px; border-radius: 20px; color: var(--bg-deep); font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 3px 12px var(--gold-glow); }
-  .request-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 18px var(--gold-glow); }
-  .request-btn:disabled { background: rgba(255,255,255,0.06); color: var(--text-3); box-shadow: none; cursor: not-allowed; transform: none; }
+    .nav-logo:hover {
+      transform: scale(1.05);
+      filter: drop-shadow(0 0 18px var(--gold)) brightness(1.4) contrast(1.4) saturate(1.6);
+    }
 
-  .empty-state { grid-column: 1/-1; text-align: center; padding: 80px 20px; color: var(--text-3); }
-  .empty-state i { font-size: 48px; margin-bottom: 16px; display: block; }
-  .empty-state p { font-size: 15px; }
+    .nav-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #FFF 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.02em;
+    }
 
-  /* ── DETAIL PANEL (slide-in from right) ── */
-  .detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-  .detail-overlay.active { opacity: 1; pointer-events: auto; }
-  .detail-panel {
-    position: fixed; top: 0; right: -480px; width: 460px; height: 100vh;
-    background: rgba(10,10,13,0.97); backdrop-filter: blur(30px); border-left: 1px solid var(--glass-border);
-    z-index: 151; padding: 40px 36px; overflow-y: auto;
-    transition: right 0.4s cubic-bezier(0.16,1,0.3,1);
-    display: flex; flex-direction: column; gap: 0;
-  }
-  .detail-panel.active { right: 0; }
-  .detail-close { position: absolute; top: 24px; right: 24px; background: transparent; border: 1px solid var(--glass-border); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 18px; cursor: pointer; transition: all 0.2s; }
-  .detail-close:hover { background: var(--red-dim); border-color: rgba(248,113,113,0.3); color: var(--red); }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
 
-  .detail-icon { width: 72px; height: 72px; border-radius: 16px; background: var(--gold-dim); border: 1px solid rgba(229,192,123,0.2); display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--gold); margin-bottom: 20px; }
-  .detail-name { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500; color: var(--text-1); margin-bottom: 6px; }
-  .detail-id { font-size: 12px; color: var(--text-3); margin-bottom: 20px; }
-  .detail-section { margin-bottom: 24px; }
-  .detail-section-title { font-size: 10px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; }
-  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-  .detail-row:last-child { border-bottom: none; }
-  .detail-row-label { font-size: 12px; color: var(--text-3); }
-  .detail-row-value { font-size: 13px; color: var(--text-1); font-weight: 500; text-align: right; }
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      padding: 8px 16px;
+      border-radius: 30px;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
 
-  .detail-lender { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; margin-bottom: 24px; }
-  .detail-lender-avatar { width: 40px; height: 40px; border-radius: 50%; background: rgba(229,192,123,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--gold); flex-shrink: 0; }
-  .detail-lender-name { font-size: 14px; color: var(--text-1); font-weight: 500; }
-  .detail-lender-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .nav-back:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
 
-  .detail-cta { margin-top: auto; padding-top: 24px; border-top: 1px solid var(--glass-border); }
-  .btn-request-full { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, var(--gold-light), var(--gold-dark)); border: none; padding: 15px; border-radius: 12px; color: var(--bg-deep); font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 20px var(--gold-glow); }
-  .btn-request-full:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--gold-glow); }
-  .btn-request-full:disabled { background: rgba(255,255,255,0.06); color: var(--text-3); box-shadow: none; cursor: not-allowed; transform: none; }
-  .detail-unavail-note { text-align: center; font-size: 12px; color: var(--text-3); margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .profile-menu {
+      position: relative;
+    }
 
-  /* ── CONFIRM MODAL ── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(10px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-  .modal-overlay.active { opacity: 1; pointer-events: auto; }
-  .modal { background: rgba(12,12,16,0.97); border: 1px solid var(--glass-border); border-radius: 20px; padding: 40px; width: 100%; max-width: 480px; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
-  .modal-overlay.active .modal { transform: scale(1); }
+    .profile-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      padding: 8px 16px;
+      border-radius: 30px;
+      color: var(--text-1);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
 
-  .modal-icon { width: 64px; height: 64px; border-radius: 16px; background: var(--gold-dim); border: 1px solid rgba(229,192,123,0.2); display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--gold); margin-bottom: 20px; }
-  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: var(--text-1); margin-bottom: 8px; }
-  .modal-sub { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 28px; }
-  .modal-asset-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-dim); border: 1px solid rgba(229,192,123,0.2); border-radius: 30px; padding: 6px 14px; font-size: 13px; color: var(--gold-light); font-weight: 500; margin-bottom: 24px; }
+    .profile-btn:hover {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+    }
 
-  /* Terms box */
-  .terms-box { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 18px; margin-bottom: 20px; max-height: 160px; overflow-y: auto; }
-  .terms-box p { font-size: 12px; color: var(--text-3); line-height: 1.8; }
-  .terms-box p + p { margin-top: 10px; }
+    .profile-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--bg-deep);
+      overflow: hidden;
+    }
 
-  .terms-check { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 28px; cursor: pointer; }
-  .terms-check input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; margin-top: 1px; flex-shrink: 0; }
-  .terms-check span { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+    .dropdown {
+      position: absolute;
+      top: 120%;
+      right: 0;
+      width: 220px;
+      background: rgba(15, 15, 20, 0.85);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-  .modal-footer { display: flex; gap: 12px; }
-  .btn-ghost { flex: 1; background: transparent; border: 1px solid var(--glass-border); padding: 13px; border-radius: 10px; color: var(--text-2); font-family: 'Outfit', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
-  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
-  .btn-confirm { flex: 2; background: linear-gradient(135deg, var(--gold-light), var(--gold-dark)); border: none; padding: 13px; border-radius: 10px; color: var(--bg-deep); font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px var(--gold-glow); }
-  .btn-confirm:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px var(--gold-glow); }
-  .btn-confirm:disabled { background: rgba(255,255,255,0.08); color: var(--text-3); box-shadow: none; cursor: not-allowed; }
+    .dropdown.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
 
-  /* ── SUCCESS SCREEN ── */
-  .success-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
-  .success-overlay.active { opacity: 1; pointer-events: auto; }
-  .success-card { background: rgba(10,10,13,0.98); border: 1px solid rgba(74,222,128,0.2); border-radius: 24px; padding: 56px 48px; width: 100%; max-width: 420px; text-align: center; transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); }
-  .success-overlay.active .success-card { transform: scale(1); }
-  .success-anim { width: 80px; height: 80px; border-radius: 50%; background: var(--green-dim); border: 2px solid rgba(74,222,128,0.3); display: flex; align-items: center; justify-content: center; font-size: 40px; color: var(--green); margin: 0 auto 24px; animation: popIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
-  @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .success-title { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 500; color: var(--text-1); margin-bottom: 10px; }
-  .success-sub { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 8px; }
-  .success-ref { font-size: 12px; color: var(--text-3); margin-bottom: 32px; }
-  .success-ref span { color: var(--gold); font-weight: 600; }
-  .btn-done { width: 100%; background: linear-gradient(135deg, var(--gold-light), var(--gold-dark)); border: none; padding: 14px; border-radius: 12px; color: var(--bg-deep); font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 20px var(--gold-glow); }
-  .btn-done:hover { transform: translateY(-2px); }
+    .drop-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      text-align: left;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-  /* ── MY BORROWINGS PANEL ── */
-  .borrows-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-  .borrows-overlay.active { opacity: 1; pointer-events: auto; }
-  .borrows-panel { position: fixed; top: 0; right: -500px; width: 460px; height: 100vh; background: rgba(10,10,13,0.97); backdrop-filter: blur(30px); border-left: 1px solid var(--glass-border); z-index: 151; padding: 40px 36px; overflow-y: auto; transition: right 0.4s cubic-bezier(0.16,1,0.3,1); }
-  .borrows-panel.active { right: 0; }
-  .borrows-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-  .borrows-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; }
-  .borrow-item { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 14px; padding: 20px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 14px; }
-  .borrow-item-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--gold-dim); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--gold); flex-shrink: 0; }
-  .borrow-item-name { font-size: 15px; font-weight: 500; color: var(--text-1); margin-bottom: 4px; }
-  .borrow-item-meta { font-size: 12px; color: var(--text-3); margin-bottom: 8px; }
-  .borrow-item-footer { display: flex; align-items: center; justify-content: space-between; }
-  .borrow-status { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
-  .borrow-status.pending { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(96,165,250,0.2); }
-  .borrow-status.active  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
-  .borrow-due { font-size: 11px; color: var(--text-3); }
-  .borrows-empty { text-align: center; padding: 60px 20px; color: var(--text-3); }
-  .borrows-empty i { font-size: 40px; margin-bottom: 12px; display: block; }
+    .drop-item i {
+      font-size: 18px;
+      color: var(--gold);
+      opacity: 0.7;
+    }
 
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-  @media (max-width: 600px) { .detail-panel, .borrows-panel { width: 100%; right: -100%; } .page-header { flex-direction: column; align-items: flex-start; } }
-</style>
+    .drop-item:hover {
+      background: var(--gold-dim);
+      color: var(--gold-light);
+    }
+
+    .drop-divider {
+      height: 1px;
+      background: var(--glass-border);
+      margin: 6px 0;
+    }
+
+    .drop-item.logout {
+      color: #ff6b7a;
+    }
+
+    .drop-item.logout:hover {
+      background: rgba(220, 53, 69, 0.1);
+    }
+
+    /* ── PAGE LAYOUT ── */
+    .page {
+      position: relative;
+      z-index: 10;
+      padding: 100px 5% 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--glass-border);
+      flex-wrap: wrap;
+      gap: 16px;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .page-header-left h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 500;
+      line-height: 1.1;
+    }
+
+    .page-header-left p {
+      font-size: 13px;
+      color: var(--text-2);
+      font-weight: 300;
+      margin-top: 6px;
+    }
+
+    .my-borrows-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      padding: 10px 20px;
+      border-radius: 30px;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .my-borrows-btn:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .badge-count {
+      background: var(--gold);
+      color: var(--bg-deep);
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .search-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-3);
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 11px 16px 11px 42px;
+      color: var(--text-1);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: rgba(229, 192, 123, 0.4);
+    }
+
+    .filter-select {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 11px 36px 11px 14px;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B665A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    /* ── CATALOG GRID ── */
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    }
+
+    .asset-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .asset-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(229, 192, 123, 0.3);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(229, 192, 123, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: var(--gold);
+      margin-bottom: 18px;
+    }
+
+    .card-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-1);
+      margin-bottom: 4px;
+    }
+
+    .card-id {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-bottom: 14px;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .card-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    .card-meta-row i {
+      font-size: 15px;
+      color: var(--text-3);
+      width: 16px;
+      flex-shrink: 0;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--glass-border);
+      margin-top: auto;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-available {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(74, 222, 128, 0.2);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .request-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: var(--bg-deep);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="bg-mesh"></div>
-<div class="ambient-glow" id="glow"></div>
+  <div class="bg-mesh"></div>
+  <div class="ambient-glow" id="glow"></div>
 
-<!-- NAV -->
-<nav class="top-nav">
-  <a href="borrower_lender_dashboard.html" class="nav-brand">
-    <div class="nav-logo-slot">
-      <img src="image_0.png" alt="HariBorrow Logo" onload="this.style.display='block';this.parentElement.style.background='none';this.parentElement.style.border='none';">
-    </div>
-    <span class="nav-title">HariBorrow</span>
-  </a>
-  <div class="nav-right">
-    <a href="#" class="nav-back" onclick="history.back();return false;"><i class="ph ph-arrow-left"></i> Dashboard</a>
-    <div class="profile-menu">
-      <button class="profile-btn" onclick="toggleDropdown()">
-        <div class="profile-avatar">JM</div>
-        <span>J. Mirasol</span>
-        <i class="ph ph-caret-down"></i>
-      </button>
-      <div class="dropdown" id="settingsDropdown">
-        <button class="drop-item"><i class="ph ph-user"></i> My Profile</button>
-        <button class="drop-item"><i class="ph ph-chat-circle-dots"></i> Messages <span style="margin-left:auto;background:var(--gold);color:#000;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:700;">2</span></button>
-        <button class="drop-item"><i class="ph ph-gear"></i> Account Settings</button>
-        <button class="drop-item"><i class="ph ph-warning-circle"></i> Report an Issue</button>
-        <div class="drop-divider"></div>
-        <button class="drop-item logout"><i class="ph ph-sign-out"></i> Secure Log Out</button>
+  <nav class="top-nav">
+    <a href="borrower_lender_dashboard.html" class="nav-brand">
+      <img src="image_0.png" alt="HariBorrow Logo" class="nav-logo">
+      <span class="nav-title">HariBorrow</span>
+    </a>
+    <div class="nav-right">
+      <a href="#" class="nav-back" onclick="history.back();return false;"><i class="ph ph-arrow-left"></i> Dashboard</a>
+
+      <div class="profile-menu">
+        <button class="profile-btn" onclick="toggleDropdown()">
+
+          <div class="profile-avatar" id="navAvatar">UN</div>
+
+          <span>User Name</span>
+
+          <i class="ph ph-caret-down"></i>
+        </button>
+
+        <div class="dropdown" id="settingsDropdown">
+          <button class="drop-item"><i class="ph ph-user"></i> My Profile</button>
+          <button class="drop-item"><i class="ph ph-gear"></i> Account Settings</button>
+          <div class="drop-divider"></div>
+          <button class="drop-item logout" onclick="window.api.removeToken(); window.location.href='login.html'"><i class="ph ph-sign-out"></i> Secure Log Out</button>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<!-- MAIN -->
-<main class="page">
-
-  <div class="page-header">
-    <div class="page-header-left">
-      <h1>Asset Catalog</h1>
-      <p>Browse available university equipment and submit borrow requests.</p>
-    </div>
-    <button class="my-borrows-btn" onclick="openBorrows()">
-      <i class="ph ph-clock-counter-clockwise"></i>
-      My Borrowings
-      <span class="badge-count" id="borrowCount">0</span>
-    </button>
-  </div>
-
-  <!-- TOOLBAR -->
-  <div class="toolbar">
-    <div class="search-wrap">
-      <i class="ph ph-magnifying-glass"></i>
-      <input class="search-input" type="text" placeholder="Search assets by name, type, or ID…" oninput="filterAssets(this.value)">
-    </div>
-    <select class="filter-select" onchange="filterByType(this.value)">
-      <option value="">All Types</option>
-      <option value="Electronics">Electronics</option>
-      <option value="Mechanical">Mechanical</option>
-      <option value="Laboratory">Laboratory</option>
-      <option value="Computing">Computing</option>
-    </select>
-    <select class="filter-select" onchange="filterByAvail(this.value)">
-      <option value="">All Status</option>
-      <option value="Available">Available Only</option>
-      <option value="Borrowed">Borrowed</option>
-      <option value="Pending">Pending</option>
-      <option value="Maintenance">Maintenance</option>
-    </select>
-  </div>
-
-  <!-- CATALOG -->
-  <div class="catalog-grid" id="catalogGrid"></div>
-
-</main>
-
-<!-- DETAIL PANEL -->
-<div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
-<div class="detail-panel" id="detailPanel">
-  <button class="detail-close" onclick="closeDetail()"><i class="ph ph-x"></i></button>
-  <div class="detail-icon"><i class="ph" id="dIcon"></i></div>
-  <div class="detail-name" id="dName"></div>
-  <div class="detail-id" id="dId"></div>
-
-  <div class="detail-section">
-    <div class="detail-section-title">Asset Details</div>
-    <div class="detail-row"><span class="detail-row-label">Type</span><span class="detail-row-value" id="dType"></span></div>
-    <div class="detail-row"><span class="detail-row-label">Status</span><span class="detail-row-value" id="dStatus"></span></div>
-    <div class="detail-row"><span class="detail-row-label">Date Added</span><span class="detail-row-value" id="dDate"></span></div>
-  </div>
-
-  <div class="detail-section">
-    <div class="detail-section-title">Lender Information</div>
-    <div class="detail-lender">
-      <div class="detail-lender-avatar" id="dLenderInit"></div>
-      <div>
-        <div class="detail-lender-name" id="dLenderName"></div>
-        <div class="detail-lender-sub">Asset Custodian</div>
+  <main class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h1>Asset Catalog</h1>
+        <p>Browse available university equipment and submit borrow requests.</p>
       </div>
-    </div>
-  </div>
-
-  <div class="detail-cta">
-    <button class="btn-request-full" id="detailRequestBtn" onclick="openConfirmModal()">
-      <i class="ph ph-paper-plane-tilt"></i> Submit Borrow Request
-    </button>
-    <div class="detail-unavail-note" id="detailUnavailNote" style="display:none;">
-      <i class="ph ph-info"></i> This asset is currently unavailable for borrowing.
-    </div>
-  </div>
-</div>
-
-<!-- CONFIRM MODAL -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal">
-    <div class="modal-icon"><i class="ph ph-paper-plane-tilt"></i></div>
-    <div class="modal-title">Confirm Borrow Request</div>
-    <div class="modal-sub">You are about to submit a borrow request for:</div>
-    <div class="modal-asset-pill"><i class="ph" id="mIcon"></i> <span id="mAssetName"></span></div>
-
-    <div class="terms-box">
-      <p>By submitting this request, you agree to the following terms and conditions of the HariBorrow Equipment Lending Program:</p>
-      <p>1. The borrower is responsible for the safe and proper use of the equipment during the loan period.</p>
-      <p>2. The equipment must be returned in the same condition as it was borrowed. Any damage will be the financial responsibility of the borrower.</p>
-      <p>3. Late returns will be flagged on your account and may affect future borrowing privileges.</p>
-      <p>4. Unauthorized transfer of the equipment to another party is strictly prohibited.</p>
-      <p>5. The university reserves the right to recall any loaned equipment at any time for official use.</p>
-    </div>
-
-    <label class="terms-check">
-      <input type="checkbox" id="termsCheckbox" onchange="toggleConfirmBtn()">
-      <span>I have read and I agree to the terms and conditions of the lending program.</span>
-    </label>
-
-    <div class="modal-footer">
-      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn-confirm" id="confirmBtn" onclick="submitRequest()" disabled>
-        <i class="ph ph-check"></i> Confirm Request
+      <button class="my-borrows-btn" onclick="openBorrows()">
+        <i class="ph ph-clock-counter-clockwise"></i>
+        My Borrowings
+        <span class="badge-count" id="borrowCount">0</span>
       </button>
     </div>
-  </div>
-</div>
 
-<!-- SUCCESS SCREEN -->
-<div class="success-overlay" id="successOverlay">
-  <div class="success-card">
-    <div class="success-anim"><i class="ph ph-check-fat"></i></div>
-    <div class="success-title">Request Submitted!</div>
-    <div class="success-sub">Your borrow request has been sent to the lender for review. You'll be notified once it's approved.</div>
-    <div class="success-ref">Reference No: <span id="successRef"></span></div>
-    <button class="btn-done" onclick="closeSucess()">Back to Catalog</button>
-  </div>
-</div>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ph ph-magnifying-glass"></i>
+        <input class="search-input" type="text" placeholder="Search assets by name, type, or ID…"
+          oninput="filterAssets(this.value)">
+      </div>
+      <select class="filter-select" onchange="filterByType(this.value)">
+        <option value="">All Types</option>
+        <option>Electronics</option>
+        <option>Mechanical</option>
+        <option>Computing</option>
+      </select>
+    </div>
 
-<!-- MY BORROWINGS PANEL -->
-<div class="borrows-overlay" id="borrowsOverlay" onclick="closeBorrows()"></div>
-<div class="borrows-panel" id="borrowsPanel">
-  <div class="borrows-header">
-    <div class="borrows-title">My Borrowings</div>
-    <button class="detail-close" onclick="closeBorrows()"><i class="ph ph-x"></i></button>
-  </div>
-  <div id="borrowsList"></div>
-</div>
+    <div class="catalog-grid" id="catalogGrid">
+    </div>
+  </main>
 
-<script>
-// ── DATA (same 6 assets from asset management) ──
-const assets = [
-  { id:'AST-001', name:'Oscilloscope Unit A', type:'Electronics', created:'2025-01-10 09:14', lender:'Electrical Eng. Dept.',  lenderInitials:'EE', status:'Available',   icon:'ph-wave-sine' },
-  { id:'AST-002', name:'3D Printer MK3S',     type:'Mechanical',  created:'2025-01-15 14:22', lender:'Mechanical Eng. Dept.', lenderInitials:'ME', status:'Borrowed',    icon:'ph-cube' },
-  { id:'AST-003', name:'Arduino Mega Pack',   type:'Computing',   created:'2025-03-20 15:30', lender:'Computer Eng. Dept.',   lenderInitials:'CE', status:'Borrowed',    icon:'ph-cpu' },
-  { id:'AST-004', name:'Raspberry Pi Kit',    type:'Computing',   created:'2025-02-18 08:30', lender:'Computer Eng. Dept.',   lenderInitials:'CE', status:'Pending',     icon:'ph-circuit-board' },
-  { id:'AST-005', name:'Digital Multimeter',  type:'Electronics', created:'2025-02-03 10:05', lender:'Electronics Lab',       lenderInitials:'EL', status:'Pending',     icon:'ph-gauge' },
-  { id:'AST-006', name:'Spectrum Analyzer',   type:'Electronics', created:'2025-03-01 11:45', lender:'Electrical Eng. Dept.', lenderInitials:'EE', status:'Maintenance', icon:'ph-chart-line-up' },
-];
+  <script>
+    // Ambient Glow Logic
+    document.addEventListener('mousemove', e => {
+      document.getElementById('glow').style.setProperty('--mouse-x', e.clientX + 'px');
+      document.getElementById('glow').style.setProperty('--mouse-y', e.clientY + 'px');
+    });
 
-let filteredAssets = [...assets];
-let myBorrowings = [];
-let activeAsset  = null;
-let searchQ = '', typeF = '', availF = '';
+    // Dropdown Logic
+    function toggleDropdown() { document.getElementById('settingsDropdown').classList.toggle('active'); }
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!document.querySelector('.profile-menu').contains(event.target)) {
+        document.getElementById('settingsDropdown').classList.remove('active');
+      }
+    });
 
-// ── BADGE HTML ──
-function badge(s) {
-  const map = { Available:'badge-available', Borrowed:'badge-borrowed', Pending:'badge-pending', Maintenance:'badge-maintenance' };
-  return `<span class="badge ${map[s]||''}"><span class="badge-dot"></span>${s}</span>`;
-}
+  </script>
+  <script src="js/api.js"></script>
+  <script>
+    // Mock Asset Data
+    const assets = [
+      { id: 'AST-001', name: 'Oscilloscope Unit A', type: 'Electronics', created: '2025-01-10', lender: 'EE Dept', status: 'Available', icon: 'ph-wave-sine' },
+      { id: 'AST-002', name: '3D Printer MK3S', type: 'Mechanical', created: '2025-01-15', lender: 'ME Dept', status: 'Available', icon: 'ph-cube' },
+      { id: 'AST-003', name: 'Arduino Mega Pack', type: 'Computing', created: '2025-03-20', lender: 'CPE Dept', status: 'Available', icon: 'ph-cpu' }
+    ];
 
-// ── RENDER CATALOG ──
-function renderCatalog() {
-  const grid = document.getElementById('catalogGrid');
-  if (!filteredAssets.length) {
-    grid.innerHTML = `<div class="empty-state"><i class="ph ph-magnifying-glass"></i><p>No assets match your search.</p></div>`;
-    return;
-  }
-  grid.innerHTML = filteredAssets.map(a => {
-    const avail = a.status === 'Available';
-    return `
-    <div class="asset-card ${!avail ? 'unavailable' : ''}" onclick="${avail ? `openDetail('${a.id}')` : ''}">
+    function renderCatalog() {
+      const grid = document.getElementById('catalogGrid');
+      grid.innerHTML = assets.map(a => `
+    <div class="asset-card">
       <div class="card-icon"><i class="ph ${a.icon}"></i></div>
       <div class="card-name">${a.name}</div>
       <div class="card-id">${a.id}</div>
       <div class="card-meta">
         <div class="card-meta-row"><i class="ph ph-tag"></i> ${a.type}</div>
         <div class="card-meta-row"><i class="ph ph-user"></i> ${a.lender}</div>
-        <div class="card-meta-row"><i class="ph ph-clock"></i> Added ${a.created}</div>
       </div>
       <div class="card-footer">
-        ${badge(a.status)}
-        <button class="request-btn" onclick="event.stopPropagation(); ${avail ? `openDetail('${a.id}')` : ''}" ${!avail ? 'disabled' : ''}>
-          ${avail ? '<i class="ph ph-paper-plane-tilt"></i> Request' : '<i class="ph ph-lock"></i> Unavailable'}
-        </button>
+        <span class="badge badge-available"><span class="badge-dot"></span>${a.status}</span>
+        <button class="request-btn"><i class="ph ph-paper-plane-tilt"></i> Request</button>
       </div>
-    </div>`;
-  }).join('');
-}
+    </div>
+  `).join('');
+    }
 
-// ── FILTER ──
-function applyFilters() {
-  filteredAssets = assets.filter(a => {
-    const q = searchQ.toLowerCase();
-    return (!q || a.name.toLowerCase().includes(q) || a.type.toLowerCase().includes(q) || a.id.toLowerCase().includes(q))
-      && (!typeF  || a.type   === typeF)
-      && (!availF || a.status === availF);
-  });
-  renderCatalog();
-}
-function filterAssets(q) { searchQ = q; applyFilters(); }
-function filterByType(t)  { typeF   = t; applyFilters(); }
-function filterByAvail(v) { availF  = v; applyFilters(); }
+    renderCatalog();
+  </script>
 
-// ── DETAIL PANEL ──
-function openDetail(id) {
-  activeAsset = assets.find(a => a.id === id);
-  if (!activeAsset) return;
-  const a = activeAsset;
-  document.getElementById('dIcon').className = `ph ${a.icon}`;
-  document.getElementById('dName').textContent = a.name;
-  document.getElementById('dId').textContent   = a.id + ' · ' + a.type;
-  document.getElementById('dType').textContent = a.type;
-  document.getElementById('dDate').textContent = a.created;
-  document.getElementById('dLenderInit').textContent = a.lenderInitials;
-  document.getElementById('dLenderName').textContent = a.lender;
-  document.getElementById('dStatus').innerHTML = badge(a.status);
-
-  const avail = a.status === 'Available';
-  document.getElementById('detailRequestBtn').disabled = !avail;
-  document.getElementById('detailUnavailNote').style.display = avail ? 'none' : 'flex';
-
-  document.getElementById('detailOverlay').classList.add('active');
-  document.getElementById('detailPanel').classList.add('active');
-}
-function closeDetail() {
-  document.getElementById('detailOverlay').classList.remove('active');
-  document.getElementById('detailPanel').classList.remove('active');
-}
-
-// ── CONFIRM MODAL ──
-function openConfirmModal() {
-  if (!activeAsset) return;
-  document.getElementById('mIcon').className = `ph ${activeAsset.icon}`;
-  document.getElementById('mAssetName').textContent = activeAsset.name;
-  document.getElementById('termsCheckbox').checked = false;
-  document.getElementById('confirmBtn').disabled = true;
-  document.getElementById('confirmModal').classList.add('active');
-}
-function closeModal() {
-  document.getElementById('confirmModal').classList.remove('active');
-}
-function toggleConfirmBtn() {
-  document.getElementById('confirmBtn').disabled = !document.getElementById('termsCheckbox').checked;
-}
-
-// ── SUBMIT ──
-function submitRequest() {
-  if (!activeAsset) return;
-  const ref = 'HB-' + Date.now().toString().slice(-6);
-  // Update status to Pending in-memory
-  activeAsset.status = 'Pending';
-  // Add to my borrowings
-  myBorrowings.push({ ...activeAsset, refNo: ref, requestedAt: new Date().toLocaleString(), borrowStatus: 'pending' });
-  document.getElementById('borrowCount').textContent = myBorrowings.length;
-  document.getElementById('successRef').textContent  = ref;
-
-  closeModal();
-  closeDetail();
-  applyFilters();
-
-  setTimeout(() => document.getElementById('successOverlay').classList.add('active'), 200);
-}
-
-function closeSucess() {
-  document.getElementById('successOverlay').classList.remove('active');
-  activeAsset = null;
-}
-
-// ── MY BORROWINGS ──
-function openBorrows() {
-  const list = document.getElementById('borrowsList');
-  if (!myBorrowings.length) {
-    list.innerHTML = `<div class="borrows-empty"><i class="ph ph-tray"></i><p>No active borrowings yet.</p></div>`;
-  } else {
-    list.innerHTML = myBorrowings.map(b => `
-      <div class="borrow-item">
-        <div class="borrow-item-icon"><i class="ph ${b.icon}"></i></div>
-        <div style="flex:1">
-          <div class="borrow-item-name">${b.name}</div>
-          <div class="borrow-item-meta">${b.id} · ${b.lender}</div>
-          <div class="borrow-item-footer">
-            <span class="borrow-status pending">Awaiting Approval</span>
-            <span class="borrow-due">Ref: ${b.refNo}</span>
-          </div>
-        </div>
-      </div>
-    `).join('');
-  }
-  document.getElementById('borrowsOverlay').classList.add('active');
-  document.getElementById('borrowsPanel').classList.add('active');
-}
-function closeBorrows() {
-  document.getElementById('borrowsOverlay').classList.remove('active');
-  document.getElementById('borrowsPanel').classList.remove('active');
-}
-
-// ── DROPDOWN ──
-function toggleDropdown() { document.getElementById('settingsDropdown').classList.toggle('active'); }
-document.addEventListener('click', e => { if (!document.querySelector('.profile-menu').contains(e.target)) document.getElementById('settingsDropdown').classList.remove('active'); });
-
-// ── AMBIENT GLOW ──
-document.addEventListener('mousemove', e => {
-  document.getElementById('glow').style.setProperty('--mouse-x', e.clientX+'px');
-  document.getElementById('glow').style.setProperty('--mouse-y', e.clientY+'px');
-});
-
-// ── INIT ──
-renderCatalog();
-</script>
 </body>
-</html>
 
+</html>
