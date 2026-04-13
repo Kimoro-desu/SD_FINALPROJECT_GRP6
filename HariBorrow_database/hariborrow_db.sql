@@ -31,6 +31,8 @@ CREATE TABLE `assets` (
   `Asset_ID` int(11) NOT NULL,
   `Lender_ID` int(10) DEFAULT NULL,
   `asset_name` varchar(50) DEFAULT NULL,
+  `asset_type` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL,
   `availability` varchar(50) DEFAULT NULL,
   `time_created` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -74,12 +76,17 @@ CREATE TABLE `transactions` (
 
 CREATE TABLE `users` (
   `User_ID` int(11) NOT NULL,
+  `school_id_number` varchar(50) DEFAULT NULL,
   `first_name` varchar(50) DEFAULT NULL,
   `middle_name` varchar(50) DEFAULT NULL,
   `last_name` varchar(50) DEFAULT NULL,
-  `password_hash` varchar(50) DEFAULT NULL,
+  `password_hash` varchar(255) DEFAULT NULL,
   `user_role` varchar(50) DEFAULT NULL,
-  `plm_email` varchar(50) DEFAULT NULL
+  `department` varchar(100) DEFAULT NULL,
+  `contact_number` varchar(20) DEFAULT NULL,
+  `plm_email` varchar(50) DEFAULT NULL,
+  UNIQUE KEY `plm_email` (`plm_email`),
+  UNIQUE KEY `school_id_number` (`school_id_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -119,6 +126,12 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `assets`
+--
+ALTER TABLE `assets`
+  MODIFY `Asset_ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `penalties`
 --
 ALTER TABLE `penalties`
@@ -129,6 +142,12 @@ ALTER TABLE `penalties`
 --
 ALTER TABLE `transactions`
   MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `User_ID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables

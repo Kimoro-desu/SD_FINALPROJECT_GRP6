@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HariBorrow — Asset Catalog</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="../js/auth_guard.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-deep: #030304;
+      --glass: rgba(15, 15, 20, 0.45);
+      --glass-heavy: rgba(10, 10, 13, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --gold: #E5C07B;
+      --gold-light: #FCEBAF;
+      --gold-dark: #A68A48;
+      --gold-dim: rgba(229, 192, 123, 0.1);
+      --gold-glow: rgba(229, 192, 123, 0.25);
+      --text-1: #FFFFFF;
+      --text-2: #A39E93;
+      --text-3: #6B665A;
+      --green: #4ade80;
+      --green-dim: rgba(74, 222, 128, 0.1);
+      --red: #f87171;
+      --red-dim: rgba(248, 113, 113, 0.1);
+      --blue: #60a5fa;
+      --blue-dim: rgba(96, 165, 250, 0.1);
+    }
+
+    html,
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      overflow-x: hidden;
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-deep);
+      color: var(--text-1);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-3);
+      border-radius: 10px;
+    }
+
+
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 15% 50%, rgba(229, 192, 123, 0.05), transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(166, 138, 72, 0.07), transparent 50%),
+        var(--bg-deep);
+      animation: pulseBg 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulseBg {
+      0% {
+        transform: scale(1);
+      }
+
+      100% {
+        transform: scale(1.05);
+      }
+    }
+
+    .ambient-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
+      z-index: 9999;
+      mix-blend-mode: screen;
+    }
+
+    /* ── NAV ── */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 80px;
+      background: var(--glass-heavy);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+
+    .nav-logo {
+      height: 56px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 10px rgba(229, 192, 123, 0.4)) brightness(1.2) contrast(1.3) saturate(1.4);
+      transition: transform 0.3s ease, filter 0.3s ease;
+    }
+
+    .nav-logo:hover {
+      transform: scale(1.05);
+      filter: drop-shadow(0 0 18px var(--gold)) brightness(1.4) contrast(1.4) saturate(1.6);
+    }
+
+    .nav-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #FFF 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      padding: 8px 16px;
+      border-radius: 30px;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    .nav-back:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .profile-menu {
+      position: relative;
+    }
+
+    .profile-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      padding: 8px 16px;
+      border-radius: 30px;
+      color: var(--text-1);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .profile-btn:hover {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+    }
+
+    .profile-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--bg-deep);
+      overflow: hidden;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 120%;
+      right: 0;
+      width: 220px;
+      background: rgba(15, 15, 20, 0.85);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dropdown.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .drop-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      text-align: left;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .drop-item i {
+      font-size: 18px;
+      color: var(--gold);
+      opacity: 0.7;
+    }
+
+    .drop-item:hover {
+      background: var(--gold-dim);
+      color: var(--gold-light);
+    }
+
+    .drop-divider {
+      height: 1px;
+      background: var(--glass-border);
+      margin: 6px 0;
+    }
+
+    .drop-item.logout {
+      color: #ff6b7a;
+    }
+
+    .drop-item.logout:hover {
+      background: rgba(220, 53, 69, 0.1);
+    }
+
+    /* ── PAGE LAYOUT ── */
+    .page {
+      position: relative;
+      z-index: 10;
+      padding: 100px 5% 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--glass-border);
+      flex-wrap: wrap;
+      gap: 16px;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .page-header-left h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 500;
+      line-height: 1.1;
+    }
+
+    .page-header-left p {
+      font-size: 13px;
+      color: var(--text-2);
+      font-weight: 300;
+      margin-top: 6px;
+    }
+
+    .my-borrows-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      padding: 10px 20px;
+      border-radius: 30px;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .my-borrows-btn:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .badge-count {
+      background: var(--gold);
+      color: var(--bg-deep);
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .search-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-3);
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 11px 16px 11px 42px;
+      color: var(--text-1);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: rgba(229, 192, 123, 0.4);
+    }
+
+    .filter-select {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 11px 36px 11px 14px;
+      color: var(--text-2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B665A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    /* ── CATALOG GRID ── */
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    }
+
+    .asset-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .asset-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(229, 192, 123, 0.3);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(229, 192, 123, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: var(--gold);
+      margin-bottom: 18px;
+    }
+
+    .card-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-1);
+      margin-bottom: 4px;
+    }
+
+    .card-id {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-bottom: 14px;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .card-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    .card-meta-row i {
+      font-size: 15px;
+      color: var(--text-3);
+      width: 16px;
+      flex-shrink: 0;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--glass-border);
+      margin-top: auto;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-available {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(74, 222, 128, 0.2);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .request-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: var(--bg-deep);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="bg-mesh"></div>
+  <div class="ambient-glow" id="glow"></div>
+
+  <nav class="top-nav">
+    <a href="borrower_lender_dashboard.html" class="nav-brand">
+      <img src="../images/image_0.png" alt="HariBorrow Logo" class="nav-logo">
+      <span class="nav-title">HariBorrow</span>
+    </a>
+    <div class="nav-right">
+      <a href="#" class="nav-back" onclick="history.back();return false;"><i class="ph ph-arrow-left"></i> Dashboard</a>
+
+      <div class="profile-menu">
+        <button class="profile-btn" onclick="toggleDropdown()">
+
+          <div class="profile-avatar" id="navAvatar">UN</div>
+
+          <span>User Name</span>
+
+          <i class="ph ph-caret-down"></i>
+        </button>
+
+        <div class="dropdown" id="settingsDropdown">
+          <button class="drop-item"><i class="ph ph-user"></i> My Profile</button>
+          <button class="drop-item"><i class="ph ph-gear"></i> Account Settings</button>
+          <div class="drop-divider"></div>
+          <button class="drop-item logout" onclick="window.api.removeToken(); window.location.href='login.html'"><i class="ph ph-sign-out"></i> Secure Log Out</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h1>Asset Catalog</h1>
+        <p>Browse available university equipment and submit borrow requests.</p>
+      </div>
+      <button class="my-borrows-btn" onclick="openBorrows()">
+        <i class="ph ph-clock-counter-clockwise"></i>
+        My Borrowings
+        <span class="badge-count" id="borrowCount">0</span>
+      </button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ph ph-magnifying-glass"></i>
+        <input class="search-input" type="text" placeholder="Search assets by name, type, or ID…"
+          oninput="filterAssets(this.value)">
+      </div>
+      <select class="filter-select" onchange="filterByType(this.value)">
+        <option value="">All Types</option>
+        <option>Electronics</option>
+        <option>Mechanical</option>
+        <option>Computing</option>
+      </select>
+    </div>
+
+    <div class="catalog-grid" id="catalogGrid">
+    </div>
+  </main>
+
+  <script>
+    // Ambient Glow Logic
+    document.addEventListener('mousemove', e => {
+      document.getElementById('glow').style.setProperty('--mouse-x', e.clientX + 'px');
+      document.getElementById('glow').style.setProperty('--mouse-y', e.clientY + 'px');
+    });
+
+    // Dropdown Logic
+    function toggleDropdown() { document.getElementById('settingsDropdown').classList.toggle('active'); }
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!document.querySelector('.profile-menu').contains(event.target)) {
+        document.getElementById('settingsDropdown').classList.remove('active');
+      }
+    });
+
+  </script>
+  <script src="../js/api.js"></script>
+  <script>
+    // Mock Asset Data
+    const assets = [
+      { id: 'AST-001', name: 'Oscilloscope Unit A', type: 'Electronics', created: '2025-01-10', lender: 'EE Dept', status: 'Available', icon: 'ph-wave-sine' },
+      { id: 'AST-002', name: '3D Printer MK3S', type: 'Mechanical', created: '2025-01-15', lender: 'ME Dept', status: 'Available', icon: 'ph-cube' },
+      { id: 'AST-003', name: 'Arduino Mega Pack', type: 'Computing', created: '2025-03-20', lender: 'CPE Dept', status: 'Available', icon: 'ph-cpu' }
+    ];
+
+    function renderCatalog() {
+      const grid = document.getElementById('catalogGrid');
+      grid.innerHTML = assets.map(a => `
+    <div class="asset-card">
+      <div class="card-icon"><i class="ph ${a.icon}"></i></div>
+      <div class="card-name">${a.name}</div>
+      <div class="card-id">${a.id}</div>
+      <div class="card-meta">
+        <div class="card-meta-row"><i class="ph ph-tag"></i> ${a.type}</div>
+        <div class="card-meta-row"><i class="ph ph-user"></i> ${a.lender}</div>
+      </div>
+      <div class="card-footer">
+        <span class="badge badge-available"><span class="badge-dot"></span>${a.status}</span>
+        <button class="request-btn"><i class="ph ph-paper-plane-tilt"></i> Request</button>
+      </div>
+    </div>
+  `).join('');
+    }
+
+    renderCatalog();
+  </script>
+
+</body>
+
+</html>
