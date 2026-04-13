@@ -9,8 +9,8 @@
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
     rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="js/auth_guard.js"></script>
-    <script src="js/api.js"></script>
+    <script src="../js/auth_guard.js"></script>
+    <script src="../js/api.js"></script>
   <style>
     *,
     *::before,
@@ -1141,7 +1141,7 @@
 
   <nav class="top-nav">
     <a href="borrower_lender_dashboard.html" class="nav-brand">
-      <img src="image_0.png" alt="HariBorrow Logo" class="nav-logo">
+      <img src="../images/image_0.png" alt="HariBorrow Logo" class="nav-logo">
       <span class="nav-title">HariBorrow</span>
     </a>
 
@@ -1337,17 +1337,38 @@
     <span id="toastMsg">Asset created successfully.</span>
   </div>
 
-  <script src="js/api.js"></script>
+  <script src="../js/api.js"></script>
   <script>
     // ── DATA ──
-    let assets = [
-      { id: 'AST-001', name: 'Oscilloscope Unit A', type: 'Electronics', created: '2025-01-10 09:14', lender: 'Electrical Eng. Dept.', lenderInitials: 'EE', status: 'Available', icon: 'ph-wave-sine' },
-      { id: 'AST-002', name: '3D Printer MK3S', type: 'Mechanical', created: '2025-01-15 14:22', lender: 'Mechanical Eng. Dept.', lenderInitials: 'ME', status: 'Borrowed', icon: 'ph-cube' },
-      { id: 'AST-003', name: 'Arduino Mega Pack', type: 'Computing', created: '2025-03-20 15:30', lender: 'Computer Eng. Dept.', lenderInitials: 'CE', status: 'Borrowed', icon: 'ph-cpu' },
-      { id: 'AST-004', name: 'Raspberry Pi Kit', type: 'Computing', created: '2025-02-18 08:30', lender: 'Computer Eng. Dept.', lenderInitials: 'CE', status: 'Pending', icon: 'ph-circuit-board' },
-      { id: 'AST-005', name: 'Digital Multimeter', type: 'Electronics', created: '2025-02-03 10:05', lender: 'Electronics Lab', lenderInitials: 'EL', status: 'Pending', icon: 'ph-gauge' },
-      { id: 'AST-006', name: 'Spectrum Analyzer', type: 'Electronics', created: '2025-03-01 11:45', lender: 'Electrical Eng. Dept.', lenderInitials: 'EE', status: 'Maintenance', icon: 'ph-chart-line-up' },
-    ];
+    let assets = [];
+
+    async function loadAssets() {
+        try {
+            const data = await window.api.authenticatedFetch('/assets/list_assets.php', { method: 'GET' });
+            if (data && data.assets) {
+                const iconMap = { Electronics: 'ph-wave-sine', Mechanical: 'ph-gear-six', Laboratory: 'ph-flask', Computing: 'ph-cpu' };
+                
+                assets = data.assets.map(a => {
+                    const initials = (a.lender_name || 'System').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                    
+                    return {
+                        id: a.id,
+                        name: a.name,
+                        type: a.type || 'General',
+                        created: a.created_at,
+                        lender: a.lender_name || 'System Default',
+                        lenderInitials: initials,
+                        status: a.status,
+                        icon: iconMap[a.type] || 'ph-stack'
+                    };
+                });
+                applyFilters(); // This triggers renderAll() properly
+            }
+        } catch (error) {
+            console.error('Failed to load assets', error);
+            showToast('Failed to load assets.');
+        }
+    }
 
     let filteredAssets = [...assets];
     let deleteTarget = null;
@@ -1463,12 +1484,24 @@
     }
 
     // ── TOGGLE AVAILABILITY ──
-    function toggleAvailability(id) {
+    async function toggleAvailability(id) {
       const a = assets.find(x => x.id === id);
       if (!a) return;
-      a.status = a.status === 'Available' ? 'Borrowed' : 'Available';
-      applyFilters();
-      showToast(`"${a.name}" availability updated.`);
+      const newStatus = a.status === 'Available' ? 'Borrowed' : 'Available';
+      
+      try {
+          await window.api.authenticatedFetch(`/assets/update.php?id=${a.id}`, { 
+              method: 'PUT', 
+              body: { 
+                  availability: newStatus
+              } 
+          });
+          a.status = newStatus;
+          applyFilters();
+          showToast(`"${a.name}" availability updated.`);
+      } catch (error) {
+          alert('Failed to toggle status: ' + (error.message || 'Server error'));
+      }
     }
 
     // ── CREATE MODAL ──
@@ -1498,29 +1531,34 @@
       document.getElementById('createModal').classList.add('active');
     }
 
-    function saveAsset() {
+    async function saveAsset() {
       const name = document.getElementById('assetName').value.trim();
       const type = document.getElementById('assetType').value;
       const status = document.getElementById('assetStatus').value;
-      const lender = document.getElementById('assetLender').value.trim();
-      if (!name || !lender) { alert('Please fill in Asset Name and Lender.'); return; }
+      const description = document.getElementById('assetDesc').value.trim();
 
-      const now = new Date();
-      const ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      if (!name) { alert('Please fill in Asset Name.'); return; }
 
-      if (editTarget) {
-        const a = assets.find(x => x.id === editTarget);
-        a.name = name; a.type = type; a.status = status; a.lender = lender;
-        a.lenderInitials = lender.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-        showToast(`"${name}" updated successfully.`);
-      } else {
-        const newId = 'AST-' + String(assets.length + 1).padStart(3, '0');
-        const iconMap = { Electronics: 'ph-wave-sine', Mechanical: 'ph-gear-six', Laboratory: 'ph-flask', Computing: 'ph-cpu' };
-        assets.push({ id: newId, name, type, created: ts, lender, lenderInitials: lender.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(), status, icon: iconMap[type] || 'ph-stack' });
-        showToast(`"${name}" created successfully.`);
+      const payload = {
+          asset_name: name,
+          asset_type: type,
+          availability: status,
+          description: description
+      };
+
+      try {
+          if (editTarget) {
+              await window.api.authenticatedFetch(`/assets/update.php?id=${editTarget}`, { method: 'PUT', body: payload });
+              showToast(`"${name}" updated successfully.`);
+          } else {
+              await window.api.authenticatedFetch('/assets/add.php', { method: 'POST', body: payload });
+              showToast(`"${name}" created successfully.`);
+          }
+          closeModal('createModal');
+          loadAssets();
+      } catch (error) {
+          alert("Error saving asset: " + (error.message || 'Unknown error'));
       }
-      applyFilters();
-      closeModal('createModal');
     }
 
     // ── DELETE ──
@@ -1528,15 +1566,17 @@
       deleteTarget = id;
       document.getElementById('deleteModal').classList.add('active');
     }
-    function confirmDelete() {
+    async function confirmDelete() {
       if (!deleteTarget) return;
-      const a = assets.find(x => x.id === deleteTarget);
-      assets = assets.filter(x => x.id !== deleteTarget);
-      filteredAssets = filteredAssets.filter(x => x.id !== deleteTarget);
-      deleteTarget = null;
-      renderAll();
-      closeModal('deleteModal');
-      showToast(a ? `"${a.name}" deleted.` : 'Asset deleted.');
+      try {
+          await window.api.authenticatedFetch(`/assets/delete.php?id=${deleteTarget}`, { method: 'DELETE' });
+          showToast('Asset deleted successfully.');
+          deleteTarget = null;
+          closeModal('deleteModal');
+          loadAssets();
+      } catch (error) {
+          alert('Failed to delete asset: ' + (error.message || 'Unknown error'));
+      }
     }
 
     // ── MODAL HELPERS ──
@@ -1574,7 +1614,8 @@
     });
 
     // ── INIT ──
-    renderAll();
+    // ── INIT ──
+    loadAssets();
   </script>
 </body>
 
