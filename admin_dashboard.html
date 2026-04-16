@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HariBorrow — Admin Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:    #030304;
+    --glass:      rgba(15, 15, 20, 0.45);
+    --glass-heavy: rgba(10, 10, 13, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --gold:       #E5C07B;
+    --gold-light: #FCEBAF;
+    --gold-dark:  #A68A48;
+    --gold-dim:   rgba(229, 192, 123, 0.1);
+    --gold-glow:  rgba(229, 192, 123, 0.25);
+    --text-1:     #FFFFFF;
+    --text-2:     #A39E93;
+    --text-3:     #6B665A;
+    --sidebar-w:  260px;
+    --danger:     #ff6b7a;
+    --success:    #4ade80;
+  }
+
+  html, body {
+    height: 100vh; width: 100vw; overflow: hidden;
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-deep);
+    color: var(--text-1);
+    display: flex;
+  }
+
+  ::-webkit-scrollbar { width: 6px; background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 10px; }
+
+  /* Background */
+  .bg-mesh {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
+    background: 
+      radial-gradient(circle at 10% 90%, rgba(229, 192, 123, 0.05), transparent 50%),
+      radial-gradient(circle at 90% 10%, rgba(166, 138, 72, 0.05), transparent 50%),
+      var(--bg-deep);
+  }
+
+  .ambient-glow {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-w); height: 100vh;
+    background: var(--glass-heavy); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid var(--glass-border);
+    display: flex; flex-direction: column; z-index: 100;
+    position: relative;
+  }
+
+  .sidebar-header {
+    padding: 32px 24px; border-bottom: 1px solid var(--glass-border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  
+  .nav-logo { 
+    height: 48px; 
+    width: auto; 
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(229, 192, 123, 0.4)) brightness(1.2) contrast(1.3) saturate(1.4);
+    transition: transform 0.3s ease, filter 0.3s ease;
+  }
+  
+  .nav-logo:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 18px var(--gold)) brightness(1.4) contrast(1.4) saturate(1.6);
+  }
+
+  .nav-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600;
+    background: linear-gradient(135deg, #FFF 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  
+  .admin-badge {
+    font-family: 'Outfit', sans-serif; font-size: 8px; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold);
+    border: 1px solid var(--gold-dim); padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;
+  }
+
+  .nav-menu { padding: 24px 12px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1; overflow-y: auto; }
+  
+  .nav-section-title {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-3); margin: 16px 0 8px 12px;
+  }
+
+  .nav-link {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    color: var(--text-2); text-decoration: none; border-radius: 8px;
+    font-size: 14px; font-weight: 400; transition: all 0.2s; border: 1px solid transparent;
+  }
+  
+  .nav-link i { font-size: 20px; color: var(--text-3); transition: color 0.2s; }
+  .nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-1); }
+  .nav-link.active { background: var(--gold-dim); border-color: rgba(229, 192, 123, 0.2); color: var(--gold-light); }
+  .nav-link.active i { color: var(--gold); }
+
+  .sidebar-footer { padding: 24px; border-top: 1px solid var(--glass-border); }
+  .admin-profile { display: flex; align-items: center; gap: 12px; }
+  .admin-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--gold-dark); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: var(--bg-deep); }
+  .admin-info { display: flex; flex-direction: column; }
+  .admin-name { font-size: 14px; font-weight: 500; color: var(--text-1); }
+  .admin-role { font-size: 11px; color: var(--text-3); }
+
+  /* Main Layout */
+  .main-content {
+    flex-grow: 1; height: 100vh; overflow-y: auto; position: relative; z-index: 10;
+    padding: 40px 48px;
+  }
+
+  .header-area { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+  .page-title h1 { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 400; color: var(--text-1); line-height: 1.1; margin-bottom: 8px; }
+  .page-title p { font-size: 14px; color: var(--text-2); font-weight: 300; letter-spacing: 0.03em; }
+
+  /* Stats Grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 40px; }
+  
+  .stat-card {
+    background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px;
+    padding: 24px; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--gold); opacity: 0.5;
+  }
+  .stat-title { font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-2); margin-bottom: 12px; }
+  .stat-value { font-family: 'Cormorant Garamond', serif; font-size: 36px; color: var(--text-1); font-weight: 500; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--text-3); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+  .stat-sub.positive { color: var(--success); }
+  .stat-sub.negative { color: var(--danger); }
+
+  /* Data Table */
+  .data-panel {
+    background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px;
+    overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  
+  .panel-header {
+    padding: 24px; border-bottom: 1px solid var(--glass-border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-title { font-size: 16px; font-weight: 500; color: var(--text-1); letter-spacing: 0.02em; }
+  .panel-actions { display: flex; gap: 12px; }
+  
+  .btn-outline {
+    background: transparent; border: 1px solid var(--glass-border); color: var(--text-2);
+    padding: 8px 16px; border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 12px;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+  .btn-danger-outline { border-color: rgba(255, 107, 122, 0.3); color: var(--danger); }
+  .btn-danger-outline:hover { border-color: var(--danger); color: #fff; background: var(--danger); }
+  
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 16px 24px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3);
+    border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);
+  }
+  td {
+    padding: 16px 24px; font-size: 14px; color: var(--text-2); font-weight: 300;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  
+  .status-pill {
+    padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; display: inline-block;
+  }
+  .status-pill.pending { background: rgba(229, 192, 123, 0.1); color: var(--gold); border: 1px solid rgba(229, 192, 123, 0.3); }
+  .status-pill.active { background: rgba(74, 222, 128, 0.1); color: var(--success); border: 1px solid rgba(74, 222, 128, 0.3); }
+  .status-pill.overdue { background: rgba(255, 107, 122, 0.1); color: var(--danger); border: 1px solid rgba(255, 107, 122, 0.3); }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal { background: rgba(15,15,20,0.95); border: 1px solid var(--glass-border); border-radius: 20px; padding: 40px; width: 100%; max-width: 440px; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+  .modal-overlay.active .modal { transform: scale(1); }
+  
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: var(--danger); display: flex; align-items: center; gap: 10px; }
+  .modal-close { background: transparent; border: 1px solid var(--glass-border); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 18px; cursor: pointer; transition: all 0.2s; }
+  .modal-close:hover { background: var(--red-dim); border-color: rgba(248,113,113,0.3); color: var(--danger); }
+
+  .form-group { margin-bottom: 20px; }
+  .form-label { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); display: block; margin-bottom: 8px; }
+  .form-input, .form-textarea {
+    width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+    border-radius: 10px; padding: 14px 16px; color: var(--text-1); font-family: 'Outfit', sans-serif;
+    font-size: 14px; outline: none; transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus { border-color: var(--danger); box-shadow: 0 0 10px rgba(255, 107, 122, 0.2); }
+  .form-textarea { resize: vertical; min-height: 100px; }
+
+  .btn-submit-danger { width: 100%; background: var(--danger); border: none; padding: 16px; border-radius: 10px; color: #fff; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-top: 12px; }
+  .btn-submit-danger:hover { background: #ef4444; box-shadow: 0 4px 15px rgba(255, 107, 122, 0.3); transform: translateY(-2px); }
+
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+<div class="ambient-glow" id="glow"></div>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <img src="image_0.png" alt="HariBorrow Logo" class="nav-logo">
+    <div>
+      <div class="nav-title">HariBorrow</div>
+      <span class="admin-badge">Admin Console</span>
+    </div>
+  </div>
+
+  <nav class="nav-menu">
+    <a href="#" class="nav-link active"><i class="ph ph-squares-four"></i> Command Center</a>
+    <div class="nav-section-title">Operations</div>
+    <a href="#" class="nav-link"><i class="ph ph-bell-ringing"></i> Pending Requests</a>
+    <a href="#" class="nav-link"><i class="ph ph-clock-counter-clockwise"></i> Active Transactions</a>
+    <div class="nav-section-title">Database</div>
+    <a href="#" class="nav-link"><i class="ph ph-stack"></i> Asset Inventory</a>
+    <a href="#" class="nav-link"><i class="ph ph-users"></i> Registered Users</a>
+    <div class="nav-section-title">System</div>
+    <a href="#" class="nav-link"><i class="ph ph-shield-check"></i> Registration Approvals</a>
+    <a href="#" class="nav-link"><i class="ph ph-file-text"></i> System Logs</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-profile">
+      <div class="admin-avatar">UN</div>
+      <div class="admin-info">
+        <span class="admin-name">Admin Name</span>
+        <span class="admin-role">IT Department</span>
+      </div>
+      <a href="login.html" style="margin-left: auto; color: var(--text-3); cursor: pointer;"><i class="ph ph-sign-out" style="font-size: 20px;"></i></a>
+    </div>
+  </div>
+</aside>
+
+<main class="main-content">
+  
+  <div class="header-area">
+    <div class="page-title">
+      <h1>Command Center</h1>
+      <p>System metrics and recent facility transactions.</p>
+    </div>
+    <button class="btn-outline" style="border-color: var(--gold); color: var(--gold);"><i class="ph ph-download-simple"></i> Export Daily Report</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-title">Pending Approvals</div>
+      <div class="stat-value">0</div>
+      <div class="stat-sub"><i class="ph ph-clock"></i> Requires immediate action</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Active Borrowings</div>
+      <div class="stat-value">0</div>
+      <div class="stat-sub positive"><i class="ph ph-trend-up"></i> Dispatched today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Overdue Assets</div>
+      <div class="stat-value" style="color: var(--danger);">0</div>
+      <div class="stat-sub negative"><i class="ph ph-warning"></i> Administrative holds pending</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Total Registered Users</div>
+      <div class="stat-value">0</div>
+      <div class="stat-sub"><i class="ph ph-users"></i> System total</div>
+    </div>
+  </div>
+
+  <div class="data-panel">
+    <div class="panel-header">
+      <div class="panel-title">Recent Transactions Logging</div>
+      <div class="panel-actions">
+        <button class="btn-outline"><i class="ph ph-funnel"></i> Filter</button>
+        <button class="btn-outline"><i class="ph ph-magnifying-glass"></i> Search</button>
+      </div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Borrower</th>
+          <th>Asset Requested</th>
+          <th>Request Date</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: var(--text-1); font-family: monospace;">#TXN-XXXX</td>
+          <td>Borrower Name <br><span style="font-size: 11px; color: var(--text-3);">Department Name</span></td>
+          <td style="color: var(--text-1);">Asset Name</td>
+          <td>Date/Time</td>
+          <td><span class="status-pill pending">Status</span></td>
+          <td>
+            <button class="btn-outline" onclick="openPenaltyModal('#TXN-XXXX', 'Borrower Name')">Review</button>
+          </td>
+        </tr>
+        </tbody>
+    </table>
+  </div>
+
+</main>
+
+<div class="modal-overlay" id="penaltyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ph ph-warning-octagon"></i> Issue Penalty</div>
+      <button class="modal-close" onclick="closePenaltyModal()"><i class="ph ph-x"></i></button>
+    </div>
+    
+    <p style="font-size: 13px; color: var(--text-2); margin-bottom: 24px;">
+      You are issuing a penalty to <strong id="penaltyUserName" style="color: var(--text-1);">[User]</strong> for transaction <span id="penaltyTxnId" style="font-family: monospace; color: var(--gold);">[TXN]</span>. This will place an administrative hold on their account.
+    </p>
+
+    <div class="form-group">
+      <label class="form-label">Penalty Amount (PHP)</label>
+      <input type="number" class="form-input" name="penalty_amount" placeholder="e.g. 50.00" required>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Reason for Penalty</label>
+      <textarea class="form-textarea" name="penalty_reason" placeholder="e.g. Asset returned 3 days late. Minor scratch on the casing." required></textarea>
+    </div>
+
+    <button class="btn-submit-danger" onclick="submitPenalty(this)">Apply Penalty & Restrict Account</button>
+  </div>
+</div>
+
+<script>
+  const glow = document.getElementById('glow');
+  document.addEventListener('mousemove', (e) => {
+    glow.style.setProperty('--mouse-x', e.clientX + 'px');
+    glow.style.setProperty('--mouse-y', e.clientY + 'px');
+  });
+
+  const links = document.querySelectorAll('.nav-link');
+  links.forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      links.forEach(l => l.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  function openPenaltyModal(txnId, userName) {
+    document.getElementById('penaltyTxnId').textContent = txnId;
+    document.getElementById('penaltyUserName').textContent = userName;
+    document.getElementById('penaltyModal').classList.add('active');
+  }
+
+  function closePenaltyModal() {
+    document.getElementById('penaltyModal').classList.remove('active');
+  }
+
+  function submitPenalty(btn) {
+    btn.textContent = 'Processing...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+      btn.textContent = 'Penalty Applied';
+      btn.style.background = 'var(--success)';
+      
+      setTimeout(() => {
+        closePenaltyModal();
+        btn.textContent = 'Apply Penalty & Restrict Account';
+        btn.style.background = 'var(--danger)';
+        btn.disabled = false;
+      }, 1000);
+    }, 1500);
+  }
+</script>
+
+</body>
+</html>

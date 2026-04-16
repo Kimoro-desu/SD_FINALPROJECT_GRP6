@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HariBorrow — Registration Approvals</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:    #030304;
+    --glass:      rgba(15, 15, 20, 0.45);
+    --glass-heavy: rgba(10, 10, 13, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --gold:       #E5C07B;
+    --gold-light: #FCEBAF;
+    --gold-dark:  #A68A48;
+    --gold-dim:   rgba(229, 192, 123, 0.1);
+    --text-1:     #FFFFFF;
+    --text-2:     #A39E93;
+    --text-3:     #6B665A;
+    --sidebar-w:  260px;
+    --danger:     #ff6b7a;
+    --success:    #4ade80;
+  }
+
+  html, body {
+    height: 100vh; width: 100vw; overflow: hidden;
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-deep);
+    color: var(--text-1);
+    display: flex;
+  }
+
+  ::-webkit-scrollbar { width: 6px; background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 10px; }
+
+  /* Background */
+  .bg-mesh {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
+    background: 
+      radial-gradient(circle at 10% 90%, rgba(229, 192, 123, 0.05), transparent 50%),
+      radial-gradient(circle at 90% 10%, rgba(166, 138, 72, 0.05), transparent 50%),
+      var(--bg-deep);
+  }
+
+  .ambient-glow {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-w); height: 100vh;
+    background: var(--glass-heavy); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid var(--glass-border);
+    display: flex; flex-direction: column; z-index: 100;
+    position: relative;
+  }
+
+  .sidebar-header {
+    padding: 32px 24px; border-bottom: 1px solid var(--glass-border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  
+  .nav-logo { 
+    height: 48px; width: auto; object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(229, 192, 123, 0.4)) brightness(1.2) contrast(1.3) saturate(1.4);
+  }
+
+  .nav-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600;
+    background: linear-gradient(135deg, #FFF 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  
+  .admin-badge {
+    font-family: 'Outfit', sans-serif; font-size: 8px; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold);
+    border: 1px solid var(--gold-dim); padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;
+  }
+
+  .nav-menu { padding: 24px 12px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1; overflow-y: auto; }
+  
+  .nav-section-title {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-3); margin: 16px 0 8px 12px;
+  }
+
+  .nav-link {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    color: var(--text-2); text-decoration: none; border-radius: 8px;
+    font-size: 14px; font-weight: 400; transition: all 0.2s; border: 1px solid transparent;
+  }
+  
+  .nav-link i { font-size: 20px; color: var(--text-3); transition: color 0.2s; }
+  .nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-1); }
+  .nav-link.active { background: var(--gold-dim); border-color: rgba(229, 192, 123, 0.2); color: var(--gold-light); }
+  .nav-link.active i { color: var(--gold); }
+
+  .nav-badge {
+    margin-left: auto; background: var(--danger); color: #fff;
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+  }
+
+  .sidebar-footer { padding: 24px; border-top: 1px solid var(--glass-border); }
+  .admin-profile { display: flex; align-items: center; gap: 12px; }
+  .admin-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--gold-dark); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: var(--bg-deep); }
+  .admin-info { display: flex; flex-direction: column; }
+  .admin-name { font-size: 14px; font-weight: 500; color: var(--text-1); }
+  .admin-role { font-size: 11px; color: var(--text-3); }
+
+  /* Main Layout */
+  .main-content {
+    flex-grow: 1; height: 100vh; overflow-y: auto; position: relative; z-index: 10;
+    padding: 40px 48px;
+  }
+
+  .header-area { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+  .page-title h1 { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 400; color: var(--text-1); line-height: 1.1; margin-bottom: 8px; }
+  .page-title p { font-size: 14px; color: var(--text-2); font-weight: 300; letter-spacing: 0.03em; }
+
+  /* System Alerts */
+  .sys-alert {
+    padding: 16px 20px; border-radius: 8px; margin-bottom: 30px; font-size: 13px; font-weight: 400;
+    display: flex; align-items: center; gap: 12px; animation: slideDown 0.4s ease;
+  }
+  .sys-alert.success { background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.3); color: var(--success); }
+  .sys-alert.error { background: rgba(255, 107, 122, 0.1); border: 1px solid rgba(255, 107, 122, 0.3); color: var(--danger); }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Data Table Extensions */
+  .data-panel {
+    background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px;
+    overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  
+  .panel-header {
+    padding: 24px; border-bottom: 1px solid var(--glass-border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-title { font-size: 16px; font-weight: 500; color: var(--text-1); letter-spacing: 0.02em; }
+  
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 16px 24px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3);
+    border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);
+  }
+  td {
+    padding: 16px 24px; font-size: 14px; color: var(--text-1); font-weight: 400;
+    border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle;
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .sub-text { font-size: 12px; color: var(--text-3); display: block; margin-top: 4px; font-weight: 300; }
+  
+  /* Role Tags */
+  .role-tag {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+  }
+  .role-tag.student { color: #8ab4f8; border-color: rgba(138, 180, 248, 0.2); background: rgba(138, 180, 248, 0.05); }
+  .role-tag.faculty { color: var(--gold); border-color: rgba(229, 192, 123, 0.2); background: rgba(229, 192, 123, 0.05); }
+  .role-tag.staff { color: #c084fc; border-color: rgba(192, 132, 252, 0.2); background: rgba(192, 132, 252, 0.05); }
+  .role-tag.researcher { color: #4ade80; border-color: rgba(74, 222, 128, 0.2); background: rgba(74, 222, 128, 0.05); }
+
+  /* Action Buttons */
+  .action-form { display: flex; gap: 8px; }
+  .btn-action {
+    background: transparent; border: 1px solid var(--glass-border); padding: 8px 12px;
+    border-radius: 6px; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-approve { color: var(--success); border-color: rgba(74, 222, 128, 0.3); }
+  .btn-approve:hover { background: rgba(74, 222, 128, 0.1); border-color: var(--success); }
+  
+  .btn-reject { color: var(--danger); border-color: rgba(255, 107, 122, 0.3); }
+  .btn-reject:hover { background: rgba(255, 107, 122, 0.1); border-color: var(--danger); }
+
+  /* Empty State */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-2); }
+  .empty-state i { font-size: 48px; color: var(--glass-border); margin-bottom: 16px; display: block; }
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+<div class="ambient-glow" id="glow"></div>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <img src="image_0.png" alt="HariBorrow Logo" class="nav-logo">
+    <div>
+      <div class="nav-title">HariBorrow</div>
+      <span class="admin-badge">Admin Console</span>
+    </div>
+  </div>
+
+  <nav class="nav-menu">
+    <a href="admin_dashboard.html" class="nav-link"><i class="ph ph-squares-four"></i> Command Center</a>
+    <div class="nav-section-title">Operations</div>
+    <a href="#" class="nav-link"><i class="ph ph-bell-ringing"></i> Pending Requests</a>
+    <a href="#" class="nav-link"><i class="ph ph-clock-counter-clockwise"></i> Active Transactions</a>
+    <div class="nav-section-title">Database</div>
+    <a href="#" class="nav-link"><i class="ph ph-stack"></i> Asset Inventory</a>
+    <a href="#" class="nav-link"><i class="ph ph-users"></i> Registered Users</a>
+    <div class="nav-section-title">System</div>
+    <a href="#" class="nav-link active">
+      <i class="ph ph-shield-check"></i> Registration Approvals
+      <span class="nav-badge">2</span> 
+    </a>
+    <a href="#" class="nav-link"><i class="ph ph-file-text"></i> System Logs</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-profile">
+      <div class="admin-avatar">UN</div>
+      <div class="admin-info">
+        <span class="admin-name">Admin Name</span>
+        <span class="admin-role">IT Department</span>
+      </div>
+      <a href="login.html" style="margin-left: auto; color: var(--text-3); cursor: pointer;"><i class="ph ph-sign-out" style="font-size: 20px;"></i></a>
+    </div>
+  </div>
+</aside>
+
+<main class="main-content">
+  
+  <div class="header-area">
+    <div class="page-title">
+      <h1>Registration Approvals</h1>
+      <p>Review and verify identity credentials for new system applicants.</p>
+    </div>
+  </div>
+
+  <div class="sys-alert success" style="display: none;" id="mockAlert">
+    <i class="ph ph-check-circle"></i> Registration for Juan Miguel has been approved. Account is now active.
+  </div>
+
+  <div class="data-panel">
+    <div class="panel-header">
+      <div class="panel-title">Pending Applications</div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Applicant</th>
+          <th>Academic Profile</th>
+          <th>Role</th>
+          <th>Contact / Email</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            Juan Miguel Mirasol
+            <span class="sub-text" style="font-family: monospace; color: var(--gold);">ID: 2024-00123</span>
+          </td>
+          <td>
+            College of Engineering
+          </td>
+          <td>
+            <span class="role-tag student"><i class="ph ph-student"></i> Student</span>
+          </td>
+          <td>
+            jmmirasol@university.edu.ph
+            <span class="sub-text">+63 912 345 6789</span>
+          </td>
+          <td>
+            <form class="action-form" action="process_registration.php" method="POST" onsubmit="event.preventDefault(); showMockAlert(); this.closest('tr').style.display='none';">
+              <input type="hidden" name="user_id" value="1"> 
+              
+              <button type="submit" name="action" value="approve" class="btn-action btn-approve" title="Approve Account">
+                <i class="ph ph-check"></i> Approve
+              </button>
+              
+              <button type="submit" name="action" value="reject" class="btn-action btn-reject" title="Reject Application" onclick="return confirm('Are you sure you want to reject this application? This action cannot be undone.');">
+                <i class="ph ph-x"></i> Reject
+              </button>
+            </form>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Maria Santos
+            <span class="sub-text" style="font-family: monospace; color: var(--gold);">ID: 2015-88392</span>
+          </td>
+          <td>College of Sciences</td>
+          <td><span class="role-tag faculty"><i class="ph ph-chalkboard-teacher"></i> Faculty</span></td>
+          <td>
+            msantos@university.edu.ph
+            <span class="sub-text">Not provided</span>
+          </td>
+          <td>
+            <form class="action-form" action="process_registration.php" method="POST" onsubmit="event.preventDefault(); this.closest('tr').style.display='none';">
+              <input type="hidden" name="user_id" value="2">
+              <button type="submit" name="action" value="approve" class="btn-action btn-approve"><i class="ph ph-check"></i> Approve</button>
+              <button type="submit" name="action" value="reject" class="btn-action btn-reject" onclick="return confirm('Reject this application?');"><i class="ph ph-x"></i> Reject</button>
+            </form>
+          </td>
+        </tr>
+
+        </tbody>
+    </table>
+  </div>
+
+</main>
+
+<script>
+  /* ── Ambient Mouse Glow (Inherited from Admin Console) ── */
+  const glow = document.getElementById('glow');
+  document.addEventListener('mousemove', (e) => {
+    glow.style.setProperty('--mouse-x', e.clientX + 'px');
+    glow.style.setProperty('--mouse-y', e.clientY + 'px');
+  });
+
+  /* Frontend Simulation for demonstration */
+  function showMockAlert() {
+    const alert = document.getElementById('mockAlert');
+    alert.style.display = 'flex';
+    setTimeout(() => {
+      alert.style.opacity = '0';
+      setTimeout(() => alert.style.display = 'none', 300);
+    }, 4000);
+  }
+</script>
+
+</body>
+</html>
