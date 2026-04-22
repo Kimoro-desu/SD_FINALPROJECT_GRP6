@@ -137,17 +137,7 @@
     }
 
     .eagle-mark {
-      width: 60px;
-      height: 60px;
-      flex-shrink: 0;
-      object-fit: contain;
-      filter: brightness(1.3) sepia(100%) hue-rotate(35deg) saturate(2.5) drop-shadow(0 0 14px var(--gold-glow));
-      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
-    }
-
-    .eagle-mark {
       width: 110px;
-
       height: 110px;
       flex-shrink: 0;
       object-fit: contain;
@@ -377,7 +367,6 @@
         opacity: 0;
         transform: translateY(24px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
@@ -389,7 +378,6 @@
         opacity: 1;
         transform: translateY(0);
       }
-
       to {
         opacity: 0;
         transform: translateY(-16px);
@@ -932,12 +920,10 @@
     }
 
     @keyframes pulseRing {
-
       0%,
       100% {
         box-shadow: 0 0 30px rgba(82, 196, 138, 0.2), inset 0 0 20px rgba(82, 196, 138, 0.05);
       }
-
       50% {
         box-shadow: 0 0 50px rgba(82, 196, 138, 0.35), inset 0 0 20px rgba(82, 196, 138, 0.08);
       }
@@ -1073,7 +1059,6 @@
         opacity: 0;
         transform: translateY(18px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
@@ -1133,7 +1118,6 @@
 
       .mobile-logo {
         width: 90px;
-        /* Made bigger for mobile */
         height: 90px;
         margin-bottom: 16px;
         filter: drop-shadow(0 0 20px rgba(229, 192, 123, 0.5)) brightness(1.2) contrast(1.3) saturate(1.4);
@@ -1150,7 +1134,6 @@
 
   <div class="page">
 
-    <!-- ══════════ LEFT PANEL ══════════ -->
     <div class="left">
       <div class="left-shine"></div>
       <div class="left-deco"></div>
@@ -1171,7 +1154,6 @@
       <p class="left-sub">Complete the registration to gain access to campus equipment, laboratory tools, and academic
         resources.</p>
 
-      <!-- STEP TRACKER -->
       <div class="step-tracker" id="stepTracker">
         <div class="step-track-item step-active" data-step="1">
           <div class="step-orb">1</div>
@@ -1199,10 +1181,8 @@
       <div class="left-foot">© 2026 HariBorrow — Premium Campus Systems</div>
     </div>
 
-    <!-- ══════════ RIGHT PANEL ══════════ -->
     <div class="right">
 
-      <!-- Mobile branding -->
       <div class="mobile-header">
         <div class="brand-name">HariBorrow</div>
         <div class="brand-tagline">Pamantasan Asset Gateway</div>
@@ -1210,22 +1190,18 @@
 
       <div class="form-wrap">
 
-        <!-- Progress bar -->
         <div class="progress-bar-track">
           <div class="progress-bar-fill" id="progressFill" style="width: 33.33%"></div>
         </div>
 
-        <!-- Alert -->
         <div class="alert" id="alert"></div>
 
-        <!-- ══ STEP 1: Identity ══ -->
         <div class="step-view active" id="step1">
           <div class="form-head">
             <h2>Who are<span class="script">You?</span></h2>
             <p>Tell us your role and academic department so we can tailor your borrowing access.</p>
           </div>
 
-          <!-- Role Selector -->
           <div style="margin-bottom: 6px;">
             <label class="field-label"
               style="display:block; font-size:11px; font-weight:500; letter-spacing:0.25em; text-transform:uppercase; color:var(--text-2); margin-bottom:12px;">
@@ -1322,7 +1298,6 @@
           </div>
         </div>
 
-        <!-- ══ STEP 2: Credentials ══ -->
         <div class="step-view" id="step2">
           <div class="form-head">
             <h2>Secure<span class="script">Access.</span></h2>
@@ -1382,14 +1357,12 @@
           </div>
         </div>
 
-        <!-- ══ STEP 3: Review ══ -->
         <div class="step-view" id="step3">
           <div class="form-head">
             <h2>Almost<span class="script">There.</span></h2>
             <p>Verify your information before submitting your registration request.</p>
           </div>
 
-          <!-- Review summary -->
           <div class="review-section">
             <div class="review-title">Identity</div>
             <div class="review-grid" id="reviewIdentity"></div>
@@ -1400,7 +1373,6 @@
             <div class="review-grid" id="reviewCredentials"></div>
           </div>
 
-          <!-- Terms -->
           <div style="margin-bottom: 28px;">
             <label class="check-group" style="margin-bottom: 14px;">
               <input type="checkbox" id="termsCheck">
@@ -1423,7 +1395,6 @@
           </div>
         </div>
 
-        <!-- ══ STEP 4: Success ══ -->
         <div class="step-view" id="step4">
           <div class="success-wrap">
             <div class="success-icon-ring"><i class="ph ph-check-fat"></i></div>
@@ -1672,16 +1643,19 @@
 
       const btn = document.getElementById('submitBtn');
       const originalText = btn.querySelector('span').textContent;
+
       btn.querySelector('span').textContent = 'Submitting…';
       btn.disabled = true;
 
       try {
-        const response = await window.api.rawFetch('/auth/register.php', {
+        const response = await window.api.rawFetch('/api/auth/register.php', {
           method: 'POST',
           body: formData
         });
 
-        if (response.status === 'success') {
+        // Added a safety check here! 
+        // This stops the "Cannot read properties of null" error from crashing the page.
+        if (response && response.status === 'success') {
           // Hide progress bar and tracker for success screen
           document.getElementById('progressFill').parentElement.style.display = 'none';
           document.querySelectorAll('.step-track-item').forEach(i => { i.classList.remove('step-active', 'step-done'); i.classList.add('step-done'); });
@@ -1691,7 +1665,9 @@
           currentStep = 4;
           document.getElementById('step4').classList.add('active');
         } else {
-          showAlert('<i class="ph ph-warning-circle"></i> &nbsp;' + (response.message || 'Registration failed.'), 'err');
+          // Fallback message if response is null or missing data
+          const errorMsg = (response && response.message) ? response.message : 'Registration failed. Backend returned empty data.';
+          showAlert('<i class="ph ph-warning-circle"></i> &nbsp;' + errorMsg, 'err');
           btn.querySelector('span').textContent = originalText;
           btn.disabled = false;
         }
