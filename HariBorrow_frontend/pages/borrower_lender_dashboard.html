@@ -486,8 +486,9 @@
                 <button class="drop-item"><i class="ph ph-gear"></i> Account Settings</button>
                 <button class="drop-item"><i class="ph ph-warning-circle"></i> Report an Issue</button>
                 <div class="drop-divider"></div>
-                <button class="drop-item logout" onclick="window.api.removeToken(); window.location.href='login.html'"><i
-                        class="ph ph-sign-out"></i> Secure Log Out</button>
+                <button class="drop-item logout"
+                    onclick="window.api.removeToken(); window.location.href='login.html'"><i class="ph ph-sign-out"></i>
+                    Secure Log Out</button>
             </div>
         </div>
     </nav>
@@ -499,7 +500,7 @@
                 <h1>Welcome back, <span class="aesthetic-script">
                         User.
                     </span></h1>
-                <p>Pamantasan ng Lungsod ng Maynila — College of Engineering</p>
+                <p>Pamantasan ng Lungsod ng Maynila</p>
             </div>
 
             <div class="role-toggle" id="roleToggle" data-mode="borrower">
@@ -527,64 +528,10 @@
                 <div class="card-top">
                     <div class="card-icon"><i class="ph ph-clock-counter-clockwise"></i></div>
                     <div class="card-title">My Borrowings</div>
-                    <div class="card-desc">Track status, due dates, and initiate return protocols.</div>
-                </div>
-                <div class="card-bottom">
-                    <span class="card-action">View Active</span>
-                    <i class="ph ph-arrow-right arrow-icon"></i>
-                </div>
-            </a>
-
-            <a href="#" class="module-card lender-only">
-                <div class="card-top">
-                    <div class="card-icon" style="color: #4ade80;"><i class="ph ph-check-circle"></i></div>
-                    <div class="card-title">Request Approvals</div>
-                    <div class="card-desc">Review and manage incoming borrow requests.</div>
-                </div>
-                <button class="drop-item logout" onclick="logout()"><i
-                        class="ph ph-sign-out"></i> Secure Log Out</button>
-            </div>
-        </div>
-    </nav>
-
-    <main class="dashboard">
-
-        <div class="dash-header">
-            <div class="welcome">
-                <h1>Welcome back, <span class="aesthetic-script">
-                        User.
-                    </span></h1>
-                <p>Pamantasan ng Lungsod ng Maynila — College of Engineering</p>
-            </div>
-
-            <div class="role-toggle" id="roleToggle" data-mode="borrower">
-                <div class="role-indicator"></div>
-                <button class="role-btn active" onclick="setRole('borrower')">Borrower</button>
-                <button class="role-btn" onclick="setRole('lender')">Lender</button>
-            </div>
-        </div>
-
-        <div class="module-grid">
-            <a href="catalog.html" class="module-card">
-                <div class="card-top">
-                    <div class="card-icon"><i class="ph ph-magnifying-glass"></i></div>
-                    <div class="card-title">Asset Catalog</div>
-                    <div class="card-desc">Browse available university equipment and submit secure borrow requests.
+                    <div class="card-desc" id="borrowerStats">Track status, due dates, and initiate return protocols.
                     </div>
                 </div>
                 <div class="card-bottom">
-                    <span class="card-action">Browse Catalog</span>
-                    <i class="ph ph-arrow-right arrow-icon"></i>
-                </div>
-            </a>
-
-            <a href="#" class="module-card borrower-only">
-                <div class="card-top">
-                    <div class="card-icon"><i class="ph ph-clock-counter-clockwise"></i></div>
-                    <div class="card-title">My Borrowings</div>
-                    <div class="card-desc">Track status, due dates, and initiate return protocols.</div>
-                </div>
-                <div class="card-bottom">
                     <span class="card-action">View Active</span>
                     <i class="ph ph-arrow-right arrow-icon"></i>
                 </div>
@@ -594,7 +541,7 @@
                 <div class="card-top">
                     <div class="card-icon" style="color: #4ade80;"><i class="ph ph-check-circle"></i></div>
                     <div class="card-title">Request Approvals</div>
-                    <div class="card-desc">Review and manage incoming borrow requests.</div>
+                    <div class="card-desc" id="lenderStats">Review and manage incoming borrow requests.</div>
                 </div>
                 <div class="card-bottom">
                     <span class="card-action" style="color: #4ade80;">Review Pending</span>
@@ -623,7 +570,38 @@
                 const welcomeScript = document.querySelector('.welcome .aesthetic-script');
                 if (welcomeScript) welcomeScript.textContent = `${firstName}.`;
             }
+
+            fetchDashboardStats();
         });
+
+        async function fetchDashboardStats() {
+            try {
+                const response = await window.api.authenticatedFetch('/transactions/dashboard_stats.php');
+                if (response && response.status === 'success') {
+                    const stats = response.stats;
+
+                    const borrowerStatsEl = document.getElementById('borrowerStats');
+                    if (borrowerStatsEl) {
+                        borrowerStatsEl.textContent = `You have ${stats.active_borrowings} active borrowing${stats.active_borrowings !== 1 ? 's' : ''}.`;
+                        if (stats.active_borrowings > 0) {
+                            borrowerStatsEl.style.color = 'var(--gold-light)';
+                            borrowerStatsEl.style.fontWeight = '500';
+                        }
+                    }
+
+                    const lenderStatsEl = document.getElementById('lenderStats');
+                    if (lenderStatsEl) {
+                        lenderStatsEl.textContent = `You have ${stats.pending_requests} pending request${stats.pending_requests !== 1 ? 's' : ''} to review.`;
+                        if (stats.pending_requests > 0) {
+                            lenderStatsEl.style.color = 'var(--gold-light)';
+                            lenderStatsEl.style.fontWeight = '500';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard stats:", error);
+            }
+        }
 
         // Mouse Glow Effect
         const glow = document.getElementById('glow');

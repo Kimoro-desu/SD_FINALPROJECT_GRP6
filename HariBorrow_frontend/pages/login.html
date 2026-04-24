@@ -997,12 +997,14 @@
       const password = document.getElementById('password').value;
 
       try {
-        const response = await window.api.rawFetch('/auth/login.php', {
+        // FIXED: Added /api/ prefix to match your actual folder structure
+        const response = await window.api.rawFetch('/api/auth/login.php', {
           method: 'POST',
           body: { email, password }
         });
         
-        if (response.status === 'success') {
+        // FIXED: Added null safety check
+        if (response && response.status === 'success') {
           window.api.setToken(response.token);
           window.api.setUser(response.user);
           showAlert('✦ Login successful. Accessing dashboard...', 'ok');
@@ -1010,12 +1012,14 @@
             window.location.href = 'borrower_lender_dashboard.html';
           }, 1200);
         } else {
-          showAlert(response.message || 'Invalid credentials.', 'err');
+          // Fallback if response is null
+          const errorMsg = (response && response.message) ? response.message : 'Invalid credentials or server error.';
+          showAlert('✦ ' + errorMsg, 'err');
           textSpan.textContent = originalText;
           btn.disabled = false;
         }
       } catch (error) {
-        showAlert(error.message || 'Server error occurred. Please try again later.', 'err');
+        showAlert('✦ ' + (error.message || 'Server error occurred. Please try again later.'), 'err');
         textSpan.textContent = originalText;
         btn.disabled = false;
       }

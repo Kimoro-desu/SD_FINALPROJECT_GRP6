@@ -8,9 +8,11 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
     rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="../js/auth_guard.js"></script>
-    <script src="../js/api.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth_guard.js"></script>
+
   <style>
     *,
     *::before,
@@ -692,8 +694,8 @@
     </a>
     <div style="display: flex; align-items: center; gap: 16px;">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <div class="profile-avatar" id="navAvatar">UI</div>
-        <span style="font-size: 14px; font-weight: 500;">User Name</span>
+        <div class="profile-avatar" id="navAvatar">--</div>
+        <span style="font-size: 14px; font-weight: 500;" id="navUserName">Loading...</span>
       </div>
       <a href="borrower_lender_dashboard.html" class="back-btn">
         <i class="ph ph-arrow-left"></i> Dashboard
@@ -718,7 +720,8 @@
         <button class="tab-btn" onclick="switchTab('securityTab', this)">
           <i class="ph ph-lock-key"></i> Security & Authentication
         </button>
-        <button class="tab-btn" style="color: #ff6b7a; margin-top: auto;" onclick="window.api.removeToken(); window.location.href='login.html'">
+        <button class="tab-btn" style="color: #ff6b7a; margin-top: auto;"
+          onclick="window.api.removeToken(); window.location.href='login.html'">
           <i class="ph ph-sign-out" style="color: #ff6b7a;"></i> Secure Log Out
         </button>
       </nav>
@@ -730,7 +733,7 @@
           <p class="panel-desc">Update your official university directory details and verification status.</p>
 
           <div class="avatar-upload">
-            <div class="avatar-preview" id="mainAvatar">UI</div>
+            <div class="avatar-preview" id="mainAvatar">--</div>
             <div class="avatar-actions">
               <input type="file" id="avatarInput" accept="image/*" style="display: none;"
                 onchange="previewAvatar(event)">
@@ -745,11 +748,12 @@
           <div class="form-row">
             <div class="field">
               <label>Full Legal Name</label>
-              <input type="text" value="User Full Name">
+              <input type="text" id="legalNameInput" placeholder="Loading...">
             </div>
             <div class="field">
               <label>Student / Employee ID</label>
-              <input type="text" value="XXXX-XXXXX" disabled style="opacity: 0.6; cursor: not-allowed;">
+              <input type="text" id="studentIdInput" disabled style="opacity: 0.6; cursor: not-allowed;"
+                placeholder="Not available in database yet">
             </div>
           </div>
 
@@ -771,16 +775,12 @@
           <div class="form-row">
             <div class="field">
               <label>University Email</label>
-              <input type="email" value="user@university.edu.ph">
+              <input type="email" id="emailInput" placeholder="Loading...">
             </div>
             <div class="field">
               <label>Primary College / Department</label>
-              <select>
-                <option>College of Engineering</option>
-                <option>College of Science</option>
-                <option>College of Architecture</option>
-                <option>College of Nursing</option>
-              </select>
+              <input type="text" id="departmentInput" disabled style="opacity: 0.6; cursor: not-allowed;"
+                placeholder="Not available in database yet">
             </div>
           </div>
 
@@ -913,6 +913,55 @@
       glow.style.setProperty('--mouse-y', e.clientY + 'px');
     });
 
+    // Load Dynamic Data when Page Loads
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUserProfile();
+    });
+
+    // Main Database Fetch Function
+    async function loadUserProfile() {
+      try {
+        // Because getting profile info requires being logged in, we use authenticatedFetch!
+        // Make sure this path matches where your profile.php actually lives
+        const response = await window.api.authenticatedFetch('/api/users/profile.php', {
+          method: 'GET'
+        });
+
+        if (response && response.status === 'success') {
+          const profile = response.profile;
+
+          // 1. Populate Navigation Name
+          document.getElementById('navUserName').textContent = profile.full_name || profile.first_name;
+
+          // 2. Generate and Set Initials (e.g. Juan Mirasol = JM)
+          const firstInitial = profile.first_name ? profile.first_name.charAt(0) : '';
+          const lastInitial = profile.last_name ? profile.last_name.charAt(0) : '';
+          const initials = (firstInitial + lastInitial).toUpperCase();
+
+          window.currentUserInitials = initials; // Store to reuse if avatar is removed
+          document.getElementById('navAvatar').textContent = initials;
+          document.getElementById('mainAvatar').textContent = initials;
+
+          // 3. Populate Input Fields
+          document.getElementById('legalNameInput').value = profile.full_name;
+          document.getElementById('emailInput').value = profile.email;
+
+          // Note: If you update profile.php to SELECT school_id_number, it will automatically show up here!
+          if (profile.school_id_number) {
+            document.getElementById('studentIdInput').value = profile.school_id_number;
+          }
+          if (profile.department) {
+            document.getElementById('departmentInput').value = profile.department;
+          }
+
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+        // Note: auth_guard will automatically handle redirecting if the token is completely invalid.
+      }
+    }
+
+
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
@@ -964,10 +1013,10 @@
     }
 
     function removeAvatar() {
-      // BACKEND: Update this variable with PHP session initials when converting to .php
-      const defaultInitials = "UN";
-      document.getElementById('mainAvatar').innerHTML = defaultInitials;
-      document.getElementById('navAvatar').innerHTML = defaultInitials;
+      // Reverts back to the dynamic initials we generated on page load!
+      const initials = window.currentUserInitials || "UN";
+      document.getElementById('mainAvatar').innerHTML = initials;
+      document.getElementById('navAvatar').innerHTML = initials;
       document.getElementById('avatarInput').value = ""; // Reset file input
     }
 
@@ -986,7 +1035,6 @@
       }
     }
   </script>
-  <script src="../js/api.js"></script>
 </body>
 
 </html>
