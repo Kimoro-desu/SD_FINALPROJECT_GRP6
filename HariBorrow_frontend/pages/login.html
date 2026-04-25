@@ -998,7 +998,7 @@
 
       try {
         // FIXED: Added /api/ prefix to match your actual folder structure
-        const response = await window.api.rawFetch('/api/auth/login.php', {
+        const response = await window.api.rawFetch('/auth/login.php', {
           method: 'POST',
           body: { email, password }
         });
