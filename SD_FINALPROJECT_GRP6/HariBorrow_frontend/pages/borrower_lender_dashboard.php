@@ -672,7 +672,7 @@
                 <div class="notif-dropdown" id="notifDropdown">
                     <div class="notif-header">
                         Notifications
-                        <span style="cursor:pointer;" onclick="markAllNotificationsRead(event)">Mark all read</span>
+                        <span style="cursor:pointer;" onclick="markAllNotificationsRead(event)">Mark all as read</span>
                     </div>
                     <div class="notif-list" id="notifList">
                         <div class="notif-item">
