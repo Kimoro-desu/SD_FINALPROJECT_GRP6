@@ -1,0 +1,1685 @@
+<?php require_once '../includes/config.php'; ?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HariBorrow — Register Account</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-deep: #030304;
+      --glass: rgba(10, 10, 13, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.05);
+      --gold: #E5C07B;
+      --gold-light: #FCEBAF;
+      --gold-dark: #A68A48;
+      --gold-dim: rgba(229, 192, 123, 0.1);
+      --gold-glow: rgba(229, 192, 123, 0.35);
+      --text-1: #FFFFFF;
+      --text-2: #A39E93;
+      --text-3: #6B665A;
+      --success: #52c48a;
+      --error: #ff6b6b;
+    }
+
+    html,
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-deep);
+      color: var(--text-1);
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-3);
+      border-radius: 4px;
+    }
+
+    /* ── BACKGROUND ── */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 60%, rgba(229, 192, 123, 0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 90% 20%, rgba(166, 138, 72, 0.07) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 100%, rgba(229, 192, 123, 0.04) 0%, transparent 50%),
+        var(--bg-deep);
+    }
+
+    .ambient-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.07), transparent 50%);
+      mix-blend-mode: screen;
+      transition: background 0.2s ease;
+    }
+
+    /* texture overlay */
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ── LAYOUT ── */
+    .page {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      min-height: 100vh;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ── LEFT PANEL ── */
+    .left {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      background: var(--glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      padding: 60px 72px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .left-shine {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--gold-light) 50%, transparent 100%);
+      opacity: 0.5;
+    }
+
+    .left-deco {
+      position: absolute;
+      top: 0;
+      right: -1px;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, rgba(229, 192, 123, 0.3) 40%, rgba(229, 192, 123, 0.1) 70%, transparent);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 56px;
+    }
+
+    .eagle-mark {
+      width: 110px;
+      height: 110px;
+      flex-shrink: 0;
+      object-fit: contain;
+      filter: drop-shadow(0 0 18px rgba(229, 192, 123, 0.5)) brightness(1.2) contrast(1.3) saturate(1.4);
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+    }
+
+    .eagle-mark:hover {
+      transform: scale(1.08) rotate(-2deg);
+      filter: drop-shadow(0 0 35px var(--gold)) brightness(1.4) contrast(1.4) saturate(1.6);
+    }
+
+    .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, #FFFFFF 0%, #FCEBAF 40%, #E5C07B 75%, #A68A48 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 12px rgba(229, 192, 123, 0.45));
+      line-height: 1;
+    }
+
+    .brand-tagline {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-top: 7px;
+    }
+
+    .left-headline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 50px;
+      font-weight: 400;
+      line-height: 1.07;
+      margin-bottom: 20px;
+    }
+
+    .left-headline .script {
+      font-family: 'Pinyon Script', cursive;
+      font-size: 1.45em;
+      color: var(--gold-light);
+      display: block;
+      line-height: 0.85;
+      padding-top: 6px;
+      text-shadow: 0 0 28px rgba(229, 192, 123, 0.45);
+    }
+
+    .left-sub {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-2);
+      line-height: 1.75;
+      border-left: 2px solid var(--gold);
+      padding-left: 20px;
+      max-width: 340px;
+      margin-bottom: 52px;
+    }
+
+    /* ── STEP TRACKER (left side) ── */
+    .step-tracker {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      flex: 1;
+    }
+
+    .step-track-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      position: relative;
+      padding-bottom: 32px;
+      cursor: default;
+    }
+
+    .step-track-item:last-child {
+      padding-bottom: 0;
+    }
+
+    /* Connector line */
+    .step-track-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 32px;
+      width: 1px;
+      height: calc(100% - 32px);
+      background: linear-gradient(to bottom, rgba(229, 192, 123, 0.25), rgba(229, 192, 123, 0.05));
+      transition: background 0.4s ease;
+    }
+
+    .step-track-item.step-done:not(:last-child)::after {
+      background: linear-gradient(to bottom, rgba(82, 196, 138, 0.4), rgba(229, 192, 123, 0.15));
+    }
+
+    .step-orb {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(229, 192, 123, 0.25);
+      background: rgba(10, 10, 13, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-3);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-track-item.step-active .step-orb {
+      border-color: var(--gold);
+      color: var(--gold);
+      box-shadow: 0 0 16px rgba(229, 192, 123, 0.3), inset 0 0 8px rgba(229, 192, 123, 0.08);
+      background: rgba(229, 192, 123, 0.05);
+    }
+
+    .step-track-item.step-done .step-orb {
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: 0 0 12px rgba(82, 196, 138, 0.25);
+      background: rgba(82, 196, 138, 0.05);
+    }
+
+    .step-info {
+      padding-top: 4px;
+    }
+
+    .step-lbl {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      transition: color 0.3s;
+    }
+
+    .step-track-item.step-active .step-lbl {
+      color: var(--gold-light);
+    }
+
+    .step-track-item.step-done .step-lbl {
+      color: var(--success);
+    }
+
+    .step-desc {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-3);
+      margin-top: 4px;
+      line-height: 1.5;
+      transition: color 0.3s;
+    }
+
+    .step-track-item.step-active .step-desc {
+      color: var(--text-2);
+    }
+
+    .left-foot {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-3);
+      letter-spacing: 0.1em;
+      margin-top: auto;
+    }
+
+    /* ── RIGHT PANEL ── */
+    .right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 72px;
+      background: rgba(5, 5, 7, 0.35);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      min-height: 100vh;
+      box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .form-wrap {
+      width: 100%;
+      max-width: 400px;
+      margin: auto 0;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar-track {
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 2px;
+      margin-bottom: 48px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+      transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 8px rgba(229, 192, 123, 0.5);
+    }
+
+    /* ── STEP VIEWS ── */
+    .step-view {
+      display: none;
+    }
+
+    .step-view.active {
+      display: block;
+      animation: stepIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .step-view.exit {
+      animation: stepOut 0.3s ease forwards;
+    }
+
+    @keyframes stepIn {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes stepOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-16px);
+      }
+    }
+
+    /* ── FORM HEAD ── */
+    .form-head {
+      margin-bottom: 40px;
+    }
+
+    .form-head h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 44px;
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: 0.02em;
+    }
+
+    .form-head h2 .script {
+      font-family: 'Pinyon Script', cursive;
+      font-size: 1.4em;
+      color: var(--gold-light);
+      display: block;
+      line-height: 0.85;
+      padding-top: 8px;
+      text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
+    }
+
+    .form-head p {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-2);
+      margin-top: 16px;
+      letter-spacing: 0.03em;
+      line-height: 1.6;
+    }
+
+    /* ── ALERT ── */
+    .alert {
+      display: none;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 28px;
+      letter-spacing: 0.02em;
+      font-weight: 400;
+      line-height: 1.55;
+    }
+
+    .alert.show {
+      display: flex;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    .alert.err {
+      background: rgba(255, 107, 107, 0.08);
+      border-left: 3px solid var(--error);
+      color: #ff9999;
+    }
+
+    .alert.ok {
+      background: rgba(82, 196, 138, 0.08);
+      border-left: 3px solid var(--success);
+      color: #7edcaa;
+    }
+
+    /* ── FIELDS ── */
+    .field {
+      margin-bottom: 22px;
+      position: relative;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    label.field-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+
+    .required-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .field:focus-within label.field-label {
+      color: var(--gold-light);
+    }
+
+    .inp-wrap {
+      position: relative;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 15px 48px 15px 18px;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      color: var(--text-1);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      outline: none;
+      transition: all 0.3s ease;
+      letter-spacing: 0.03em;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input::placeholder {
+      color: var(--text-3);
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B665A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 18px center;
+      padding-right: 48px;
+      cursor: pointer;
+      color: var(--text-3);
+    }
+
+    select.selected {
+      color: var(--text-1);
+    }
+
+    select option {
+      background: #111113;
+      color: var(--text-1);
+      padding: 8px;
+    }
+
+    input:focus,
+    select:focus {
+      background: rgba(0, 0, 0, 0.45);
+      border-color: var(--gold);
+      box-shadow: 0 0 20px rgba(229, 192, 123, 0.12), inset 0 0 8px rgba(229, 192, 123, 0.04);
+    }
+
+    /* Valid / invalid states */
+    input.valid {
+      border-color: rgba(82, 196, 138, 0.4);
+    }
+
+    input.invalid {
+      border-color: rgba(255, 107, 107, 0.4);
+    }
+
+    .field-hint {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-3);
+      margin-top: 7px;
+      letter-spacing: 0.05em;
+      transition: color 0.3s;
+    }
+
+    .field-hint.err {
+      color: #ff9090;
+    }
+
+    /* Icons inside inputs */
+    .inp-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-3);
+      font-size: 16px;
+      pointer-events: none;
+      transition: color 0.3s;
+    }
+
+    .field:focus-within .inp-icon {
+      color: var(--gold);
+    }
+
+    input.has-icon,
+    select.has-icon {
+      padding-left: 44px;
+    }
+
+    .pw-btn {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-3);
+      cursor: pointer;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .pw-btn:hover {
+      color: var(--gold);
+    }
+
+    /* Password strength */
+    .pw-strength {
+      margin-top: 10px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .pw-bar {
+      flex: 1;
+      height: 2px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      transition: background 0.4s ease;
+    }
+
+    .pw-strength-label {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-3);
+      margin-left: 8px;
+      letter-spacing: 0.08em;
+      min-width: 60px;
+      text-align: right;
+      transition: color 0.3s;
+    }
+
+    /* ── CHECKBOX ── */
+    .check-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-2);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.6;
+    }
+
+    .check-group input[type="checkbox"] {
+      display: none;
+    }
+
+    .check-custom {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      border: 1px solid rgba(229, 192, 123, 0.35);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .check-group input:checked~.check-custom {
+      background: var(--gold);
+      border-color: var(--gold);
+      box-shadow: 0 0 12px rgba(229, 192, 123, 0.35);
+    }
+
+    .check-group input:checked~.check-custom::after {
+      content: '';
+      width: 5px;
+      height: 9px;
+      border: 2px solid var(--bg-deep);
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translate(-1px, -1px);
+      display: block;
+    }
+
+    .link {
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(229, 192, 123, 0.3);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .link:hover {
+      border-bottom-color: var(--gold);
+      text-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    /* ── BUTTONS ── */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 17px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-back {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text-3);
+      flex: 0 0 auto;
+      padding: 17px 22px;
+    }
+
+    .btn-back:hover {
+      border-color: rgba(229, 192, 123, 0.3);
+      color: var(--text-2);
+    }
+
+    .btn-next {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+
+    .btn-next::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(229, 192, 123, 0.4), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+
+    .btn-next span {
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s;
+    }
+
+    .btn-next:hover {
+      background: var(--gold);
+      box-shadow: 0 8px 36px rgba(229, 192, 123, 0.28);
+    }
+
+    .btn-next:hover span {
+      color: var(--bg-deep);
+      font-weight: 600;
+    }
+
+    .btn-next:hover::before {
+      transform: translateX(100%);
+    }
+
+    .btn-next:active {
+      transform: scale(0.98);
+    }
+
+    .btn-next:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* ── ROLE SELECTOR ── */
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .role-card {
+      padding: 16px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .role-card:hover {
+      border-color: rgba(229, 192, 123, 0.2);
+      background: var(--gold-dim);
+    }
+
+    .role-card.selected {
+      border-color: var(--gold);
+      background: rgba(229, 192, 123, 0.07);
+      box-shadow: 0 0 20px rgba(229, 192, 123, 0.15);
+    }
+
+    .role-icon {
+      font-size: 22px;
+      color: var(--text-3);
+      transition: color 0.3s;
+    }
+
+    .role-card.selected .role-icon,
+    .role-card:hover .role-icon {
+      color: var(--gold);
+    }
+
+    .role-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+      transition: color 0.3s;
+      letter-spacing: 0.04em;
+    }
+
+    .role-card.selected .role-name {
+      color: var(--gold-light);
+    }
+
+    .role-sub {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-3);
+      line-height: 1.4;
+    }
+
+    /* ── REVIEW SUMMARY ── */
+    .review-section {
+      margin-bottom: 28px;
+    }
+
+    .review-title {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .review-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--glass-border);
+    }
+
+    .review-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .review-item {
+      padding: 12px 16px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+    }
+
+    .review-key {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 5px;
+    }
+
+    .review-val {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-1);
+      letter-spacing: 0.02em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .review-item.full {
+      grid-column: 1 / -1;
+    }
+
+    /* ── SUCCESS ── */
+    .success-wrap {
+      text-align: center;
+      padding: 20px 0;
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .success-icon-ring {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      margin: 0 auto 28px;
+      border: 1px solid rgba(82, 196, 138, 0.4);
+      background: rgba(82, 196, 138, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      color: var(--success);
+      box-shadow: 0 0 30px rgba(82, 196, 138, 0.2), inset 0 0 20px rgba(82, 196, 138, 0.05);
+      animation: pulseRing 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseRing {
+      0%,
+      100% {
+        box-shadow: 0 0 30px rgba(82, 196, 138, 0.2), inset 0 0 20px rgba(82, 196, 138, 0.05);
+      }
+      50% {
+        box-shadow: 0 0 50px rgba(82, 196, 138, 0.35), inset 0 0 20px rgba(82, 196, 138, 0.08);
+      }
+    }
+
+    .success-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 400;
+      margin-bottom: 10px;
+    }
+
+    .success-title .script {
+      font-family: 'Pinyon Script', cursive;
+      font-size: 1.3em;
+      color: var(--gold-light);
+      display: block;
+      line-height: 0.9;
+      padding-top: 6px;
+      text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
+    }
+
+    .success-msg {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-2);
+      line-height: 1.75;
+      margin-bottom: 32px;
+    }
+
+    .success-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+      background: rgba(82, 196, 138, 0.04);
+      border: 1px solid rgba(82, 196, 138, 0.15);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 36px;
+    }
+
+    .success-detail-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-2);
+    }
+
+    .success-detail-item i {
+      color: var(--success);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .btn-login-now {
+      width: 100%;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      color: var(--gold);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login-now::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(229, 192, 123, 0.4), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+
+    .btn-login-now span {
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s;
+    }
+
+    .btn-login-now:hover {
+      background: var(--gold);
+      box-shadow: 0 8px 36px rgba(229, 192, 123, 0.28);
+    }
+
+    .btn-login-now:hover span {
+      color: var(--bg-deep);
+      font-weight: 600;
+    }
+
+    .btn-login-now:hover::before {
+      transform: translateX(100%);
+    }
+
+    .form-foot {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-3);
+      margin-top: 28px;
+      letter-spacing: 0.04em;
+    }
+
+    .form-foot a {
+      color: var(--gold);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+      cursor: pointer;
+    }
+
+    .form-foot a:hover {
+      opacity: 1;
+      text-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    /* ── MOBILE ── */
+    .mobile-header {
+      display: none;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 960px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+
+      .left {
+        display: none;
+      }
+
+      .right {
+        padding: 40px 28px;
+      }
+
+      .mobile-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 40px;
+        animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      .mobile-header .brand-name {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 26px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #fff, var(--gold-light), var(--gold-dark));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .mobile-header .brand-tagline {
+        font-size: 10px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-top: 6px;
+      }
+
+      .field-row {
+        grid-template-columns: 1fr;
+      }
+
+      .review-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .review-item.full {
+        grid-column: 1;
+      }
+
+      .mobile-logo {
+        width: 90px;
+        height: 90px;
+        margin-bottom: 16px;
+        filter: drop-shadow(0 0 20px rgba(229, 192, 123, 0.5)) brightness(1.2) contrast(1.3) saturate(1.4);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="bg-mesh"></div>
+  <div class="grain"></div>
+  <div class="ambient-glow" id="glow"></div>
+
+  <div class="page">
+
+    <div class="left">
+      <div class="left-shine"></div>
+      <div class="left-deco"></div>
+
+      <div class="logo">
+        <img class="eagle-mark" src="<?php echo htmlspecialchars($logoPath); ?>" alt="HariBorrow Logo">
+        <div>
+          <div class="brand-name">HariBorrow</div>
+          <div class="brand-tagline">Pamantasan Assets Borrowing</div>
+        </div>
+      </div>
+
+      <h1 class="left-headline">
+        Join the<br>Campus
+        <span class="script">Network.</span>
+      </h1>
+
+      <p class="left-sub">Complete the registration to gain access to campus equipment, laboratory tools, and academic
+        resources.</p>
+
+      <div class="step-tracker" id="stepTracker">
+        <div class="step-track-item step-active" data-step="1">
+          <div class="step-orb">1</div>
+          <div class="step-info">
+            <div class="step-lbl">Identity</div>
+            <div class="step-desc">Your name, role, and academic department</div>
+          </div>
+        </div>
+        <div class="step-track-item" data-step="2">
+          <div class="step-orb">2</div>
+          <div class="step-info">
+            <div class="step-lbl">Credentials</div>
+            <div class="step-desc">University email and secure password setup</div>
+          </div>
+        </div>
+        <div class="step-track-item" data-step="3">
+          <div class="step-orb">3</div>
+          <div class="step-info">
+            <div class="step-lbl">Review & Submit</div>
+            <div class="step-desc">Confirm your information and agree to terms</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="left-foot">© 2026 HariBorrow — Premium Campus Systems</div>
+    </div>
+
+    <div class="right">
+
+      <div class="mobile-header">
+        <div class="brand-name">HariBorrow</div>
+        <div class="brand-tagline">Pamantasan Asset Gateway</div>
+      </div>
+
+      <div class="form-wrap">
+
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill" style="width: 33.33%"></div>
+        </div>
+
+        <div class="alert" id="alert"></div>
+
+        <div class="step-view active" id="step1">
+          <div class="form-head">
+            <h2>Who are<span class="script">You?</span></h2>
+            <p>Tell us your role and academic department so we can tailor your borrowing access.</p>
+          </div>
+
+          <div style="margin-bottom: 6px;">
+            <label class="field-label"
+              style="display:block; font-size:11px; font-weight:500; letter-spacing:0.25em; text-transform:uppercase; color:var(--text-2); margin-bottom:12px;">
+              <span class="required-dot"></span> Account Role
+            </label>
+            <div class="role-grid">
+              <div class="role-card" onclick="selectRole('student', this)">
+                <i class="ph ph-student role-icon"></i>
+                <div class="role-name">Student</div>
+                <div class="role-sub">Enrolled in any undergraduate or graduate program</div>
+              </div>
+              <div class="role-card" onclick="selectRole('faculty', this)">
+                <i class="ph ph-chalkboard-teacher role-icon"></i>
+                <div class="role-name">Faculty</div>
+                <div class="role-sub">Active instructor, professor, or teaching assistant</div>
+              </div>
+              <div class="role-card" onclick="selectRole('staff', this)">
+                <i class="ph ph-briefcase role-icon"></i>
+                <div class="role-name">Staff</div>
+                <div class="role-sub">Administrative or non-teaching personnel</div>
+              </div>
+              <div class="role-card" onclick="selectRole('researcher', this)">
+                <i class="ph ph-flask role-icon"></i>
+                <div class="role-name">Researcher</div>
+                <div class="role-sub">Research assistant or graduate research student</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label"><span class="required-dot"></span> First Name</label>
+              <div class="inp-wrap">
+                <i class="ph ph-user inp-icon"></i>
+                <input type="text" id="firstName" class="has-icon" placeholder="e.g. Maria"
+                  oninput="validateName(this)">
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label"><span class="required-dot"></span> Last Name</label>
+              <div class="inp-wrap">
+                <input type="text" id="lastName" placeholder="e.g. Santos" oninput="validateName(this)">
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label"><span class="required-dot"></span> College / Department</label>
+            <div class="inp-wrap">
+              <i class="ph ph-buildings inp-icon"></i>
+              <select id="department" class="has-icon" onchange="this.classList.add('selected')">
+                <option value="" disabled selected>Select your department</option>
+                <optgroup label="Engineering & Technology">
+                  <option>College of Engineering</option>
+                  <option>College of Information Systems and Technology Management</option>
+                  <option>College of Architecture</option>
+                </optgroup>
+                <optgroup label="Health Sciences">
+                  <option>College of Nursing</option>
+                  <option>College of Medicine</option>
+                  <option>College of Pharmacy</option>
+                </optgroup>
+                <optgroup label="Sciences">
+                  <option>College of Sciences</option>
+                  <option>College of Mathematics</option>
+                </optgroup>
+                <optgroup label="Arts & Humanities">
+                  <option>College of Arts & Humanities</option>
+                  <option>College of Education</option>
+                  <option>College of Business Administration</option>
+                </optgroup>
+                <option>Graduate School</option>
+                <option>Administrative / Non-Academic</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label"><span class="required-dot"></span> Student / Employee ID Number</label>
+            <div class="inp-wrap">
+              <i class="ph ph-identification-card inp-icon"></i>
+              <input type="text" id="idNumber" class="has-icon" placeholder="202X-XXXXX" oninput="validateId(this)"
+                maxlength="12">
+            </div>
+            <div class="field-hint" id="idHint">Format: YYYY-NNNNN (e.g. 2024-00123)</div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-next" onclick="goStep(2)"><span>Continue →</span></button>
+          </div>
+
+          <div class="form-foot">
+            Already registered? <a href="login.php">Sign in here</a>
+          </div>
+        </div>
+
+        <div class="step-view" id="step2">
+          <div class="form-head">
+            <h2>Secure<span class="script">Access.</span></h2>
+            <p>Create your university login credentials. Use your official institutional email address.</p>
+          </div>
+
+          <div class="field">
+            <label class="field-label"><span class="required-dot"></span> University Email Address</label>
+            <div class="inp-wrap">
+              <i class="ph ph-envelope inp-icon"></i>
+              <input type="email" id="email" class="has-icon" placeholder="student@university.edu.ph"
+                oninput="validateEmail(this)">
+            </div>
+            <div class="field-hint" id="emailHint">Must use your official @university.edu.ph address</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label"><span class="required-dot"></span> Password</label>
+            <div class="inp-wrap">
+              <i class="ph ph-lock inp-icon"></i>
+              <input type="password" id="password" class="has-icon" placeholder="Minimum 8 characters"
+                oninput="checkStrength(this)">
+              <button type="button" class="pw-btn" onclick="togglePw('password', this)">Show</button>
+            </div>
+            <div class="pw-strength">
+              <div class="pw-bar" id="bar1"></div>
+              <div class="pw-bar" id="bar2"></div>
+              <div class="pw-bar" id="bar3"></div>
+              <div class="pw-bar" id="bar4"></div>
+              <span class="pw-strength-label" id="pwLabel">—</span>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom: 28px;">
+            <label class="field-label"><span class="required-dot"></span> Confirm Password</label>
+            <div class="inp-wrap">
+              <i class="ph ph-lock-key inp-icon"></i>
+              <input type="password" id="confirmPw" class="has-icon" placeholder="Re-enter your password"
+                oninput="validateConfirm(this)">
+              <button type="button" class="pw-btn" onclick="togglePw('confirmPw', this)">Show</button>
+            </div>
+            <div class="field-hint" id="confirmHint"></div>
+          </div>
+
+          <div class="field" style="margin-bottom: 0;">
+            <label class="field-label">Contact Number <span
+                style="color:var(--text-3); font-size:10px; text-transform:none; letter-spacing:0.05em;">(Optional)</span></label>
+            <div class="inp-wrap">
+              <i class="ph ph-phone inp-icon"></i>
+              <input type="text" id="contact" class="has-icon" placeholder="+63 9XX XXX XXXX" maxlength="16">
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-back" onclick="goStep(1)"><i class="ph ph-arrow-left"></i></button>
+            <button class="btn btn-next" onclick="goStep(3)"><span>Review →</span></button>
+          </div>
+        </div>
+
+        <div class="step-view" id="step3">
+          <div class="form-head">
+            <h2>Almost<span class="script">There.</span></h2>
+            <p>Verify your information before submitting your registration request.</p>
+          </div>
+
+          <div class="review-section">
+            <div class="review-title">Identity</div>
+            <div class="review-grid" id="reviewIdentity"></div>
+          </div>
+
+          <div class="review-section">
+            <div class="review-title">Credentials</div>
+            <div class="review-grid" id="reviewCredentials"></div>
+          </div>
+
+          <div style="margin-bottom: 28px;">
+            <label class="check-group" style="margin-bottom: 14px;">
+              <input type="checkbox" id="termsCheck">
+              <div class="check-custom"></div>
+              <span>I have read and agree to the <a class="link" onclick="event.preventDefault()">Terms & Conditions</a>
+                and the Campus Accountability Policy.</span>
+            </label>
+
+            <label class="check-group">
+              <input type="checkbox" id="ageCheck">
+              <div class="check-custom"></div>
+              <span>I confirm that all provided information is accurate and truthful.</span>
+            </label>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-back" onclick="goStep(2)"><i class="ph ph-arrow-left"></i></button>
+            <button class="btn btn-next" id="submitBtn" onclick="submitRegistration()"><span>Submit
+                Registration</span></button>
+          </div>
+        </div>
+
+        <div class="step-view" id="step4">
+          <div class="success-wrap">
+            <div class="success-icon-ring"><i class="ph ph-check-fat"></i></div>
+            <div class="success-title">Welcome<span class="script">Aboard!</span></div>
+            <p class="success-msg">Your registration has been submitted. A confirmation link has been sent to your
+              university email address.</p>
+
+            <div class="success-detail">
+              <div class="success-detail-item"><i class="ph ph-envelope-simple"></i> Check your inbox for a verification
+                email</div>
+              <div class="success-detail-item"><i class="ph ph-clock"></i> Account approval takes 1–2 business days
+              </div>
+              <div class="success-detail-item"><i class="ph ph-shield-check"></i> Your data is encrypted and secure
+              </div>
+            </div>
+
+            <button class="btn-login-now" onclick="window.location.href='login.php'"><span>Go to Sign
+                In</span></button>
+          </div>
+
+          <div class="form-foot" style="margin-top: 24px;">
+            Questions? <a onclick="void(0)">Contact support</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    /* ── Mouse ambient glow ── */
+    const glow = document.getElementById('glow');
+    document.addEventListener('mousemove', e => {
+      glow.style.setProperty('--mx', e.clientX + 'px');
+      glow.style.setProperty('--my', e.clientY + 'px');
+    });
+
+    /* ── State ── */
+    let formData = {
+      role: '', firstName: '', lastName: '',
+      department: '', idNumber: '',
+      email: '', password: '', contact: ''
+    };
+    let currentStep = 1;
+
+    /* ── Role selection ── */
+    function selectRole(role, el) {
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      formData.role = role;
+    }
+
+    /* ── Validation helpers ── */
+    function validateName(el) {
+      const v = el.value.trim();
+      el.classList.toggle('valid', v.length >= 2);
+      el.classList.toggle('invalid', v.length > 0 && v.length < 2);
+    }
+
+    function validateId(el) {
+      const v = el.value.trim();
+      const ok = /^\d{4}-\d{5}$/.test(v);
+      el.classList.toggle('valid', ok);
+      el.classList.toggle('invalid', v.length > 0 && !ok);
+      const hint = document.getElementById('idHint');
+      if (v.length > 0 && !ok) { hint.textContent = 'Use format YYYY-NNNNN (e.g. 2024-00123)'; hint.classList.add('err'); }
+      else { hint.textContent = 'Format: YYYY-NNNNN (e.g. 2024-00123)'; hint.classList.remove('err'); }
+    }
+
+    function validateEmail(el) {
+      const v = el.value.trim();
+      const ok = /^[^\s@]+@[^\s@]+\.edu\.ph$/i.test(v);
+      el.classList.toggle('valid', ok);
+      el.classList.toggle('invalid', v.length > 0 && !ok);
+      const hint = document.getElementById('emailHint');
+      if (v.length > 0 && !ok) { hint.textContent = 'Must be a valid .edu.ph address'; hint.classList.add('err'); }
+      else { hint.textContent = 'Must use your official @university.edu.ph address'; hint.classList.remove('err'); }
+    }
+
+    function validateConfirm(el) {
+      const pw = document.getElementById('password').value;
+      const v = el.value;
+      const hint = document.getElementById('confirmHint');
+      if (v.length === 0) { el.classList.remove('valid', 'invalid'); hint.textContent = ''; return; }
+      const match = v === pw;
+      el.classList.toggle('valid', match);
+      el.classList.toggle('invalid', !match);
+      hint.textContent = match ? '✓ Passwords match' : '✗ Passwords do not match';
+      hint.classList.toggle('err', !match);
+      hint.style.color = match ? 'var(--success)' : '';
+    }
+
+    /* ── Password strength ── */
+    function checkStrength(el) {
+      const v = el.value;
+      let score = 0;
+      if (v.length >= 8) score++;
+      if (/[A-Z]/.test(v)) score++;
+      if (/[0-9]/.test(v)) score++;
+      if (/[^A-Za-z0-9]/.test(v)) score++;
+
+      const colors = ['', '#ff6b6b', '#ffb347', '#E5C07B', '#52c48a'];
+      const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+      const bars = ['bar1', 'bar2', 'bar3', 'bar4'];
+
+      bars.forEach((id, i) => {
+        document.getElementById(id).style.background = i < score ? colors[score] : 'rgba(255,255,255,0.05)';
+      });
+      const lbl = document.getElementById('pwLabel');
+      lbl.textContent = v.length === 0 ? '—' : labels[score];
+      lbl.style.color = colors[score] || 'var(--text-3)';
+
+      const confirm = document.getElementById('confirmPw');
+      if (confirm.value.length > 0) validateConfirm(confirm);
+    }
+
+    /* ── Toggle password visibility ── */
+    function togglePw(id, btn) {
+      const el = document.getElementById(id);
+      const hidden = el.type === 'password';
+      el.type = hidden ? 'text' : 'password';
+      btn.textContent = hidden ? 'Hide' : 'Show';
+    }
+
+    /* ── Alert ── */
+    function showAlert(msg, type) {
+      const el = document.getElementById('alert');
+      el.innerHTML = msg;
+      el.className = 'alert ' + type + ' show';
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function clearAlert() {
+      const el = document.getElementById('alert');
+      el.className = 'alert';
+    }
+
+    /* ── Step navigation ── */
+    function goStep(n) {
+      clearAlert();
+
+      if (n > currentStep) {
+        if (!validateStep(currentStep)) return;
+        collectData(currentStep);
+      }
+
+      if (n === 3) buildReview();
+
+      // Transition
+      const cur = document.getElementById('step' + currentStep);
+      cur.classList.remove('active');
+
+      currentStep = n;
+      const next = document.getElementById('step' + currentStep);
+      next.classList.add('active');
+
+      // Progress bar
+      const pct = (currentStep / 3) * 100;
+      document.getElementById('progressFill').style.width = Math.min(pct, 100) + '%';
+
+      // Left step tracker
+      updateTracker(currentStep);
+
+      // Scroll right panel to top
+      document.querySelector('.right').scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateTracker(active) {
+      document.querySelectorAll('.step-track-item').forEach(item => {
+        const s = parseInt(item.dataset.step);
+        item.classList.remove('step-active', 'step-done');
+        if (s === active) item.classList.add('step-active');
+        else if (s < active) item.classList.add('step-done');
+        // Update orb icon for done
+        const orb = item.querySelector('.step-orb');
+        if (s < active) orb.innerHTML = '<i class="ph ph-check" style="font-size:14px;"></i>';
+        else orb.textContent = s;
+      });
+    }
+
+    /* ── Validation per step ── */
+    function validateStep(step) {
+      if (step === 1) {
+        if (!formData.role) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please select your account role.', 'err'); return false; }
+        const fn = document.getElementById('firstName').value.trim();
+        const ln = document.getElementById('lastName').value.trim();
+        const dept = document.getElementById('department').value;
+        const id = document.getElementById('idNumber').value.trim();
+        if (!fn || fn.length < 2) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please enter your first name.', 'err'); return false; }
+        if (!ln || ln.length < 2) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please enter your last name.', 'err'); return false; }
+        if (!dept) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please select your college or department.', 'err'); return false; }
+        if (!/^\d{4}-\d{5}$/.test(id)) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please enter a valid ID number in the format YYYY-NNNNN.', 'err'); return false; }
+      }
+      if (step === 2) {
+        const em = document.getElementById('email').value.trim();
+        const pw = document.getElementById('password').value;
+        const cp = document.getElementById('confirmPw').value;
+        if (!/^[^\s@]+@[^\s@]+\.edu\.ph$/i.test(em)) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please enter a valid university email address (.edu.ph).', 'err'); return false; }
+        if (pw.length < 8) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Password must be at least 8 characters.', 'err'); return false; }
+        if (pw !== cp) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Passwords do not match.', 'err'); return false; }
+      }
+      return true;
+    }
+
+    function collectData(step) {
+      if (step === 1) {
+        formData.firstName = document.getElementById('firstName').value.trim();
+        formData.lastName = document.getElementById('lastName').value.trim();
+        formData.department = document.getElementById('department').value;
+        formData.idNumber = document.getElementById('idNumber').value.trim();
+      }
+      if (step === 2) {
+        formData.email = document.getElementById('email').value.trim();
+        formData.password = document.getElementById('password').value;
+        formData.contact = document.getElementById('contact').value.trim();
+      }
+    }
+
+    /* ── Build review summary ── */
+    function buildReview() {
+      const roleLabel = { student: 'Student', faculty: 'Faculty', staff: 'Staff', researcher: 'Researcher' };
+
+      document.getElementById('reviewIdentity').innerHTML = `
+      <div class="review-item"><div class="review-key">Role</div><div class="review-val">${roleLabel[formData.role] || '—'}</div></div>
+      <div class="review-item"><div class="review-key">Full Name</div><div class="review-val">${formData.firstName} ${formData.lastName}</div></div>
+      <div class="review-item full"><div class="review-key">Department</div><div class="review-val">${formData.department}</div></div>
+      <div class="review-item"><div class="review-key">ID Number</div><div class="review-val">${formData.idNumber}</div></div>
+    `;
+      document.getElementById('reviewCredentials').innerHTML = `
+      <div class="review-item full"><div class="review-key">Email</div><div class="review-val">${formData.email}</div></div>
+      <div class="review-item"><div class="review-key">Password</div><div class="review-val">••••••••</div></div>
+      <div class="review-item"><div class="review-key">Contact</div><div class="review-val">${formData.contact || 'Not provided'}</div></div>
+    `;
+    }
+
+    /* ── Final submission ── */
+    async function submitRegistration() {
+      if (!document.getElementById('termsCheck').checked) {
+        showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please agree to the Terms & Conditions before proceeding.', 'err');
+        return;
+      }
+      if (!document.getElementById('ageCheck').checked) {
+        showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please confirm that your information is accurate.', 'err');
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      const originalText = btn.querySelector('span').textContent;
+
+      btn.querySelector('span').textContent = 'Submitting…';
+      btn.disabled = true;
+
+      try {
+        const response = await window.api.rawFetch('/auth/register.php', {
+          method: 'POST',
+          body: formData
+        });
+
+        // Added a safety check here! 
+        // This stops the "Cannot read properties of null" error from crashing the page.
+        if (response && response.status === 'success') {
+          // Hide progress bar and tracker for success screen
+          document.getElementById('progressFill').parentElement.style.display = 'none';
+          document.querySelectorAll('.step-track-item').forEach(i => { i.classList.remove('step-active', 'step-done'); i.classList.add('step-done'); });
+
+          const cur = document.getElementById('step3');
+          cur.classList.remove('active');
+          currentStep = 4;
+          document.getElementById('step4').classList.add('active');
+        } else {
+          // Fallback message if response is null or missing data
+          const errorMsg = (response && response.message) ? response.message : 'Registration failed. Backend returned empty data.';
+          showAlert('<i class="ph ph-warning-circle"></i> &nbsp;' + errorMsg, 'err');
+          btn.querySelector('span').textContent = originalText;
+          btn.disabled = false;
+        }
+      } catch (error) {
+        showAlert('<i class="ph ph-warning-circle"></i> &nbsp;' + (error.message || 'Server error occurred.'), 'err');
+        btn.querySelector('span').textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+
+</html>
