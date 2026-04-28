@@ -32,7 +32,7 @@ if (!$decodedData) {
 }
 
 // Restrict this operation
-$allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF];
+$allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF, Database::ROLE_STUDENT, Database::ROLE_FACULTY, Database::ROLE_RESEARCHER];
 if (!in_array($decodedData['role'], $allowed_roles)) {
     http_response_code(403);
     die(json_encode(["message" => "Forbidden. You do not have permission to update assets.", "status" => "error"]));
@@ -53,10 +53,22 @@ if (!empty($asset_id) && !empty($data)) {
         if (isset($data->asset_name)) $fields[] = "asset_name = :asset_name";
         if (isset($data->asset_type)) $fields[] = "asset_type = :asset_type";
         if (isset($data->description)) $fields[] = "description = :description";
-        if (isset($data->availability)) $fields[] = "availability = :availability";
+        if (isset($data->daily_penalty)) $fields[] = "daily_penalty = :daily_penalty";
+        if (isset($data->penalty_type)) $fields[] = "penalty_type = :penalty_type";
+        
+        // Only Admins can update the availability status
+        if (isset($data->availability) && $decodedData['role'] === Database::ROLE_ADMIN) {
+            $fields[] = "availability = :availability";
+        }
 
         if (count($fields) > 0) {
             $query = "UPDATE assets SET " . implode(', ', $fields) . " WHERE Asset_ID = :id";
+            
+            // If not admin, you can only update your own asset
+            if ($decodedData['role'] !== Database::ROLE_ADMIN) {
+                $query .= " AND Lender_ID = :lender_id";
+            }
+
             $stmt = $db->prepare($query);
 
             $stmt->bindParam(":id", $asset_id);
@@ -72,9 +84,20 @@ if (!empty($asset_id) && !empty($data)) {
                 $description = htmlspecialchars(strip_tags($data->description));
                 $stmt->bindParam(":description", $description);
             }
-            if (isset($data->availability)) {
+            if (isset($data->availability) && $decodedData['role'] === Database::ROLE_ADMIN) {
                 $availability = htmlspecialchars(strip_tags($data->availability));
                 $stmt->bindParam(":availability", $availability);
+            }
+            if (isset($data->daily_penalty)) {
+                $daily_penalty = max(0, (int)$data->daily_penalty);
+                $stmt->bindParam(":daily_penalty", $daily_penalty, \PDO::PARAM_INT);
+            }
+            if (isset($data->penalty_type)) {
+                $penalty_type = in_array($data->penalty_type, ['per_day', 'per_hour'], true) ? $data->penalty_type : 'per_day';
+                $stmt->bindParam(":penalty_type", $penalty_type);
+            }
+            if ($decodedData['role'] !== Database::ROLE_ADMIN) {
+                $stmt->bindParam(":lender_id", $decodedData['id']);
             }
 
             if ($stmt->execute() && $stmt->rowCount() > 0) {

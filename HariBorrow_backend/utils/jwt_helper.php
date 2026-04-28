@@ -100,4 +100,3 @@ class JwtHelper
         return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', 3 - (3 + strlen($data)) % 4));
     }
 }
-?>

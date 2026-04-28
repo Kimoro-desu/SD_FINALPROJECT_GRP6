@@ -5,8 +5,10 @@ header("Access-Control-Allow-Methods: GET");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 
 require_once '../../config/database.php';
+require_once '../../utils/penalty_schema.php';
 
 use Config\Database;
+use function Utils\ensurePenaltySchema;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -15,12 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $database = new Database();
 $db = $database->getConnection();
+ensurePenaltySchema($db);
 
 // Check if there's an availability filter provided in the URL (e.g. ?status=Available)
 $statusFilter = isset($_GET['status']) ? htmlspecialchars(strip_tags($_GET['status'])) : null;
 
 // Build query to get assets along with their lender's name
-$query = "SELECT a.Asset_ID, a.Lender_ID, a.asset_name, a.asset_type, a.description, a.availability, a.time_created,
+$query = "SELECT a.Asset_ID, a.Lender_ID, a.asset_name, a.asset_type, a.description, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.time_created,
                  u.first_name, u.last_name 
           FROM assets a 
           LEFT JOIN users u ON a.Lender_ID = u.User_ID";
@@ -57,6 +60,10 @@ try {
                 "name" => $row['asset_name'],
                 "type" => $row['asset_type'],
                 "description" => $row['description'],
+                "meetup_location" => $row['meetup_location'],
+                "proposed_penalty_amount" => (int)($row['proposed_penalty_amount'] ?? 0),
+                "daily_penalty" => (int)($row['daily_penalty'] ?? 0),
+                "penalty_type" => $row['penalty_type'] ?? 'per_day',
                 "status" => $row['availability'],
                 "lender_id" => $row['Lender_ID'],
                 "lender_name" => $lender_name,

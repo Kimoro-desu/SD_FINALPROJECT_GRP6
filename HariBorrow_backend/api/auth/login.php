@@ -9,9 +9,11 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 // Include database and helper
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
+require_once '../../utils/system_logger.php';
 
 use Config\Database;
 use Utils\JwtHelper;
+use Utils\SystemLogger;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -22,6 +24,7 @@ $database = new Database();
 $db = $database->getConnection();
 
 $data = json_decode(file_get_contents("php://input"));
+$ip = $_SERVER['REMOTE_ADDR'] ?? null;
 
 // Verify data exists
 if (!empty($data->email) && !empty($data->password)) {
@@ -43,6 +46,23 @@ if (!empty($data->email) && !empty($data->password)) {
 
         // Verify password hash
         if (password_verify($data->password, $row['password_hash'])) {
+
+            // Block login if registration is still pending (if approvals table exists)
+            try {
+                $check = $db->prepare("SELECT status FROM registration_requests WHERE user_id = :uid LIMIT 1");
+                $uid = (int)$row['User_ID'];
+                $check->bindParam(':uid', $uid);
+                $check->execute();
+                $reg = $check->fetch(\PDO::FETCH_ASSOC);
+                if ($reg && strtolower(trim($reg['status'])) !== 'approved') {
+                    http_response_code(403);
+                    SystemLogger::log($db, 'security', 'Login blocked: registration not approved (User_ID: ' . $uid . ').', $row['plm_email'], $ip, 'Failed');
+                    echo json_encode(["message" => "Your account is pending approval.", "status" => "error"]);
+                    exit();
+                }
+            } catch (\Throwable $e) {
+                // If the table doesn't exist yet, don't block legacy installs.
+            }
             
             // Build claims payload for JWT
             $tokenPayload = [
@@ -55,6 +75,7 @@ if (!empty($data->email) && !empty($data->password)) {
             $jwt = JwtHelper::generateToken($tokenPayload);
 
             http_response_code(200);
+            SystemLogger::log($db, 'auth', 'User login successful.', $row['plm_email'], $ip, 'Success');
             echo json_encode([
                 "message" => "Successful login.",
                 "token" => $jwt,
@@ -69,11 +90,13 @@ if (!empty($data->email) && !empty($data->password)) {
         } else {
             // Password mismatch
             http_response_code(401);
+            SystemLogger::log($db, 'security', 'Failed login attempt (bad password).', $email, $ip, 'Failed');
             echo json_encode(["message" => "Invalid credentials.", "status" => "error"]);
         }
     } else {
         // User not found
         http_response_code(404);
+        SystemLogger::log($db, 'security', 'Failed login attempt (user not found).', $email, $ip, 'Failed');
         echo json_encode(["message" => "User does not exist.", "status" => "error"]);
     }
 } else {
