@@ -214,6 +214,23 @@ foreach ($active_loans_raw as $loan) {
   .user-info { display: flex; flex-direction: column; }
   .user-name { font-size: 14px; font-weight: 500; color: var(--text-1); }
   .user-dept { font-size: 11px; color: var(--text-3); }
+  
+  /* ── NOTIFICATIONS DROPDOWN ── */
+  .notif-dropdown.active {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      transform: translateX(0) !important;
+  }
+  .notif-item { padding: 16px; border-bottom: 1px solid var(--glass-border); display: flex; gap: 12px; align-items: flex-start; text-decoration: none; transition: background 0.2s; }
+  .notif-item:hover { background: rgba(255, 255, 255, 0.03); }
+  .notif-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .notif-icon.info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+  .notif-icon.danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+  .notif-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+  .notif-content { display: flex; flex-direction: column; gap: 4px; }
+  .notif-title { font-size: 13px; font-weight: 500; color: var(--text-1); }
+  .notif-desc { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+  .notif-time { font-size: 11px; color: var(--text-3); margin-top: 4px; }
 
   /* ── MAIN CONTENT ── */
   .main-content {
@@ -437,7 +454,6 @@ foreach ($active_loans_raw as $loan) {
 <div class="bg-mesh"></div>
 <div class="ambient-glow" id="glow"></div>
 
-<!-- ── SIDEBAR ── -->
 <aside class="sidebar">
   <div class="sidebar-header">
     <img src="../images/image_0.png" alt="HariBorrow Logo" class="nav-logo">
@@ -448,32 +464,47 @@ foreach ($active_loans_raw as $loan) {
   </div>
 
   <nav class="nav-menu">
-    <a href="dashboard.html" class="nav-link"><i class="ph ph-squares-four"></i> My Dashboard</a>
+    <a href="borrower_lender_dashboard.php" class="nav-link"><i class="ph ph-squares-four"></i> My Dashboard</a>
     <div class="nav-section-title">Transactions</div>
-    <a href="UserBorrowing.html" class="nav-link"><i class="ph ph-package"></i> Borrow an Asset</a>
+    <a href="borrowing.php" class="nav-link"><i class="ph ph-package"></i> Borrow an Asset</a>
     <a href="#" class="nav-link active"><i class="ph ph-arrow-u-up-left"></i> Return an Asset</a>
-    <a href="#" class="nav-link"><i class="ph ph-clock-counter-clockwise"></i> My Borrowing History</a>
-    <a href="#" class="nav-link"><i class="ph ph-bell"></i> Notifications</a>
+    <a href="borrowing.php?view=borrows" class="nav-link"><i class="ph ph-clock-counter-clockwise"></i> My Borrowing History</a>
+    
+    <div style="position: relative;">
+      <a href="#" class="nav-link" onclick="toggleMenu('notifDropdown')">
+        <i class="ph ph-bell"></i> Notifications
+        <span class="notif-badge" id="notifBadge" style="display:none; margin-left: auto; background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold;">0</span>
+      </a>
+      <div class="notif-dropdown" id="notifDropdown" style="position: absolute; left: calc(100% + 10px); top: 0; width: 340px; background: rgba(15, 15, 20, 0.95); backdrop-filter: blur(24px); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); opacity: 0; pointer-events: none; transform: translateX(-10px); transition: all 0.3s ease; z-index: 1000;">
+        <div class="notif-header" style="padding: 16px; border-bottom: 1px solid var(--glass-border); font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--gold-light); display: flex; justify-content: space-between; align-items: center;">
+            Notifications
+            <span style="font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 400; color: var(--text-2); cursor: pointer;" onclick="markAllNotificationsRead(event)">Mark all as read</span>
+        </div>
+        <div class="notif-list" id="notifList" style="max-height: 360px; overflow-y: auto;">
+            <div class="notif-item" style="padding: 16px; color: var(--text-2); font-size: 12px;">Loading notifications...</div>
+        </div>
+      </div>
+    </div>
+
     <div class="nav-section-title">Account</div>
-    <a href="#" class="nav-link"><i class="ph ph-user-circle"></i> My Profile</a>
-    <a href="#" class="nav-link"><i class="ph ph-gear"></i> Settings</a>
+    <a href="my_profile.php" class="nav-link"><i class="ph ph-user-circle"></i> My Profile</a>
+    <a href="profile_settings.php" class="nav-link"><i class="ph ph-gear"></i> Account Settings</a>
   </nav>
 
   <div class="sidebar-footer">
     <div class="user-profile">
-      <div class="user-avatar">UN</div>
+      <div class="user-avatar" id="sidebarAvatar">UN</div>
       <div class="user-info">
-        <span class="user-name">User Name</span>
-        <span class="user-dept">College of Engineering</span>
+        <span class="user-name" id="sidebarName">User Name</span>
+        <span class="user-dept" id="sidebarRole">User Role</span>
       </div>
-      <a href="login.html" style="margin-left:auto;color:var(--text-3);cursor:pointer;">
+      <a onclick="window.api.removeToken(); window.location.href='login.php'" style="margin-left:auto;color:var(--text-3);cursor:pointer;" title="Secure Log Out">
         <i class="ph ph-sign-out" style="font-size:20px;"></i>
       </a>
     </div>
   </div>
 </aside>
 
-<!-- ── MAIN ── -->
 <main class="main-content">
 
   <div class="header-area">
@@ -483,7 +514,6 @@ foreach ($active_loans_raw as $loan) {
     </div>
   </div>
 
-  <!-- STEPPER -->
   <div class="stepper">
     <div class="step-item active" id="stepItem1">
       <div class="step-circle">1</div> Select Asset
@@ -498,10 +528,8 @@ foreach ($active_loans_raw as $loan) {
     </div>
   </div>
 
-  <!-- CARD -->
   <div class="card">
 
-    <!-- ── STEP 1: SELECT ASSET ── -->
     <div class="step active" id="step1">
       <div class="card-label">Step 1 of 3</div>
       <div class="card-title">Active Loans</div>
@@ -533,7 +561,7 @@ foreach ($active_loans_raw as $loan) {
       </div>
 
       <div class="btn-group">
-        <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+        <button class="btn btn-secondary" onclick="window.location.href='borrower_lender_dashboard.php'">
           <i class="ph ph-arrow-left"></i> Back to Dashboard
         </button>
         <button class="btn btn-primary" id="proceedBtn" onclick="goToStep(2)" disabled>
@@ -542,19 +570,16 @@ foreach ($active_loans_raw as $loan) {
       </div>
     </div>
 
-    <!-- ── STEP 2: RETURN DETAILS ── -->
     <div class="step" id="step2">
       <div class="card-label">Step 2 of 3</div>
       <div class="card-title">Return Details</div>
       <div class="card-desc">Confirm the condition of the asset and provide any relevant notes before submitting.</div>
 
-      <!-- Overdue alert — shown conditionally -->
       <div class="overdue-banner hidden" id="overdueBanner">
         <i class="ph ph-warning"></i>
         <span>This asset is <strong>overdue</strong>. Please return it to the designated location immediately and notify the lab custodian. Late returns are logged in your borrowing record.</span>
       </div>
 
-      <!-- Asset quick-summary -->
       <div class="info-wrap">
         <div class="info-grid">
           <div class="info-item">
@@ -580,13 +605,11 @@ foreach ($active_loans_raw as $loan) {
         </div>
       </div>
 
-      <!-- Return date/time (auto-filled) -->
       <div class="form-group">
         <label class="form-label"><i class="ph ph-clock"></i> Return Date & Time</label>
         <div class="duration-display" id="returnDateTime">—</div>
       </div>
 
-      <!-- Condition -->
       <div class="form-group">
         <label class="form-label"><i class="ph ph-check-square"></i> Asset Condition Upon Return</label>
         <div class="condition-grid">
@@ -609,13 +632,11 @@ foreach ($active_loans_raw as $loan) {
         </div>
       </div>
 
-      <!-- Notes -->
       <div class="form-group">
         <label class="form-label"><i class="ph ph-notepad"></i> Return Notes <span style="color:var(--text-3); font-weight:300; text-transform:none; letter-spacing:0;">(optional)</span></label>
         <textarea class="form-textarea" id="returnNotes" placeholder="Note any observations about the asset's condition, accessories returned, or other relevant remarks."></textarea>
       </div>
 
-      <!-- Terms -->
       <div class="terms-wrap">
         <input type="checkbox" id="terms">
         <label for="terms">I confirm that I am returning this asset to its designated location in the stated condition, and that all included accessories have been accounted for. I understand that any damage or loss will be reported to the department administrator.</label>
@@ -631,7 +652,6 @@ foreach ($active_loans_raw as $loan) {
       </div>
     </div>
 
-    <!-- ── STEP 3: CONFIRMATION ── -->
     <div class="step" id="step3">
       <div class="success-icon">
         <i class="ph-fill ph-check-circle"></i>
@@ -681,15 +701,16 @@ foreach ($active_loans_raw as $loan) {
         <button class="btn btn-secondary" onclick="window.location.reload()">
           <i class="ph ph-arrow-counter-clockwise"></i> Return Another
         </button>
-        <button class="btn btn-primary" onclick="window.location.href='dashboard.html'">
+        <button class="btn btn-primary" onclick="window.location.href='borrower_lender_dashboard.php'">
           <i class="ph ph-squares-four"></i> Go to Dashboard
         </button>
       </div>
     </div>
 
-  </div><!-- /card -->
-</main>
+  </div></main>
 
+<script src="../js/api.js"></script>
+<script src="../js/auth_guard.js"></script>
 <script>
   /* ── GLOW ── */
   const glow = document.getElementById('glow');
@@ -697,6 +718,107 @@ foreach ($active_loans_raw as $loan) {
     glow.style.setProperty('--mouse-x', e.clientX + 'px');
     glow.style.setProperty('--mouse-y', e.clientY + 'px');
   });
+
+  /* ── NOTIFICATIONS LOGIC ── */
+  function toggleMenu(menuId) {
+      const targetMenu = document.getElementById(menuId);
+      targetMenu.classList.toggle('active');
+  }
+
+  document.addEventListener('click', function (event) {
+      if (!event.target.closest('.notif-dropdown') && !event.target.closest('[onclick="toggleMenu(\'notifDropdown\')"]')) {
+          document.getElementById('notifDropdown')?.classList.remove('active');
+      }
+  });
+
+  async function fetchNotifications() {
+      try {
+          const response = await window.api.authenticatedFetch('/transactions/notifications.php');
+          if (response && response.status === 'success') {
+              const notifs = response.notifications;
+              const notifList = document.getElementById('notifList');
+              const notifBadge = document.getElementById('notifBadge');
+              
+              notifList.innerHTML = '';
+              
+              if (notifs.length > 0) {
+                  const unreadCount = notifs.filter(n => n.notification_id && !n.is_read).length;
+                  notifBadge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                  notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                  
+                  notifs.forEach(notif => {
+                      const date = new Date(notif.time_ago.replace(' ', 'T'));
+                      const timeAgo = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                      
+                      const item = document.createElement('a');
+                      item.href = '#';
+                      item.className = 'notif-item';
+                      item.style.opacity = notif.is_read ? '0.6' : '1';
+                      item.innerHTML = `
+                          <div class="notif-icon ${notif.severity}">
+                              <i class="ph ${notif.icon_class}"></i>
+                          </div>
+                          <div class="notif-content">
+                              <span class="notif-title">${notif.title}</span>
+                              <span class="notif-desc">${notif.message}</span>
+                              <span class="notif-time">${timeAgo}</span>
+                          </div>
+                      `;
+                      if (notif.notification_id && !notif.is_read) {
+                          item.addEventListener('click', async (e) => {
+                              e.preventDefault();
+                              await markNotificationRead(notif.notification_id);
+                          });
+                      }
+                      notifList.appendChild(item);
+                  });
+              } else {
+                  notifBadge.style.display = 'none';
+                  notifList.innerHTML = `
+                      <div class="notif-item">
+                          <div class="notif-content"><span class="notif-desc">No new notifications.</span></div>
+                      </div>
+                  `;
+              }
+          }
+      } catch (error) {
+          console.error("Failed to fetch notifications:", error);
+      }
+  }
+
+  async function markNotificationRead(notificationId) {
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: { notification_id: notificationId }
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark notification read:", error);
+      }
+  }
+
+  async function markAllNotificationsRead(event) {
+      if (event) event.stopPropagation();
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: {}
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark all notifications read:", error);
+      }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+      // Initialize notifications if user is logged in
+      if(window.api && window.api.isAuthenticated()) {
+          fetchNotifications();
+          setInterval(fetchNotifications, 15000);
+      }
+  });
+
 
   /* ── LOAN DATA ── */
   const loans = <?php echo json_encode($loansForJs); ?>;

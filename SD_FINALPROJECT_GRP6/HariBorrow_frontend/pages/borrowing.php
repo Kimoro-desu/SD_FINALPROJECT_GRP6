@@ -10,6 +10,7 @@
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="../js/api.js"></script>
   <script src="../js/auth_guard.js"></script>
   <style>
     *,
@@ -597,6 +598,37 @@
       font-family: 'Outfit', sans-serif;
     }
 
+    .rating-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(229, 192, 123, 0.25);
+      background: rgba(229, 192, 123, 0.1);
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .rate-btn {
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      background: rgba(96, 165, 250, 0.12);
+      color: #93c5fd;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .rate-btn:hover {
+      border-color: #60a5fa;
+      background: rgba(96, 165, 250, 0.18);
+    }
+
     /* ── MODAL ── */
     .modal-overlay {
       position: fixed;
@@ -651,18 +683,18 @@
       <span class="nav-title">HariBorrow</span>
     </a>
     <div class="nav-right">
-      <a href="#" class="nav-back" onclick="history.back();return false;"><i class="ph ph-arrow-left"></i> Dashboard</a>
+      <a href="borrower_lender_dashboard.php" class="nav-back"><i class="ph ph-arrow-left"></i> Dashboard</a>
 
       <div class="profile-menu">
         <button class="profile-btn" onclick="toggleDropdown()">
           <div class="profile-avatar" id="navAvatar">UN</div>
-          <span>User Name</span>
+          <span id="navUserName">User Name</span>
           <i class="ph ph-caret-down"></i>
         </button>
 
         <div class="dropdown" id="settingsDropdown">
-          <button class="drop-item"><i class="ph ph-user"></i> My Profile</button>
-          <button class="drop-item"><i class="ph ph-gear"></i> Account Settings</button>
+          <button class="drop-item" onclick="window.location.href='my_profile.php'"><i class="ph ph-user"></i> My Profile</button>
+          <button class="drop-item" onclick="window.location.href='profile_settings.php'"><i class="ph ph-gear"></i> Account Settings</button>
           <div class="drop-divider"></div>
           <button class="drop-item logout" onclick="window.api.removeToken(); window.location.href='login.php'"><i class="ph ph-sign-out"></i> Secure Log Out</button>
         </div>
@@ -713,15 +745,17 @@
           <thead>
             <tr>
               <th>Asset</th>
+              <th>Counterparty</th>
               <th>Status</th>
               <th>Borrow Date</th>
               <th>Return Due</th>
               <th>Returned At</th>
               <th>Penalty</th>
+              <th>Rating</th>
             </tr>
           </thead>
           <tbody id="borrowsTableBody">
-            <tr><td colspan="6" style="padding:16px;color:var(--text-3);">Loading your borrowings...</td></tr>
+            <tr><td colspan="8" style="padding:16px;color:var(--text-3);">Loading your borrowings...</td></tr>
           </tbody>
         </table>
       </div>
@@ -751,7 +785,32 @@
     </div>
   </div>
 
-  <script src="../js/api.js"></script>
+  <div class="modal-overlay" id="ratingModal">
+    <div class="borrow-modal">
+      <div class="modal-title">Rate User</div>
+      <div class="modal-sub" id="ratingModalCounterparty">Rate your transaction counterpart.</div>
+      <input type="hidden" id="ratingTxnId">
+      <div class="form-group">
+        <label class="form-label" for="ratingValueInput">Rating (1-5)</label>
+        <select class="form-input" id="ratingValueInput">
+          <option value="5">5 - Excellent</option>
+          <option value="4">4 - Good</option>
+          <option value="3">3 - Okay</option>
+          <option value="2">2 - Poor</option>
+          <option value="1">1 - Very Poor</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ratingCommentInput">Comment (optional)</label>
+        <textarea class="form-input" id="ratingCommentInput" rows="3" placeholder="How was your experience?"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" type="button" onclick="closeRatingModal()">Cancel</button>
+        <button class="btn-submit" type="button" onclick="submitRating()">Submit Rating</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Ambient Glow Logic
     document.addEventListener('mousemove', e => {
@@ -772,6 +831,7 @@
     let searchQ = '';
     let typeFilter = '';
     let myBorrowings = [];
+    let borrowingsById = {};
 
     function toInputDateTimeLocal(d) {
       const pad = (n) => String(n).padStart(2, '0');
@@ -809,9 +869,13 @@
             return {
               id: a.id,
               name: a.name,
+              description: a.description || '',
               type: a.type || 'General',
               lender: a.lender_name || 'System Default',
               status: a.availability,
+              meetup_location: a.meetup_location || '',
+              daily_penalty: a.daily_penalty || 0,
+              penalty_type: a.penalty_type || 'per_day',
               icon: iconMap[a.type] || 'ph-stack'
             };
           });
@@ -829,7 +893,7 @@
         const history = Array.isArray(res?.history) ? res.history : [];
         const user = window.api.getUser();
         const uid = Number(user?.id || 0);
-        const mine = history.filter(tx => Number(tx?.borrower?.id || 0) === uid);
+        const mine = history.filter(tx => Number(tx?.borrower?.id || 0) === uid || Number(tx?.lender?.id || 0) === uid);
         myBorrowings = mine.sort((a, b) => {
           const aTs = new Date(a?.dates?.borrowed || a?.dates?.requested || 0).getTime() || 0;
           const bTs = new Date(b?.dates?.borrowed || b?.dates?.requested || 0).getTime() || 0;
@@ -844,6 +908,10 @@
         
         const countEl = document.getElementById('borrowCount');
         if (countEl) countEl.textContent = String(openCount);
+        borrowingsById = {};
+        myBorrowings.forEach(tx => {
+          borrowingsById[String(tx?.transaction_id)] = tx;
+        });
       } catch (error) {
         console.error('Failed to load my borrowings:', error);
       }
@@ -870,7 +938,14 @@
           return;
       }
 
-      grid.innerHTML = filteredAssets.map(a => `
+      grid.innerHTML = filteredAssets.map(a => {
+        const penaltyLabel = a.daily_penalty > 0
+          ? `PHP ${a.daily_penalty} / ${a.penalty_type === 'per_hour' ? 'hour' : 'day'}`
+          : 'No penalty';
+        const locationHtml = a.meetup_location
+          ? `<div class="card-meta-row"><i class="ph ph-map-pin"></i> ${a.meetup_location}</div>`
+          : '';
+        return `
         <div class="asset-card">
           <div class="card-icon"><i class="ph ${a.icon}"></i></div>
           <div class="card-name">${a.name}</div>
@@ -878,13 +953,15 @@
           <div class="card-meta">
             <div class="card-meta-row"><i class="ph ph-tag"></i> ${a.type}</div>
             <div class="card-meta-row"><i class="ph ph-user"></i> ${a.lender}</div>
+            ${locationHtml}
+            <div class="card-meta-row"><i class="ph ph-warning-circle"></i> ${penaltyLabel}</div>
           </div>
           <div class="card-footer">
             <span class="badge ${a.status === 'available' ? 'badge-available' : 'badge-borrowed'}"><span class="badge-dot"></span>${a.status === 'available' ? 'Available' : 'Unavailable'}</span>
             <button class="request-btn" ${a.status !== 'available' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''} onclick='openBorrowModal(${JSON.stringify(String(a.id))}, ${JSON.stringify(String(a.name))})'><i class="ph ph-paper-plane-tilt"></i> Request</button>
           </div>
         </div>
-      `).join('');
+      `}).join('');
     }
 
     function openBorrowModal(id, assetName) {
@@ -971,7 +1048,7 @@
       if (!tbody) return;
 
       if (!myBorrowings.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; color: var(--text-3); text-align: center;">You have no borrow requests yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; color: var(--text-3); text-align: center;">You have no borrow requests yet.</td></tr>';
         return;
       }
 
@@ -982,45 +1059,77 @@
         const dueAt = tx?.dates?.due || null;
         const returnedAt = tx?.dates?.returned || null;
         const penalty = Number(tx?.penalty_amount || 0);
+        const counterpartyName = tx?.counterparty?.name || '—';
+        const myRating = tx?.my_rating?.rating ? Number(tx.my_rating.rating) : null;
+        const ratingCell = myRating
+          ? `<span class="rating-chip"><i class="ph ph-star-fill"></i> ${myRating}/5</span>`
+          : (tx?.can_rate
+              ? `<button class="rate-btn" onclick="openRatingModal(${Number(tx?.transaction_id || 0)})"><i class="ph ph-star"></i> Rate</button>`
+              : '—');
         return `
           <tr>
             <td style="color: var(--text-1); font-weight: 500;">${item}</td>
+            <td>${counterpartyName}</td>
             <td><span class="status-pill ${statusData.class}">${statusData.label}</span></td>
             <td>${fmtDateSafe(borrowedAt)}</td>
             <td>${fmtDateSafe(dueAt)}</td>
             <td>${fmtDateSafe(returnedAt)}</td>
-            <td style="color: ${penalty > 0 ? 'var(--danger)' : 'inherit'}">${penalty > 0 ? 'PHP ' + penalty.toFixed(2) : '—'}</td>
+            <td style="color: ${penalty > 0 ? 'var(--danger)' : 'inherit'}">${penalty > 0 ? 'PHP ' + penalty : '—'}</td>
+            <td>${ratingCell}</td>
           </tr>
         `;
       }).join('');
     }
 
+    function openRatingModal(transactionId) {
+      const tx = borrowingsById[String(transactionId)];
+      if (!tx) return;
+      document.getElementById('ratingTxnId').value = String(transactionId);
+      document.getElementById('ratingCommentInput').value = '';
+      document.getElementById('ratingValueInput').value = '5';
+      document.getElementById('ratingModalCounterparty').textContent = `Rate ${tx?.counterparty?.name || 'this user'} for transaction #TXN-${transactionId}.`;
+      document.getElementById('ratingModal').classList.add('active');
+    }
+
+    function closeRatingModal() {
+      document.getElementById('ratingModal').classList.remove('active');
+    }
+
+    async function submitRating() {
+      const transactionId = Number(document.getElementById('ratingTxnId').value || 0);
+      const rating = Number(document.getElementById('ratingValueInput').value || 0);
+      const reviewText = document.getElementById('ratingCommentInput').value || '';
+      if (!transactionId || rating < 1 || rating > 5) {
+        alert('Please provide a valid rating.');
+        return;
+      }
+      try {
+        const res = await window.api.authenticatedFetch('/transactions/rate.php', {
+          method: 'POST',
+          body: {
+            transaction_id: transactionId,
+            rating,
+            review_text: reviewText
+          }
+        });
+        alert(res?.message || 'Rating submitted.');
+        closeRatingModal();
+        await loadMyBorrowings();
+        if (document.getElementById('borrowsPanel')?.classList.contains('active')) {
+          renderBorrowsPanel();
+        }
+      } catch (e) {
+        alert(e?.message || 'Failed to submit rating.');
+      }
+    }
+
     // Initialize User Information
     document.addEventListener('DOMContentLoaded', async () => {
-        let user = window.api.getUser();
-        
-        if (!user || !user.name) {
-            try {
-                const data = await window.api.authenticatedFetch('/users/profile.php');
-                if (data && data.status === 'success') {
-                    user = {
-                        id: data.profile.id,
-                        name: data.profile.full_name,
-                        email: data.profile.email,
-                        role: data.profile.role
-                    };
-                    window.api.setUser(user);
-                }
-            } catch (e) { console.error('Failed to fetch profile', e); }
-        }
-
-        if (user && user.name) {
-            document.querySelector('.profile-btn span').textContent = user.name;
-            const initial = (user.name.split(' ')[0] || 'U').charAt(0).toUpperCase();
-            document.getElementById('navAvatar').textContent = initial;
-        }
         document.getElementById('borrowModal')?.addEventListener('click', (e) => {
           if (e.target.id === 'borrowModal') closeBorrowModal();
+        });
+        document.getElementById('ratingModal')?.addEventListener('click', (e) => {
+          if (e.target.id === 'ratingModal') closeRatingModal();
         });
         
         await loadCatalog();

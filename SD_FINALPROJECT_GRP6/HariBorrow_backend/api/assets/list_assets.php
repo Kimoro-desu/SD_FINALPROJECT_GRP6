@@ -23,7 +23,7 @@ ensurePenaltySchema($db);
 $statusFilter = isset($_GET['status']) ? htmlspecialchars(strip_tags($_GET['status'])) : null;
 
 // Build query to get assets along with their lender's name
-$query = "SELECT a.Asset_ID, a.Lender_ID, a.asset_name, a.asset_type, a.description, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.availability, a.time_created,
+$query = "SELECT a.Asset_ID, a.Lender_ID, a.asset_name, a.asset_type, a.description, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.time_created,
                  u.first_name, u.last_name 
           FROM assets a 
           LEFT JOIN users u ON a.Lender_ID = u.User_ID";
@@ -61,8 +61,9 @@ try {
                 "type" => $row['asset_type'],
                 "description" => $row['description'],
                 "meetup_location" => $row['meetup_location'],
-                "proposed_penalty_amount" => (float)($row['proposed_penalty_amount'] ?? 0),
-                "daily_penalty" => (float)($row['daily_penalty'] ?? 0),
+                "proposed_penalty_amount" => (int)($row['proposed_penalty_amount'] ?? 0),
+                "daily_penalty" => (int)($row['daily_penalty'] ?? 0),
+                "penalty_type" => $row['penalty_type'] ?? 'per_day',
                 "status" => $row['availability'],
                 "lender_id" => $row['Lender_ID'],
                 "lender_name" => $lender_name,

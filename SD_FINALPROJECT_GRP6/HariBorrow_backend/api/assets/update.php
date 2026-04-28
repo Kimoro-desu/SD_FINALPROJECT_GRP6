@@ -53,6 +53,8 @@ if (!empty($asset_id) && !empty($data)) {
         if (isset($data->asset_name)) $fields[] = "asset_name = :asset_name";
         if (isset($data->asset_type)) $fields[] = "asset_type = :asset_type";
         if (isset($data->description)) $fields[] = "description = :description";
+        if (isset($data->daily_penalty)) $fields[] = "daily_penalty = :daily_penalty";
+        if (isset($data->penalty_type)) $fields[] = "penalty_type = :penalty_type";
         
         // Only Admins can update the availability status
         if (isset($data->availability) && $decodedData['role'] === Database::ROLE_ADMIN) {
@@ -85,6 +87,14 @@ if (!empty($asset_id) && !empty($data)) {
             if (isset($data->availability) && $decodedData['role'] === Database::ROLE_ADMIN) {
                 $availability = htmlspecialchars(strip_tags($data->availability));
                 $stmt->bindParam(":availability", $availability);
+            }
+            if (isset($data->daily_penalty)) {
+                $daily_penalty = max(0, (int)$data->daily_penalty);
+                $stmt->bindParam(":daily_penalty", $daily_penalty, \PDO::PARAM_INT);
+            }
+            if (isset($data->penalty_type)) {
+                $penalty_type = in_array($data->penalty_type, ['per_day', 'per_hour'], true) ? $data->penalty_type : 'per_day';
+                $stmt->bindParam(":penalty_type", $penalty_type);
             }
             if ($decodedData['role'] !== Database::ROLE_ADMIN) {
                 $stmt->bindParam(":lender_id", $decodedData['id']);

@@ -18,8 +18,9 @@ class Database
     const ROLE_RESEARCHER = 'Researcher';
     const ROLE_LENDER = 'Lender';
 
-    // CONSTANT_VAR_AVAILABILITY: 'Available', 'Borrowed', 'Maintenance', 'Pending'
-    const AVAILABILITY_AVAILABLE = 'Available';
+    // CONSTANT_VAR_AVAILABILITY (legacy uppercase kept for backward compat)
+    const AVAILABILITY_AVAILABLE = 'available';
+    const AVAILABILITY_UNAVAILABLE = 'unavailable';
     const AVAILABILITY_BORROWED = 'Borrowed';
     const AVAILABILITY_MAINTENANCE = 'Maintenance';
     const AVAILABILITY_PENDING = 'Pending';

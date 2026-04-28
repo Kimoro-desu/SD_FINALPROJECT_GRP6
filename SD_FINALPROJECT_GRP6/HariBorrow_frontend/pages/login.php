@@ -615,7 +615,7 @@
       border-bottom-color: var(--gold);
     }
 
-    /* ── FAQ MODAL OVERLAY ── */
+    /* ── MODAL OVERLAYS ── */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -638,7 +638,7 @@
 
     .modal-content {
       background: rgba(10, 10, 13, 0.8);
-      border: 1px solid var(--gold-border);
+      border: 1px solid var(--glass-border);
       border-radius: 12px;
       padding: 48px;
       max-width: 600px;
@@ -909,7 +909,7 @@
 
           <div class="form-foot">
             Don't have an account? <a href="sign_up.php">Sign Up Here</a><br><br>
-            Need support? <a onclick="toggleFaq()">Read the FAQ</a>
+            Need support? <a onclick="toggleFaq()">Read the FAQ</a> or <a onclick="toggleContact()">Contact Support</a>
           </div>
         </div>
 
@@ -953,6 +953,25 @@
     </div>
   </div>
 
+  <div id="contactModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px; text-align: center; border-color: var(--gold-dark);">
+      <button class="close-btn" onclick="toggleContact()">×</button>
+
+      <h2 class="headline" style="font-size: 32px; margin-bottom: 16px;">
+        Contact<br><span class="aesthetic-script">Support.</span>
+      </h2>
+
+      <p style="font-size: 14px; font-weight: 300; color: var(--text-2); margin-bottom: 24px;">
+        If you need assistance with your account or have encountered an issue, please reach out to the system administrator.
+      </p>
+
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 20px; border-radius: 8px;">
+        <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px;">Admin PLM Email</div>
+        <div style="font-size: 18px; color: var(--gold-light); font-weight: 400; letter-spacing: 0.05em;"><i class="ph ph-envelope-simple" style="vertical-align: middle; margin-right: 4px;"></i> admin@plm.edu.ph</div>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/api.js"></script>
   <script>
     // Mouse Glow
@@ -965,6 +984,12 @@
     // Toggle FAQ Modal
     function toggleFaq() {
       const modal = document.getElementById('faqModal');
+      modal.classList.toggle('active');
+    }
+
+    // Toggle Contact Modal
+    function toggleContact() {
+      const modal = document.getElementById('contactModal');
       modal.classList.toggle('active');
     }
 

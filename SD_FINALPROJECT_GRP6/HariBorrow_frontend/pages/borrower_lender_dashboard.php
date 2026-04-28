@@ -685,14 +685,14 @@
             <div class="profile-menu">
                 <button class="profile-btn" onclick="toggleMenu('settingsDropdown')">
                     <div class="profile-avatar" id="navAvatar">UN</div>
-                    <span>User Name</span>
+                    <span id="navUserName">User Name</span>
                     <i class="ph ph-caret-down"></i>
                 </button>
 
                 <div class="dropdown" id="settingsDropdown">
-                    <button class="drop-item"><i class="ph ph-user"></i> My Profile</button>
-                    <button class="drop-item"><i class="ph ph-gear"></i> Account Settings</button>
-                    <button class="drop-item"><i class="ph ph-warning-circle"></i> Report an Issue</button>
+                    <button class="drop-item" onclick="window.location.href='my_profile.php'"><i class="ph ph-user"></i> My Profile</button>
+                    <button class="drop-item" onclick="window.location.href='profile_settings.php'"><i class="ph ph-gear"></i> Account Settings</button>
+                    <button class="drop-item" onclick="window.location.href='report_issue.php'"><i class="ph ph-warning-circle"></i> Report an Issue</button>
                     <div class="drop-divider"></div>
                     <button class="drop-item logout"
                         onclick="window.api.removeToken(); window.location.href='login.php'"><i
@@ -746,7 +746,7 @@
                 </div>
             </a>
 
-            <a href="borrowing.php?view=borrows" class="module-card borrower-only">
+            <a href="asset_return.php" class="module-card borrower-only">
                 <div class="card-top">
                     <div class="card-icon"><i class="ph ph-clock-counter-clockwise"></i></div>
                     <div class="card-title">My Borrowings</div>
@@ -789,33 +789,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             let user = window.api.getUser();
-            
-            // Fallback to fetch from profile.php if user name is missing (e.g. stale local storage)
-            if (!user || !user.name) {
-                try {
-                    const data = await window.api.authenticatedFetch('/users/profile.php');
-                    if (data && data.status === 'success') {
-                        user = {
-                            id: data.profile.id,
-                            name: data.profile.full_name,
-                            email: data.profile.email,
-                            role: data.profile.role
-                        };
-                        window.api.setUser(user);
-                    }
-                } catch (e) { console.error('Failed to fetch profile', e); }
-            }
 
             if (user && user.name) {
                 const firstName = user.name.split(' ')[0] || 'User';
                 const lastName = user.name.split(' ').slice(1).join(' ') || '';
-                const initial = firstName.charAt(0).toUpperCase();
-
-                const avatar = document.getElementById('navAvatar');
-                if (avatar) avatar.textContent = initial;
-
-                const nameSpan = document.querySelector('.profile-btn span');
-                if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
 
                 const welcomeScript = document.querySelector('.welcome .aesthetic-script');
                 if (welcomeScript) welcomeScript.textContent = `${firstName}.`;

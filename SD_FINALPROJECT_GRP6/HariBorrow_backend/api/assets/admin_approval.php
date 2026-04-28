@@ -45,7 +45,7 @@ try {
     ensureAssetLifecycleSchema($db);
 
     if ($method === 'GET') {
-        $q = "SELECT a.Asset_ID, a.asset_name, a.description, a.asset_type, a.meetup_location, a.proposed_penalty_amount, a.availability, a.status, a.time_created,
+        $q = "SELECT a.Asset_ID, a.asset_name, a.description, a.asset_type, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.status, a.time_created,
                      a.Lender_ID, u.first_name, u.last_name, u.plm_email
               FROM assets a
               LEFT JOIN users u ON u.User_ID = a.Lender_ID
@@ -62,7 +62,9 @@ try {
                 "description" => $row['description'],
                 "type" => $row['asset_type'],
                 "meetup_location" => $row['meetup_location'],
-                "proposed_penalty_amount" => (float)($row['proposed_penalty_amount'] ?? 0),
+                "proposed_penalty_amount" => (int)($row['proposed_penalty_amount'] ?? 0),
+                "daily_penalty" => (int)($row['daily_penalty'] ?? 0),
+                "penalty_type" => $row['penalty_type'] ?? 'per_day',
                 "status" => strtolower((string)$row['status']),
                 "availability" => strtolower((string)$row['availability']),
                 "lender_id" => (int)$row['Lender_ID'],

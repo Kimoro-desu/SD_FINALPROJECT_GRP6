@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 3. If we are missing the user's role, fetch it from the database
-    if (!user || !user.role) {
+    // 3. If we are missing the user's role or profile_picture property, fetch it from the database
+    if (!user || !user.role || typeof user.profile_picture === 'undefined') {
         try {
             const data = await window.api.authenticatedFetch('/api/users/profile.php');
             if (data && data.status === 'success') {
@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     id: data.profile.id,
                     name: data.profile.full_name,
                     email: data.profile.email,
-                    role: data.profile.role
+                    role: data.profile.role,
+                    profile_picture: data.profile.profile_picture
                 };
                 window.api.setUser(user);
             } else {
@@ -53,5 +54,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         alert("Access Denied: Administrator privileges required.");
         window.location.href = 'borrower_lender_dashboard.php';
         return;
+    }
+
+    function renderUserBadge(targetEl, name, profilePicture) {
+        if (!targetEl) return;
+        if (profilePicture) {
+            targetEl.innerHTML = `<img src="${profilePicture}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            return;
+        }
+
+        const safeName = String(name || 'User').trim();
+        const parts = safeName.split(/\s+/).filter(Boolean);
+        const initials = ((parts[0] ? parts[0].charAt(0) : 'U') + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '')).toUpperCase();
+        targetEl.textContent = initials;
+    }
+
+    // 5. Update global UI elements if they exist
+    if (user) {
+        const navName = document.getElementById('navUserName');
+        const navAvatar = document.getElementById('navAvatar');
+        const sidebarName = document.getElementById('sidebarName');
+        const sidebarAvatar = document.getElementById('sidebarAvatar');
+        const sidebarRole = document.getElementById('sidebarRole');
+        
+        if (navName) {
+            navName.textContent = user.name;
+        }
+
+        if (sidebarName) {
+            sidebarName.textContent = user.name;
+        }
+
+        if (sidebarRole) {
+            const role = String(user.role || '').trim();
+            sidebarRole.textContent = role ? (role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()) : 'User';
+        }
+
+        renderUserBadge(navAvatar, user.name, user.profile_picture);
+        renderUserBadge(sidebarAvatar, user.name, user.profile_picture);
     }
 });

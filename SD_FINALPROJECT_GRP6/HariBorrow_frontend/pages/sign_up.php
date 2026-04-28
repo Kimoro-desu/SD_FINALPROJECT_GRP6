@@ -798,6 +798,147 @@
     }
 
     .role-card:hover {
+      border-color: var(--gold);
+      background: rgba(229, 192, 123, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .role-card.selected {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+      box-shadow: 0 0 20px rgba(229, 192, 123, 0.15);
+    }
+
+    /* ── TERMS & CONDITIONS MODAL ── */
+    .tc-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .tc-modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .tc-modal-content {
+      background: var(--bg-deep);
+      border: 1px solid var(--gold-dark);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(229, 192, 123, 0.15);
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tc-modal.show .tc-modal-content {
+      transform: translateY(0);
+    }
+
+    .tc-modal-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tc-modal-header h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--gold-light);
+    }
+
+    .tc-close-btn {
+      background: none;
+      border: none;
+      color: var(--text-3);
+      font-size: 24px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .tc-close-btn:hover {
+      color: var(--text-1);
+    }
+
+    .tc-modal-body {
+      padding: 32px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-2);
+    }
+
+    .tc-modal-body h4 {
+      color: var(--text-1);
+      margin: 20px 0 10px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .tc-modal-body p {
+      margin-bottom: 16px;
+    }
+
+    .tc-modal-footer {
+      padding: 20px 32px;
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 0 0 12px 12px;
+    }
+
+    .tc-btn {
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .tc-btn-decline {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text-3);
+    }
+
+    .tc-btn-decline:hover {
+      color: var(--text-1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .tc-btn-accept {
+      background: var(--gold-dim);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+
+    .tc-btn-accept:hover {
+      background: var(--gold);
+      color: var(--bg-deep);
+      font-weight: 600;
+    }
       border-color: rgba(229, 192, 123, 0.2);
       background: var(--gold-dim);
     }
@@ -1379,7 +1520,7 @@
             <label class="check-group" style="margin-bottom: 14px;">
               <input type="checkbox" id="termsCheck">
               <div class="check-custom"></div>
-              <span>I have read and agree to the <a class="link" onclick="event.preventDefault()">Terms & Conditions</a>
+              <span>I have read and agree to the <a class="link" onclick="event.preventDefault(); openTcModal();">Terms & Conditions</a>
                 and the Campus Accountability Policy.</span>
             </label>
 
@@ -1401,13 +1542,11 @@
           <div class="success-wrap">
             <div class="success-icon-ring"><i class="ph ph-check-fat"></i></div>
             <div class="success-title">Welcome<span class="script">Aboard!</span></div>
-            <p class="success-msg">Your registration has been submitted. A confirmation link has been sent to your
-              university email address.</p>
+            <p class="success-msg">Your registration has been successfully submitted to the system administrator.</p>
 
             <div class="success-detail">
-              <div class="success-detail-item"><i class="ph ph-envelope-simple"></i> Check your inbox for a verification
-                email</div>
-              <div class="success-detail-item"><i class="ph ph-clock"></i> Account approval takes 1–2 business days
+              <div class="success-detail-item"><i class="ph ph-envelope-simple"></i> You will be notified once your account is activated</div>
+              <div class="success-detail-item"><i class="ph ph-clock"></i> Account approval typically takes 1–2 business days
               </div>
               <div class="success-detail-item"><i class="ph ph-shield-check"></i> Your data is encrypted and secure
               </div>
@@ -1422,6 +1561,38 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms & Conditions Modal -->
+  <div class="tc-modal" id="tcModal">
+    <div class="tc-modal-content">
+      <div class="tc-modal-header">
+        <h3>Terms & Conditions</h3>
+        <button class="tc-close-btn" onclick="closeTcModal()"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="tc-modal-body">
+        <p>Welcome to HariBorrow. By accessing and using this university equipment lending system, you agree to comply with and be bound by the following terms and conditions.</p>
+        
+        <h4>1. Eligibility & Access</h4>
+        <p>Only currently enrolled students, active faculty, and authorized staff of the Pamantasan with a valid institutional email address are permitted to use this system. Your account is non-transferable.</p>
+        
+        <h4>2. Equipment Liability</h4>
+        <p>By borrowing any asset, you assume full responsibility for its care. Any damage, loss, or theft during the borrowing period must be reported immediately and may result in financial penalties or holds on your university records.</p>
+        
+        <h4>3. Returns & Penalties</h4>
+        <p>All items must be returned by the agreed-upon due date. Late returns will automatically incur daily penalties as specified by the lending department. Repeated offenses may result in permanent suspension of borrowing privileges.</p>
+        
+        <h4>4. Data Privacy</h4>
+        <p>Your personal data is collected solely for the administration of the lending system in compliance with the Data Privacy Act. We do not share your information with external third parties without your explicit consent.</p>
+
+        <h4>5. Campus Accountability Policy</h4>
+        <p>By accepting these terms, you also acknowledge the broader Campus Accountability Policy, which governs the ethical use of university resources and facilities.</p>
+      </div>
+      <div class="tc-modal-footer">
+        <button class="tc-btn tc-btn-decline" onclick="closeTcModal()">Decline</button>
+        <button class="tc-btn tc-btn-accept" onclick="acceptTc()">I Accept</button>
       </div>
     </div>
   </div>
@@ -1532,6 +1703,20 @@
     function clearAlert() {
       const el = document.getElementById('alert');
       el.className = 'alert';
+    }
+
+    /* ── Terms & Conditions Modal ── */
+    function openTcModal() {
+      document.getElementById('tcModal').classList.add('show');
+    }
+
+    function closeTcModal() {
+      document.getElementById('tcModal').classList.remove('show');
+    }
+
+    function acceptTc() {
+      document.getElementById('termsCheck').checked = true;
+      closeTcModal();
     }
 
     /* ── Step navigation ── */

@@ -1,8 +1,17 @@
 <?php
 namespace Utils;
 
+/**
+ * Lazily ensures the user_notifications table exists.
+ * Uses a static flag so the DDL check runs at most once per request.
+ * IMPORTANT: This runs DDL (CREATE TABLE) which causes an implicit commit
+ * in MySQL, so it must NEVER be called inside an active PDO transaction.
+ */
 function ensureUserNotificationsTable(\PDO $db): void
 {
+    static $done = false;
+    if ($done) return;
+
     $db->exec("
         CREATE TABLE IF NOT EXISTS user_notifications (
             notification_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -17,11 +26,17 @@ function ensureUserNotificationsTable(\PDO $db): void
             CONSTRAINT fk_user_notifications_user FOREIGN KEY (user_id) REFERENCES users(User_ID) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
+    $done = true;
 }
 
+/**
+ * Insert a single notification row. The caller is responsible for ensuring
+ * that ensureUserNotificationsTable() has already been called OUTSIDE of
+ * any active transaction. This function itself only runs a plain INSERT
+ * so it is safe to call inside a transaction.
+ */
 function pushUserNotification(\PDO $db, int $userId, string $title, string $message, string $severity = 'info', string $iconClass = 'ph-info'): void
 {
-    ensureUserNotificationsTable($db);
     $stmt = $db->prepare("
         INSERT INTO user_notifications (user_id, title, message, severity, icon_class)
         VALUES (:user_id, :title, :message, :severity, :icon_class)
@@ -43,4 +58,3 @@ function ensureNotificationReadColumn(\PDO $db): void
     }
 }
 ?>
-

@@ -37,9 +37,10 @@ $data = json_decode(file_get_contents("php://input"));
 $name = isset($data->name) ? trim((string)$data->name) : '';
 $description = isset($data->description) ? trim((string)$data->description) : '';
 $type = isset($data->type) ? trim((string)$data->type) : 'General';
-$dailyPenalty = isset($data->daily_penalty) ? (float)$data->daily_penalty : 0.0;
+$dailyPenalty = isset($data->daily_penalty) ? max(0, (int)$data->daily_penalty) : 0;
+$penaltyType = isset($data->penalty_type) && in_array($data->penalty_type, ['per_day', 'per_hour'], true) ? $data->penalty_type : 'per_day';
 $meetupLocation = isset($data->meetup_location) ? trim((string)$data->meetup_location) : '';
-$proposedPenalty = isset($data->proposed_penalty_amount) ? (float)$data->proposed_penalty_amount : $dailyPenalty;
+$proposedPenalty = isset($data->proposed_penalty_amount) ? max(0, (int)$data->proposed_penalty_amount) : $dailyPenalty;
 
 if ($name === '') {
     http_response_code(400);
@@ -53,16 +54,17 @@ try {
     ensureAssetLifecycleSchema($db);
     ensurePenaltySchema($db);
 
-    $query = "INSERT INTO assets (Lender_ID, asset_name, asset_type, description, meetup_location, proposed_penalty_amount, daily_penalty, status, availability)
-              VALUES (:lender_id, :asset_name, :asset_type, :description, :meetup_location, :proposed_penalty_amount, :daily_penalty, 'pending', 'unavailable')";
+    $query = "INSERT INTO assets (Lender_ID, asset_name, asset_type, description, meetup_location, proposed_penalty_amount, daily_penalty, penalty_type, status, availability)
+              VALUES (:lender_id, :asset_name, :asset_type, :description, :meetup_location, :proposed_penalty_amount, :daily_penalty, :penalty_type, 'pending', 'unavailable')";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':lender_id', (int)$decoded['id'], \PDO::PARAM_INT);
     $stmt->bindValue(':asset_name', $name);
     $stmt->bindValue(':asset_type', $type);
     $stmt->bindValue(':description', $description !== '' ? $description : null);
     $stmt->bindValue(':meetup_location', $meetupLocation !== '' ? $meetupLocation : null);
-    $stmt->bindValue(':proposed_penalty_amount', max(0, $proposedPenalty));
-    $stmt->bindValue(':daily_penalty', max(0, $dailyPenalty));
+    $stmt->bindValue(':proposed_penalty_amount', $proposedPenalty, \PDO::PARAM_INT);
+    $stmt->bindValue(':daily_penalty', $dailyPenalty, \PDO::PARAM_INT);
+    $stmt->bindValue(':penalty_type', $penaltyType);
     $stmt->execute();
 
     http_response_code(201);

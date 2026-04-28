@@ -940,8 +940,15 @@
           const initials = (firstInitial + lastInitial).toUpperCase();
 
           window.currentUserInitials = initials; // Store to reuse if avatar is removed
-          document.getElementById('navAvatar').textContent = initials;
-          document.getElementById('mainAvatar').textContent = initials;
+          
+          if (profile.profile_picture) {
+            const imgTag = `<img src="${profile.profile_picture}" alt="Profile Picture" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            document.getElementById('navAvatar').innerHTML = imgTag;
+            document.getElementById('mainAvatar').innerHTML = imgTag;
+          } else {
+            document.getElementById('navAvatar').textContent = initials;
+            document.getElementById('mainAvatar').textContent = initials;
+          }
 
           // 3. Populate Input Fields
           document.getElementById('legalNameInput').value = profile.full_name;

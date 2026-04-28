@@ -1022,7 +1022,8 @@
                             id: data.profile.id,
                             name: data.profile.full_name,
                             email: data.profile.email,
-                            role: data.profile.role
+                            role: data.profile.role,
+                            profile_picture: data.profile.profile_picture
                         };
                         window.api.setUser(user);
                     }
@@ -1030,12 +1031,20 @@
             }
 
             if (user && user.name) {
-                const firstName = user.name.split(' ')[0] || 'Admin';
-                const lastName = user.name.split(' ').slice(1).join(' ') || '';
-                document.getElementById('sidebarName').textContent = `${firstName} ${lastName}`.trim();
+                const safeName = String(user.name).trim();
+                document.getElementById('sidebarName').textContent = safeName;
                 const rawRole = (user.role || '').trim().toLowerCase();
                 document.getElementById('sidebarRole').textContent = rawRole ? (rawRole.charAt(0).toUpperCase() + rawRole.slice(1)) : 'Admin';
-                document.getElementById('sidebarAvatar').textContent = firstName.charAt(0).toUpperCase();
+                const avatarEl = document.getElementById('sidebarAvatar');
+                if (avatarEl) {
+                    if (user.profile_picture) {
+                        avatarEl.innerHTML = `<img src="${user.profile_picture}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    } else {
+                        const parts = safeName.split(/\s+/).filter(Boolean);
+                        const initials = ((parts[0] ? parts[0][0] : 'A') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+                        avatarEl.textContent = initials;
+                    }
+                }
             }
 
             await loadPendingRequests();

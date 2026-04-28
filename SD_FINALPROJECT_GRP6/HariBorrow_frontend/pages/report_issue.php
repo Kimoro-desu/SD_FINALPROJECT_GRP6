@@ -11,6 +11,8 @@
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth_guard.js"></script>
   <style>
     *,
     *::before,
@@ -463,7 +465,7 @@
     <div style="display: flex; align-items: center; gap: 16px;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <div class="profile-avatar" id="navAvatar">UN</div>
-        <span style="font-size: 14px; font-weight: 500;">User Name</span>
+        <span id="navUserName" style="font-size: 14px; font-weight: 500;">User Name</span>
       </div>
       <a href="borrower_lender_dashboard.php" class="back-btn">
         <i class="ph ph-arrow-left"></i> Dashboard

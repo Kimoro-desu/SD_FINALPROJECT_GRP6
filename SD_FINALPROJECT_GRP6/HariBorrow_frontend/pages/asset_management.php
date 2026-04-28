@@ -1220,22 +1220,20 @@
     </a>
 
     <div class="nav-right">
-      <a href="#" class="nav-back" onclick="history.back(); return false;">
-        <i class="ph ph-arrow-left"></i> Dashboard
-      </a>
+      <a href="borrower_lender_dashboard.php" class="nav-back"><i class="ph ph-arrow-left"></i> Dashboard</a>
 
       <div class="profile-menu">
         <button class="profile-btn" onclick="toggleDropdown()">
           <div class="profile-avatar" id="navAvatar">UN</div>
-          <span>User Name</span>
+          <span id="navUserName">User Name</span>
           <i class="ph ph-caret-down"></i>
         </button>
         <div class="dropdown" id="settingsDropdown">
-          <button class="drop-item"><i class="ph ph-user"></i> My Profile</button>
+          <button class="drop-item" onclick="window.location.href='my_profile.php'"><i class="ph ph-user"></i> My Profile</button>
           <button class="drop-item"><i class="ph ph-chat-circle-dots"></i> Messages <span
               style="margin-left:auto; background:var(--gold); color:#000; padding:2px 6px; border-radius:10px; font-size:10px; font-weight:700;">2</span></button>
-          <button class="drop-item"><i class="ph ph-gear"></i> Account Settings</button>
-          <button class="drop-item"><i class="ph ph-warning-circle"></i> Report an Issue</button>
+          <button class="drop-item" onclick="window.location.href='profile_settings.php'"><i class="ph ph-gear"></i> Account Settings</button>
+          <button class="drop-item" onclick="window.location.href='report_issue.php'"><i class="ph ph-warning-circle"></i> Report an Issue</button>
           <div class="drop-divider"></div>
           <button class="drop-item logout" onclick="window.api.removeToken(); window.location.href='login.php'"><i class="ph ph-sign-out"></i>
             Secure Log Out</button>
@@ -1387,9 +1385,18 @@
           <label class="form-label">Designated Meetup Location</label>
           <input class="form-input" id="assetMeetupLocation" type="text" placeholder="e.g. Engineering Lobby, Room 201">
         </div>
-        <div class="form-group">
-          <label class="form-label">Proposed Penalty Amount (PHP)</label>
-          <input class="form-input" id="assetPenalty" type="number" min="0" step="0.01" value="0" placeholder="0.00">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Penalty Amount (PHP)</label>
+            <input class="form-input" id="assetPenalty" type="number" min="0" step="1" value="0" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Penalty Type</label>
+            <select class="form-select" id="assetPenaltyType">
+              <option value="per_day">Per Day</option>
+              <option value="per_hour">Per Hour</option>
+            </select>
+          </div>
         </div>
         <div class="form-timestamp">
           <i class="ph ph-clock"></i>
@@ -1460,6 +1467,7 @@
             meetupLocation: a.meetup_location || '—',
             proposedPenaltyAmount: Number(a.proposed_penalty_amount || 0),
             dailyPenalty: Number(a.daily_penalty || 0),
+            penaltyType: a.penalty_type || 'per_day',
             lender: 'My Upload',
             lenderInitials: initials,
             status: (a.status || 'pending').toLowerCase(),
@@ -1599,6 +1607,7 @@
       document.getElementById('assetDesc').value = '';
       document.getElementById('assetMeetupLocation').value = '';
       document.getElementById('assetPenalty').value = '0';
+      document.getElementById('assetPenaltyType').value = 'per_day';
       document.getElementById('timestampDisplay').textContent = 'Will be stamped: ' + new Date().toLocaleString();
       document.getElementById('createModal').classList.add('active');
     }
@@ -1608,14 +1617,15 @@
       const type = document.getElementById('assetType').value;
       const description = document.getElementById('assetDesc').value.trim();
       const meetup_location = document.getElementById('assetMeetupLocation').value.trim();
-      const proposed_penalty_amount = Math.max(0, Number(document.getElementById('assetPenalty').value || 0));
+      const proposed_penalty_amount = Math.max(0, Math.floor(Number(document.getElementById('assetPenalty').value || 0)));
       const daily_penalty = proposed_penalty_amount;
+      const penalty_type = document.getElementById('assetPenaltyType').value;
       if (!name) { alert('Please fill in Asset Name.'); return; }
 
       try {
         await window.api.authenticatedFetch('/assets/add_asset.php', {
           method: 'POST',
-          body: { name, type, description, meetup_location, proposed_penalty_amount, daily_penalty }
+          body: { name, type, description, meetup_location, proposed_penalty_amount, daily_penalty, penalty_type }
         });
         closeModal('createModal');
         showToast(`"${name}" submitted for approval.`);
@@ -1648,22 +1658,6 @@
     document.addEventListener('mousemove', e => { document.getElementById('glow').style.setProperty('--mouse-x', e.clientX + 'px'); document.getElementById('glow').style.setProperty('--mouse-y', e.clientY + 'px'); });
 
     document.addEventListener('DOMContentLoaded', async () => {
-      let user = window.api.getUser();
-      if (!user || !user.name) {
-        try {
-          const data = await window.api.authenticatedFetch('/users/profile.php');
-          if (data?.status === 'success') {
-            user = { id: data.profile.id, name: data.profile.full_name, email: data.profile.email, role: data.profile.role };
-            window.api.setUser(user);
-          }
-        } catch (e) { console.error('Failed to fetch profile', e); }
-      }
-
-      if (user?.name) {
-        document.querySelector('.profile-btn span').textContent = user.name;
-        const initial = (user.name.split(' ')[0] || 'U').charAt(0).toUpperCase();
-        document.getElementById('navAvatar').textContent = initial;
-      }
       await loadAssets();
 
       // Auto-open the Add Asset modal when arriving from the "Submit Asset" dashboard card

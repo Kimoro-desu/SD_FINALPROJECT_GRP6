@@ -38,9 +38,14 @@ $db = $database->getConnection();
 $data = json_decode(file_get_contents("php://input"));
 
 if (!empty($data->asset_id)) {
+    // DDL migrations BEFORE transaction to avoid implicit-commit killing it
     try {
         ensureAssetLifecycleSchema($db);
+    } catch (\Exception $schemaEx) {
+        error_log('ensureAssetLifecycleSchema warning: ' . $schemaEx->getMessage());
+    }
 
+    try {
         $db->beginTransaction();
 
         // Check if the asset exists and is strictly 'Available'
@@ -119,7 +124,7 @@ if (!empty($data->asset_id)) {
         echo json_encode(["message" => "Borrow request submitted successfully. Pending approval.", "status" => "success"]);
 
     } catch (\Exception $e) {
-        $db->rollBack();
+        if ($db->inTransaction()) { $db->rollBack(); }
         http_response_code(500);
         echo json_encode(["message" => "Error: " . $e->getMessage(), "status" => "error"]);
     }

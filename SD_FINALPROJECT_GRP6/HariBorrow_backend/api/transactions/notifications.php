@@ -67,52 +67,9 @@ try {
             ];
         }
     } else {
-        // Borrower notifications: Recent Approved/Rejected/Returned requests
-        $query = "SELECT t.transaction_id, t.request_status, t.time_created, a.asset_name 
-                  FROM transactions t
-                  JOIN assets a ON t.asset_id = a.Asset_ID
-                  WHERE t.borrower_id = :uid AND t.request_status != :status
-                  ORDER BY t.time_created DESC LIMIT 10";
-        $stmt = $db->prepare($query);
-        $status = Database::STATUS_PENDING;
-        $stmt->bindParam(':uid', $user_id);
-        $stmt->bindParam(':status', $status);
-        $stmt->execute();
-
-        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-            $status = $row['request_status'];
-            $title = ""; $message = ""; $severity = ""; $icon = "";
-            
-            if ($status === Database::STATUS_APPROVED) {
-                $title = "Request Approved";
-                $message = "You can now borrow {$row['asset_name']}";
-                $severity = "info";
-                $icon = "ph-check-circle";
-            } elseif ($status === Database::STATUS_REJECTED) {
-                $title = "Request Rejected";
-                $message = "Your request for {$row['asset_name']} was denied";
-                $severity = "danger";
-                $icon = "ph-x-circle";
-            } elseif ($status === Database::STATUS_RETURNED) {
-                $title = "Asset Returned";
-                $message = "{$row['asset_name']} was marked as returned";
-                $severity = "info"; 
-                $icon = "ph-arrow-u-down-left";
-            }
-
-            if ($title !== "") {
-                $notifications[] = [
-                    "transaction_id" => $row['transaction_id'],
-                    "notification_id" => null,
-                    "title" => $title,
-                    "message" => $message,
-                    "severity" => $severity,
-                    "icon_class" => $icon,
-                    "time_ago" => $row['time_created'],
-                    "is_read" => true
-                ];
-            }
-        }
+        // Borrower notifications are handled via user_notifications table
+        // (populated by pushUserNotification on approve/reject/return).
+        // No synthetic transaction-scan notifications needed here.
     }
 
     // User-specific notifications (asset approvals/rejections, etc.)

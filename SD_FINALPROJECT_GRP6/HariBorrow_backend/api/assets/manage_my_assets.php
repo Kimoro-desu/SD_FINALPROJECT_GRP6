@@ -43,7 +43,7 @@ try {
     ensurePenaltySchema($db);
 
     if ($method === 'GET') {
-        $q = "SELECT Asset_ID, asset_name, description, meetup_location, proposed_penalty_amount, daily_penalty, Lender_ID, status, availability, asset_type, time_created
+        $q = "SELECT Asset_ID, asset_name, description, meetup_location, proposed_penalty_amount, daily_penalty, penalty_type, Lender_ID, status, availability, asset_type, time_created
               FROM assets
               WHERE Lender_ID = :uid
               ORDER BY time_created DESC";
@@ -58,8 +58,9 @@ try {
                 "name" => $row['asset_name'],
                 "description" => $row['description'],
                 "meetup_location" => $row['meetup_location'],
-                "proposed_penalty_amount" => (float)($row['proposed_penalty_amount'] ?? 0),
-                "daily_penalty" => (float)($row['daily_penalty'] ?? 0),
+                "proposed_penalty_amount" => (int)($row['proposed_penalty_amount'] ?? 0),
+                "daily_penalty" => (int)($row['daily_penalty'] ?? 0),
+                "penalty_type" => $row['penalty_type'] ?? 'per_day',
                 "lender_id" => (int)$row['Lender_ID'],
                 "status" => strtolower((string)$row['status']),
                 "availability" => strtolower((string)$row['availability']),
@@ -86,13 +87,15 @@ try {
         $hasPenalty = isset($payload->daily_penalty);
         $hasProposedPenalty = isset($payload->proposed_penalty_amount);
         $hasMeetupLocation = property_exists($payload, 'meetup_location');
-        $dailyPenalty = $hasPenalty ? max(0, (float)$payload->daily_penalty) : 0.0;
-        $proposedPenalty = $hasProposedPenalty ? max(0, (float)$payload->proposed_penalty_amount) : 0.0;
+        $hasPenaltyType = isset($payload->penalty_type) && in_array($payload->penalty_type, ['per_day', 'per_hour'], true);
+        $dailyPenalty = $hasPenalty ? max(0, (int)$payload->daily_penalty) : 0;
+        $proposedPenalty = $hasProposedPenalty ? max(0, (int)$payload->proposed_penalty_amount) : 0;
         $meetupLocation = $hasMeetupLocation ? trim((string)$payload->meetup_location) : '';
+        $penaltyType = $hasPenaltyType ? $payload->penalty_type : 'per_day';
 
-        if (!$hasAvailability && !$hasPenalty && !$hasProposedPenalty && !$hasMeetupLocation) {
+        if (!$hasAvailability && !$hasPenalty && !$hasProposedPenalty && !$hasMeetupLocation && !$hasPenaltyType) {
             http_response_code(400);
-            die(json_encode(["message" => "Provide at least one field to update (availability, daily_penalty, proposed_penalty_amount, meetup_location).", "status" => "error"]));
+            die(json_encode(["message" => "Provide at least one field to update (availability, daily_penalty, penalty_type, proposed_penalty_amount, meetup_location).", "status" => "error"]));
         }
         if ($hasAvailability && !in_array($availability, ['available', 'unavailable'], true)) {
             http_response_code(400);
@@ -116,6 +119,10 @@ try {
         if ($hasMeetupLocation) {
             $setParts[] = "meetup_location = :meetup_location";
             $params[':meetup_location'] = $meetupLocation !== '' ? $meetupLocation : null;
+        }
+        if ($hasPenaltyType) {
+            $setParts[] = "penalty_type = :penalty_type";
+            $params[':penalty_type'] = $penaltyType;
         }
 
         $q = "UPDATE assets SET " . implode(', ', $setParts) . " WHERE Asset_ID = :id AND Lender_ID = :uid";
