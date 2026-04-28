@@ -1,0 +1,1043 @@
+<?php require_once '../includes/config.php'; ?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HariBorrow — PLM Assets & Borrowing Gateway</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-deep: #030304;
+      --glass: rgba(10, 10, 13, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.05);
+      --gold: #E5C07B;
+      --gold-light: #FCEBAF;
+      --gold-dark: #A68A48;
+      --gold-dim: rgba(229, 192, 123, 0.1);
+      --gold-glow: rgba(229, 192, 123, 0.35);
+      --text-1: #FFFFFF;
+      --text-2: #A39E93;
+      --text-3: #6B665A;
+    }
+
+    html,
+    body {
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-deep);
+      color: var(--text-1);
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-3);
+      border-radius: 4px;
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--text-3) transparent;
+    }
+
+    .bg-mesh {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 15% 50%, rgba(229, 192, 123, 0.05), transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(166, 138, 72, 0.07), transparent 50%),
+        var(--bg-deep);
+      animation: pulseBg 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulseBg {
+      0% {
+        transform: scale(1);
+      }
+
+      100% {
+        transform: scale(1.05);
+      }
+    }
+
+    .ambient-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      background: radial-gradient(500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.08), transparent 50%);
+      z-index: 9999;
+      transition: background 0.15s ease;
+      mix-blend-mode: screen;
+    }
+
+    .page {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── LEFT PANEL ── */
+    .left {
+      position: relative;
+      background: var(--glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 64px 80px;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    .left::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 55vw;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+      z-index: 2;
+      opacity: 0.6;
+    }
+
+    .brand {
+      position: relative;
+      z-index: 1;
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+      margin-bottom: 50px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 40px;
+    }
+
+    .eagle-mark {
+      height: 72px;
+      width: auto;
+      flex-shrink: 0;
+      object-fit: contain;
+      filter: drop-shadow(0 0 15px rgba(229, 192, 123, 0.4)) brightness(1.2) contrast(1.3) saturate(1.4);
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+    }
+
+    .eagle-mark:hover {
+      transform: scale(1.08) rotate(-2deg);
+      filter: drop-shadow(0 0 25px var(--gold)) brightness(1.4) contrast(1.4) saturate(1.6);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, #FFFFFF 0%, #FCEBAF 40%, #E5C07B 75%, #A68A48 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 12px rgba(229, 192, 123, 0.45));
+      line-height: 1;
+    }
+
+    .brand-tagline {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+
+    .headline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 56px;
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      margin-bottom: 24px;
+      color: var(--text-1);
+    }
+
+    .aesthetic-script {
+      font-family: 'Pinyon Script', cursive;
+      font-size: 1.5em;
+      font-weight: 400;
+      color: var(--gold-light);
+      display: inline-block;
+      padding-top: 10px;
+      line-height: 0.8;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 24px rgba(229, 192, 123, 0.5);
+    }
+
+    .sub {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text-2);
+      line-height: 1.7;
+      max-width: 400px;
+      border-left: 2px solid var(--gold);
+      padding-left: 24px;
+      margin-top: 12px;
+    }
+
+    .catalog {
+      position: relative;
+      z-index: 1;
+      animation: fadeUp 0.8s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+      margin-bottom: 40px;
+      flex-grow: 1;
+    }
+
+    .mod-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 8px;
+      display: inline-block;
+    }
+
+    .mod-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .catalog-item {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 14px 20px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: default;
+    }
+
+    .catalog-item:hover {
+      background: var(--gold-dim);
+      border: 1px solid rgba(229, 192, 123, 0.2);
+      transform: translateX(6px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .mod-icon {
+      font-size: 26px;
+      color: var(--gold);
+      opacity: 0.9;
+      filter: drop-shadow(0 0 8px rgba(229, 192, 123, 0.4));
+    }
+
+    .mod-name-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mod-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-1);
+      letter-spacing: 0.02em;
+    }
+
+    .mod-desc {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-2);
+      margin-top: 2px;
+    }
+
+    .left-foot {
+      position: relative;
+      z-index: 1;
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-3);
+      letter-spacing: 0.1em;
+      padding-bottom: 20px;
+      animation: fadeUp 0.8s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* ── RIGHT PANEL ── */
+    .right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 64px 72px;
+      background: rgba(5, 5, 7, 0.4);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      position: relative;
+      overflow-y: auto;
+      height: 100vh;
+      box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .mobile-brand {
+      display: none;
+    }
+
+    .form-wrap {
+      width: 100%;
+      max-width: 380px;
+      margin: auto 0;
+    }
+
+    .view-section {
+      display: none;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    .form-head {
+      margin-bottom: 48px;
+    }
+
+    .form-head h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      color: var(--text-1);
+      margin-bottom: 8px;
+      line-height: 1.1;
+    }
+
+    .form-head p {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-2);
+      letter-spacing: 0.03em;
+      margin-top: 16px;
+    }
+
+    .alert {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 28px;
+      letter-spacing: 0.03em;
+      font-weight: 500;
+    }
+
+    .alert.err {
+      display: flex;
+      background: rgba(220, 53, 69, 0.1);
+      border-left: 3px solid #dc3545;
+      color: #ff8a96;
+    }
+
+    .alert.ok {
+      display: flex;
+      background: var(--gold-dim);
+      border-left: 3px solid var(--gold);
+      color: var(--gold-light);
+    }
+
+    .field {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+
+    .inp-wrap {
+      position: relative;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 16px 48px 16px 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      color: var(--text-1);
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 300;
+      outline: none;
+      transition: all 0.3s ease;
+      letter-spacing: 0.04em;
+    }
+
+    input::placeholder {
+      color: var(--text-3);
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+    }
+
+    input:focus {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--gold);
+      box-shadow: 0 0 20px rgba(229, 192, 123, 0.15), inset 0 0 10px rgba(229, 192, 123, 0.05);
+    }
+
+    .field:focus-within label {
+      color: var(--gold-light);
+    }
+
+    .pw-btn {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .pw-btn:hover {
+      color: var(--gold);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0 28px;
+      gap: 10px;
+    }
+
+    .remember {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-2);
+      cursor: pointer;
+      user-select: none;
+      letter-spacing: 0.02em;
+      margin: 0;
+    }
+
+    .remember input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--gold);
+      cursor: pointer;
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--gold);
+    }
+
+    .link {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--gold);
+      text-decoration: none;
+      opacity: 0.8;
+      letter-spacing: 0.04em;
+      transition: opacity 0.2s;
+      cursor: pointer;
+    }
+
+    .link:hover {
+      opacity: 1;
+      text-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      color: var(--gold);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(229, 192, 123, 0.4), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+
+    .btn span {
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s;
+    }
+
+    .btn:hover {
+      background: var(--gold);
+      border-color: var(--gold);
+      box-shadow: 0 10px 40px rgba(229, 192, 123, 0.3);
+    }
+
+    .btn:hover span {
+      color: var(--bg-deep);
+      font-weight: 600;
+    }
+
+    .btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .terms-section {
+      position: relative;
+      padding: 20px;
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .terms-section h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--gold);
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .terms-section p {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-2);
+      line-height: 1.7;
+      letter-spacing: 0.04em;
+    }
+
+    .form-foot {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-3);
+      margin-top: 24px;
+      letter-spacing: 0.04em;
+      padding-bottom: 40px;
+    }
+
+    .form-foot a {
+      color: var(--gold);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+      border-bottom: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .form-foot a:hover {
+      opacity: 1;
+      border-bottom-color: var(--gold);
+    }
+
+    /* ── FAQ MODAL OVERLAY ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 3, 4, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: rgba(10, 10, 13, 0.8);
+      border: 1px solid var(--gold-border);
+      border-radius: 12px;
+      padding: 48px;
+      max-width: 600px;
+      width: 90%;
+      position: relative;
+      transform: translateY(20px) scale(0.98);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0) scale(1);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: none;
+      border: none;
+      color: var(--text-3);
+      font-size: 28px;
+      cursor: pointer;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: var(--gold);
+    }
+
+    .faq-item {
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 16px;
+    }
+
+    .faq-item:last-child {
+      margin-bottom: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .faq-q {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .faq-a {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-2);
+      line-height: 1.7;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ── RESPONSIVE MOBILE VIEW ── */
+    @media (max-width: 900px) {
+      .page {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      .left {
+        display: none;
+      }
+
+      .right {
+        padding: 40px 24px;
+        height: auto;
+        min-height: 100vh;
+        overflow-y: visible;
+        justify-content: flex-start;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+
+      .mobile-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 40px;
+        animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        margin-top: 6vh;
+      }
+
+      .mobile-logo {
+        height: 64px;
+        width: auto;
+        margin-bottom: 16px;
+        filter: drop-shadow(0 0 15px rgba(229, 192, 123, 0.4)) brightness(1.2) contrast(1.3) saturate(1.4);
+      }
+
+      .mobile-name {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 28px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #FFF 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1;
+      }
+
+      .mobile-tagline {
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-top: 8px;
+        opacity: 0.9;
+      }
+
+      .form-head {
+        text-align: center;
+      }
+
+      .modal-content {
+        padding: 32px 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="bg-mesh"></div>
+  <div class="ambient-glow" id="glow"></div>
+
+  <div class="page">
+    <div class="left">
+      <div class="brand">
+        <div class="logo">
+          <img class="eagle-mark" src="<?php echo htmlspecialchars($logoPath); ?>" alt="HariBorrow Logo">
+
+          <div class="brand-text">
+            <div class="brand-name">HariBorrow</div>
+            <div class="brand-tagline">Pamantasan Assets Borrowing</div>
+          </div>
+        </div>
+
+        <h1 class="headline">
+          Bridging Needs with<br>
+          <span class="aesthetic-script">Excellence.</span>
+        </h1>
+
+        <p class="sub">A centralized, high-security campus platform connecting students and faculty with essential
+          academic resources.</p>
+      </div>
+
+      <div class="catalog">
+        <div class="mod-label">Available Resources Overview</div>
+
+        <div class="mod-list">
+          <div class="catalog-item">
+            <i class="ph ph-projector-screen mod-icon"></i>
+            <div class="mod-name-group">
+              <span class="mod-name">Presentation & Visuals</span>
+              <span class="mod-desc">LCD Projectors, projection screens, and laser clickers</span>
+            </div>
+          </div>
+          <div class="catalog-item">
+            <i class="ph ph-speaker-high mod-icon"></i>
+            <div class="mod-name-group">
+              <span class="mod-name">Audio & PA Systems</span>
+              <span class="mod-desc">Microphones, wireless speakers, and sound boards</span>
+            </div>
+          </div>
+          <div class="catalog-item">
+            <i class="ph ph-compass-tool mod-icon"></i>
+            <div class="mod-name-group">
+              <span class="mod-name">Engineering & Technical</span>
+              <span class="mod-desc">Multimeters, scientific calculators, and surveying tools</span>
+            </div>
+          </div>
+          <div class="catalog-item">
+            <i class="ph ph-stethoscope mod-icon"></i>
+            <div class="mod-name-group">
+              <span class="mod-name">Nursing & Allied Health</span>
+              <span class="mod-desc">Sphygmomanometers, clinical manikins, and trauma kits</span>
+            </div>
+          </div>
+          <div class="catalog-item">
+            <i class="ph ph-flask mod-icon"></i>
+            <div class="mod-name-group">
+              <span class="mod-name">Science & Laboratory</span>
+              <span class="mod-desc">Microscopes, centrifuges, and precision analytical scales</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="left-foot">© 2026 HariBorrow — Premium Campus Systems</div>
+    </div>
+
+    <div class="right">
+
+      <div class="mobile-brand">
+        <img class="mobile-logo" src="<?php echo htmlspecialchars($logoPath); ?>" alt="HariBorrow Logo">
+        <div class="mobile-name">HariBorrow</div>
+        <div class="mobile-tagline">Pamantasan Asset Gateway</div>
+      </div>
+
+      <div class="form-wrap">
+
+        <div class="alert" id="alert"></div>
+
+        <div id="loginView" class="view-section active">
+          <div class="form-head">
+            <h2>Secure<br><span class="aesthetic-script">Gateway.</span></h2>
+            <p>Authenticate your university credentials</p>
+          </div>
+
+          <form onsubmit="event.preventDefault(); handleAuth(event, 'loginBtn')">
+            <div class="field">
+              <label>Student / Faculty Email</label>
+              <div class="inp-wrap">
+                <input type="email" id="email" placeholder="student@university.edu.ph" autocomplete="email" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Account Password</label>
+              <div class="inp-wrap">
+                <input type="password" id="password" placeholder="Enter your password" required>
+                <button type="button" class="pw-btn" onclick="togglePw('password', this)">Show</button>
+              </div>
+            </div>
+
+            <div class="row">
+              <label class="remember">
+                <input type="checkbox"> Keep me signed in
+              </label>
+              <a class="link">Reset Password</a>
+            </div>
+
+            <button type="submit" class="btn" id="loginBtn">
+              <span>Log In</span>
+            </button>
+          </form>
+
+          <div class="terms-section">
+            <h3>Campus Accountability</h3>
+            <p>By accessing this system, you assume full responsibility for requested equipment. Late returns or damages
+              will result in administrative holds.</p>
+          </div>
+
+          <div class="form-foot">
+            Don't have an account? <a href="sign_up.php">Sign Up Here</a><br><br>
+            Need support? <a onclick="toggleFaq()">Read the FAQ</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div id="faqModal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="close-btn" onclick="toggleFaq()">×</button>
+
+      <h2 class="headline" style="font-size: 38px; margin-bottom: 32px;">
+        Frequently Asked<br><span class="aesthetic-script">Questions.</span>
+      </h2>
+
+      <div class="faq-item">
+        <div class="faq-q">Who is eligible to borrow equipment?</div>
+        <div class="faq-a">All currently enrolled students and active faculty members with a valid Pamantasan email
+          address are eligible to register and request resources through HariBorrow.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">How long is the standard borrowing period?</div>
+        <div class="faq-a">Most technical and presentation equipment is loaned for a standard 24 to 48-hour window.
+          Specific laboratory tools may require same-day return depending on department policy.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">What happens if an item is damaged or lost?</div>
+        <div class="faq-a">Under the Campus Accountability clause, the borrower assumes full financial responsibility.
+          Damages or loss will result in immediate administrative holds preventing enrollment or graduation clearance
+          until the item is replaced or repaired.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">How do I track my return deadlines?</div>
+        <div class="faq-a">Once your account is approved and you log in, your personalized dashboard will display live
+          countdowns and status updates for all your active borrow requests.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    // Mouse Glow
+    const glow = document.getElementById('glow');
+    document.addEventListener('mousemove', (e) => {
+      glow.style.setProperty('--mouse-x', e.clientX + 'px');
+      glow.style.setProperty('--mouse-y', e.clientY + 'px');
+    });
+
+    // Toggle FAQ Modal
+    function toggleFaq() {
+      const modal = document.getElementById('faqModal');
+      modal.classList.toggle('active');
+    }
+
+    // Toggle Password Visibility
+    function togglePw(inputId, btn) {
+      const pw = document.getElementById(inputId);
+      const hidden = pw.type === 'password';
+      pw.type = hidden ? 'text' : 'password';
+      btn.textContent = hidden ? 'Hide' : 'Show';
+    }
+
+    // Alert System
+    function showAlert(msg, type) {
+      const el = document.getElementById('alert');
+      el.textContent = msg;
+      el.style.display = 'flex';
+      el.className = 'alert ' + type;
+    }
+
+    // Form Submission
+    async function handleAuth(e, btnId) {
+      e.preventDefault();
+      const btn = document.getElementById(btnId);
+      const textSpan = btn.querySelector('span');
+      const originalText = textSpan.textContent;
+
+      textSpan.textContent = 'Authenticating...';
+      btn.disabled = true;
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await window.api.rawFetch('/api/auth/login.php', {
+          method: 'POST',
+          body: { email, password }
+        });
+
+        if (response && response.status === 'success') {
+          // Save data to local storage
+          window.api.setToken(response.token);
+          window.api.setUser(response.user);
+
+          showAlert('✦ Login successful. Accessing dashboard...', 'ok');
+
+          // Route based on role
+          setTimeout(() => {
+            const role = (response.user && response.user.role) ? response.user.role.trim().toLowerCase() : '';
+
+            if (role === 'admin') {
+              window.location.href = 'admin_dashboard.php';
+            } else {
+              window.location.href = 'borrower_lender_dashboard.php';
+            }
+          }, 1200);
+
+        } else {
+          const errorMsg = (response && response.message) ? response.message : 'Invalid credentials.';
+          showAlert('✦ ' + errorMsg, 'err');
+          textSpan.textContent = originalText;
+          btn.disabled = false;
+        }
+      } catch (error) {
+        const msg =
+          (error && (error.message || error?.data?.message)) ||
+          'Server error occurred. Please try again later.';
+        showAlert('✦ ' + msg, 'err');
+        textSpan.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+
+  </script>
+</body>
+
+</html>
