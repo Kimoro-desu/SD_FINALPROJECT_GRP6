@@ -738,10 +738,10 @@
 
     <div class="data-panel" id="borrowsPanel">
       <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
-        <div class="panel-title">Transaction History</div>
+        <div class="panel-title">Borrowing History</div>
         <div class="role-toggle" style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 40px; padding: 4px; display: inline-flex;">
-          <button class="role-btn active" id="tabBorrower" onclick="switchHistoryTab('borrower')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--gold-light); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">Borrowing</button>
-          <button class="role-btn" id="tabLender" onclick="switchHistoryTab('lender')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--text-2); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">Lending</button>
+          <button class="role-btn active" id="tabAll" onclick="switchBorrowTab('all')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--gold-light); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">All History</button>
+          <button class="role-btn" id="tabActive" onclick="switchBorrowTab('active')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--text-2); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">Active Borrowings</button>
         </div>
       </div>
       <div style="overflow-x:auto;">
@@ -836,12 +836,12 @@
     let typeFilter = '';
     let myBorrowings = [];
     let borrowingsById = {};
-    let currentHistoryTab = 'borrower';
+    let currentBorrowTab = 'all';
 
-    function switchHistoryTab(tab) {
-      currentHistoryTab = tab;
-      document.getElementById('tabBorrower').style.color = tab === 'borrower' ? 'var(--gold-light)' : 'var(--text-2)';
-      document.getElementById('tabLender').style.color = tab === 'lender' ? 'var(--gold-light)' : 'var(--text-2)';
+    function switchBorrowTab(tab) {
+      currentBorrowTab = tab;
+      document.getElementById('tabAll').style.color = tab === 'all' ? 'var(--gold-light)' : 'var(--text-2)';
+      document.getElementById('tabActive').style.color = tab === 'active' ? 'var(--gold-light)' : 'var(--text-2)';
       renderBorrowsPanel();
     }
 
@@ -903,16 +903,17 @@
       try {
         const res = await window.api.authenticatedFetch('/transactions/history.php');
         const history = Array.isArray(res?.history) ? res.history : [];
-        const user = window.api.getUser();
-        const uid = Number(user?.id || 0);
-        const mine = history.filter(tx => Number(tx?.borrower?.id || 0) === uid || Number(tx?.lender?.id || 0) === uid);
-        myBorrowings = mine.sort((a, b) => {
+        // The API already filters to the current user's transactions and attaches
+        // is_current_user_borrower / is_current_user_lender flags.
+        myBorrowings = history.sort((a, b) => {
           const aTs = new Date(a?.dates?.borrowed || a?.dates?.requested || 0).getTime() || 0;
           const bTs = new Date(b?.dates?.borrowed || b?.dates?.requested || 0).getTime() || 0;
           return bTs - aTs;
         });
 
-        const openCount = mine.filter(tx => {
+        // Count open borrower-side transactions for the badge
+        const openCount = myBorrowings.filter(tx => {
+          if (!tx?.is_current_user_borrower) return false;
           const st = String(tx?.status || '').toLowerCase();
           const returned = Boolean(tx?.dates?.returned);
           return ((st === 'approved' || st === 'confirmed' || st === 'active') && !returned) || st === 'pending';
@@ -1059,10 +1060,19 @@
       const tbody = document.getElementById('borrowsTableBody');
       if (!tbody) return;
 
-      const filteredHistory = myBorrowings.filter(tx => tx.role === currentHistoryTab);
+      // Only show transactions where the current user is the borrower
+      let filteredHistory = myBorrowings.filter(tx => tx?.is_current_user_borrower === true);
+
+      if (currentBorrowTab === 'active') {
+        filteredHistory = filteredHistory.filter(tx => {
+          const st = String(tx?.status || '').toLowerCase();
+          const returned = Boolean(tx?.dates?.returned);
+          return ((st === 'approved' || st === 'confirmed' || st === 'active') && !returned) || st === 'pending' || (st === 'overdue' && !returned);
+        });
+      }
 
       if (!filteredHistory.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; color: var(--text-3); text-align: center;">You have no ' + currentHistoryTab + ' history yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; color: var(--text-3); text-align: center;">You have no ' + (currentBorrowTab === 'active' ? 'active borrowings' : 'borrowing history') + ' yet.</td></tr>';
         return;
       }
 
