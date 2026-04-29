@@ -1230,8 +1230,6 @@
         </button>
         <div class="dropdown" id="settingsDropdown">
           <button class="drop-item" onclick="window.location.href='my_profile.php'"><i class="ph ph-user"></i> My Profile</button>
-          <button class="drop-item"><i class="ph ph-chat-circle-dots"></i> Messages <span
-              style="margin-left:auto; background:var(--gold); color:#000; padding:2px 6px; border-radius:10px; font-size:10px; font-weight:700;">2</span></button>
           <button class="drop-item" onclick="window.location.href='profile_settings.php'"><i class="ph ph-gear"></i> Account Settings</button>
           <button class="drop-item" onclick="window.location.href='report_issue.php'"><i class="ph ph-warning-circle"></i> Report an Issue</button>
           <div class="drop-divider"></div>
