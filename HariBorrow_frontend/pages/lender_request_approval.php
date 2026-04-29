@@ -254,7 +254,7 @@
   <nav class="nav-menu">
     <a href="borrower_lender_dashboard.php" class="nav-link"><i class="ph ph-squares-four"></i> Dashboard</a>
     <div class="nav-section-title">Operations</div>
-    <a href="#" class="nav-link active"><i class="ph ph-bell-ringing"></i> Pending Approvals</a>
+    <a href="#" class="nav-link active"><i class="ph ph-bell-ringing"></i> Pending Approvals <span class="nav-badge" id="pendingBadge" style="display:none; margin-left: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;">0</span></a>
     <a href="asset_management.php" class="nav-link"><i class="ph ph-stack"></i> Asset Management</a>
   </nav>
 
@@ -403,7 +403,14 @@
               
               if (pendingRequests.length === 0) {
                   tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No pending requests to confirm.</td></tr>';
+                  if (document.getElementById('pendingBadge')) document.getElementById('pendingBadge').style.display = 'none';
                   return;
+              }
+
+              const badge = document.getElementById('pendingBadge');
+              if (badge) {
+                  badge.textContent = pendingRequests.length;
+                  badge.style.display = 'inline-block';
               }
 
               window.currentRequests = pendingRequests; // Store for modal

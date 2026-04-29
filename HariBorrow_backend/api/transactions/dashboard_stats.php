@@ -54,9 +54,15 @@ try {
     // If user is admin/staff/lender, count pending requests waiting for approval
     $allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF, Database::ROLE_STUDENT, Database::ROLE_FACULTY, Database::ROLE_RESEARCHER];
     if (in_array($role, $allowed_roles)) {
-        $query2 = "SELECT COUNT(*) as pending_count FROM transactions 
-                   WHERE request_status = :status";
-        $stmt2 = $db->prepare($query2);
+        if ($role === Database::ROLE_ADMIN) {
+            $query2 = "SELECT COUNT(*) as pending_count FROM transactions WHERE request_status = :status";
+            $stmt2 = $db->prepare($query2);
+        } else {
+            $query2 = "SELECT COUNT(t.transaction_id) as pending_count FROM transactions t JOIN assets a ON t.asset_id = a.Asset_ID WHERE t.request_status = :status AND a.Lender_ID = :uid";
+            $stmt2 = $db->prepare($query2);
+            $stmt2->bindParam(':uid', $user_id);
+        }
+        
         $status2 = Database::STATUS_PENDING;
         $stmt2->bindParam(':status', $status2);
         $stmt2->execute();
