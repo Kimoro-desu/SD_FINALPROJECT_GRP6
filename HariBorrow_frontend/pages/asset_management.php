@@ -9,9 +9,9 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
     rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="../js/auth_guard.js"></script>
-    <script src="../js/api.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="../js/auth_guard.js"></script>
+  <script src="../js/api.js"></script>
   <style>
     *,
     *::before,
@@ -343,7 +343,7 @@
     /* ── STATS BAR ── */
     .stats-bar {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 28px;
       animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
@@ -461,7 +461,6 @@
 
     .filter-select {
       background: var(--glass);
-      background-color: #1a1a22;
       border: 1px solid var(--glass-border);
       border-radius: 10px;
       padding: 11px 36px 11px 14px;
@@ -475,11 +474,6 @@
       background-repeat: no-repeat;
       background-position: right 12px center;
       transition: border-color 0.2s;
-    }
-
-    .filter-select option {
-      background-color: #1a1a22;
-      color: var(--text-1);
     }
 
     .filter-select:focus {
@@ -952,13 +946,6 @@
     .form-select {
       appearance: none;
       cursor: pointer;
-      background-color: #1a1a22;
-      color: var(--text-1);
-    }
-
-    .form-select option {
-      background-color: #1a1a22;
-      color: var(--text-1);
     }
 
     .form-textarea {
@@ -1298,6 +1285,20 @@
         padding: 12px 10px;
       }
     }
+
+    .filter-select option,
+    .form-select option {
+      background-color: #1a1a22;
+      color: #e2ddd6;
+      padding: 8px 12px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .filter-select option:checked,
+    .form-select option:checked {
+      background-color: #2a2a35;
+      color: var(--gold-light);
+    }
   </style>
 </head>
 
@@ -1322,11 +1323,15 @@
           <i class="ph ph-caret-down"></i>
         </button>
         <div class="dropdown" id="settingsDropdown">
-          <button class="drop-item" onclick="window.location.href='my_profile.php'"><i class="ph ph-user"></i> My Profile</button>
-          <button class="drop-item" onclick="window.location.href='profile_settings.php'"><i class="ph ph-gear"></i> Account Settings</button>
-          <button class="drop-item" onclick="window.location.href='report_issue.php'"><i class="ph ph-warning-circle"></i> Report an Issue</button>
+          <button class="drop-item" onclick="window.location.href='my_profile.php'"><i class="ph ph-user"></i> My
+            Profile</button>
+          <button class="drop-item" onclick="window.location.href='profile_settings.php'"><i class="ph ph-gear"></i>
+            Account Settings</button>
+          <button class="drop-item" onclick="window.location.href='report_issue.php'"><i
+              class="ph ph-warning-circle"></i> Report an Issue</button>
           <div class="drop-divider"></div>
-          <button class="drop-item logout" onclick="window.api.removeToken(); window.location.href='login.php'"><i class="ph ph-sign-out"></i>
+          <button class="drop-item logout" onclick="window.api.removeToken(); window.location.href='login.php'"><i
+              class="ph ph-sign-out"></i>
             Secure Log Out</button>
         </div>
       </div>
@@ -1401,8 +1406,7 @@
         <option value="">All Status</option>
         <option value="Available">Available</option>
         <option value="Borrowed">Borrowed</option>
-        <option value="Maintenance">Maintenance</option>
-        <option value="Pending">Pending</option>
+        <option value="Unavailable">Unavailable</option>
       </select>
       <div class="view-toggle">
         <button class="view-btn active" onclick="setView('table', this)" title="Table view"><i
@@ -1412,7 +1416,7 @@
       </div>
     </div>
 
-    <div class="asset-table-wrap" id="catalogTable">
+    <div class="asset-table-wrap">
       <table id="assetTable">
         <thead>
           <tr>
@@ -1426,13 +1430,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="assetTableBody">
-          <tr>
-            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-3);">
-              Loading your assets...
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="assetTableBody"></tbody>
       </table>
       <div class="pagination">
         <span class="pagination-info" id="paginationInfo"></span>
@@ -1502,8 +1500,7 @@
             <label class="form-label">Initial Status</label>
             <select class="form-select" id="assetStatus">
               <option>Available</option>
-              <option>Maintenance</option>
-              <option>Pending</option>
+              <option>Unavailable</option>
             </select>
           </div>
         </div>
@@ -1522,28 +1519,35 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Penalty Amount (PHP)</label>
-            <input class="form-input" id="assetPenalty" type="number" min="0" step="1" value="0" placeholder="0">
+            <input class="form-input" id="assetPenalty" type="number" min="0" max="10000" step="1" value="0"
+              placeholder="0">
           </div>
           <div class="form-group">
             <label class="form-label">Penalty Type</label>
             <select class="form-select" id="assetPenaltyType">
               <option value="per_day">Per Day</option>
               <option value="per_hour">Per Hour</option>
-              <option value="one_time">One-Time Flat Fee</option>
             </select>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Asset Photo (optional)</label>
-          <div id="assetImagePreviewWrap" style="display:none; margin-bottom:12px; position:relative; width:120px; height:120px; border-radius:12px; overflow:hidden; border:1px solid var(--glass-border);">
+          <div id="assetImagePreviewWrap"
+            style="display:none; margin-bottom:12px; position:relative; width:120px; height:120px; border-radius:12px; overflow:hidden; border:1px solid var(--glass-border);">
             <img id="assetImagePreview" src="" alt="Preview" style="width:100%;height:100%;object-fit:cover;">
-            <button type="button" onclick="clearAssetImage()" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);border:1px solid var(--glass-border);color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-x"></i></button>
+            <button type="button" onclick="clearAssetImage()"
+              style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);border:1px solid var(--glass-border);color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i
+                class="ph ph-x"></i></button>
           </div>
-          <label for="assetImageInput" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px dashed var(--glass-border);border-radius:10px;padding:14px 20px;cursor:pointer;color:var(--text-2);font-size:13px;transition:all 0.2s;width:100%;justify-content:center;" onmouseover="this.style.borderColor='rgba(229,192,123,0.4)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+          <label for="assetImageInput"
+            style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px dashed var(--glass-border);border-radius:10px;padding:14px 20px;cursor:pointer;color:var(--text-2);font-size:13px;transition:all 0.2s;width:100%;justify-content:center;"
+            onmouseover="this.style.borderColor='rgba(229,192,123,0.4)'"
+            onmouseout="this.style.borderColor='var(--glass-border)'">
             <i class="ph ph-camera" style="font-size:20px;color:var(--gold);"></i>
             <span id="assetImageLabel">Click to upload a photo of the asset</span>
           </label>
-          <input type="file" id="assetImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;" onchange="previewAssetImage(this)">
+          <input type="file" id="assetImageInput" accept="image/jpeg,image/png,image/gif,image/webp"
+            style="display:none;" onchange="previewAssetImage(this)">
         </div>
         <div class="form-timestamp">
           <i class="ph ph-clock"></i>
@@ -1554,51 +1558,6 @@
         <div class="form-footer">
           <button class="btn-ghost" onclick="closeModal('createModal')">Cancel</button>
           <button class="btn-submit" onclick="saveAsset()">Create Asset</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- EDIT ASSET MODAL -->
-  <div class="modal-overlay" id="editModal">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">Edit Asset Details</div>
-        <button class="modal-close" onclick="closeModal('editModal')"><i class="ph ph-x"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="editAssetId">
-        <div class="form-group">
-          <label class="form-label">Designated Meetup Location</label>
-          <input class="form-input" id="editMeetupLocation" type="text" placeholder="e.g. Engineering Lobby, Room 201">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Description (optional)</label>
-          <textarea class="form-textarea" id="editDescription" placeholder="Brief description of this asset…"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Penalty Amount (PHP)</label>
-            <input class="form-input" id="editPenalty" type="number" min="0" step="1" value="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Penalty Type</label>
-            <select class="form-select" id="editPenaltyType">
-              <option value="per_day">Per Day</option>
-              <option value="per_hour">Per Hour</option>
-              <option value="one_time">One-Time Flat Fee</option>
-            </select>
-          </div>
-        </div>
-        <p style="font-size:12px; color:var(--text-3); margin-top:-8px;">
-          <i class="ph ph-info"></i>
-          <em>One-Time</em> charges the penalty amount once upon late/damaged return, regardless of how many days/hours overdue.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <div class="form-footer">
-          <button class="btn-ghost" onclick="closeModal('editModal')">Cancel</button>
-          <button class="btn-submit" onclick="saveEdit()"><i class="ph ph-floppy-disk"></i> Save Changes</button>
         </div>
       </div>
     </div>
@@ -1687,7 +1646,6 @@
             id: a.id,
             name: n,
             type,
-            description: a.description || '',
             created: a.created_at || '',
             meetupLocation: a.meetup_location || '—',
             proposedPenaltyAmount: Number(a.proposed_penalty_amount || 0),
@@ -1740,9 +1698,6 @@
             <td><span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span></td>
             <td>
               <div class="action-btns">
-                <button class="action-btn" title="Edit Details" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="openEditModal(${a.id})">
-                  <i class="ph ph-pencil"></i>
-                </button>
                 <button class="action-btn toggle-btn" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
                   ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
                 </button>
@@ -1768,9 +1723,6 @@
             <div class="grid-card-meta">${`<span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span>`}</div>
             <div style="font-size:11px;color:var(--text-3);margin-bottom:16px;">${esc(a.created)}</div>
             <div class="grid-card-actions">
-              <button class="action-btn" title="Edit" style="flex:0;" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="openEditModal(${a.id})">
-                <i class="ph ph-pencil"></i>
-              </button>
               <button class="action-btn toggle-btn" style="flex:1;justify-content:center" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
                 ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
               </button>
@@ -1849,7 +1801,7 @@
     function previewAssetImage(input) {
       if (input.files && input.files[0]) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
           document.getElementById('assetImagePreview').src = e.target.result;
           document.getElementById('assetImagePreviewWrap').style.display = 'block';
           document.getElementById('assetImageLabel').textContent = input.files[0].name;
@@ -1869,7 +1821,7 @@
       const type = document.getElementById('assetType').value;
       const description = document.getElementById('assetDesc').value.trim();
       const meetup_location = document.getElementById('assetMeetupLocation').value.trim();
-      const proposed_penalty_amount = Math.max(0, Math.floor(Number(document.getElementById('assetPenalty').value || 0)));
+      const proposed_penalty_amount = Math.min(10000, Math.max(0, Math.floor(Number(document.getElementById('assetPenalty').value || 0))));
       const daily_penalty = proposed_penalty_amount;
       const penalty_type = document.getElementById('assetPenaltyType').value;
       if (!name) { alert('Please fill in Asset Name.'); return; }
@@ -1887,7 +1839,7 @@
           const formData = new FormData();
           formData.append('asset_id', res.asset_id);
           formData.append('asset_image', imageFile);
-          
+
           const token = window.api.getToken();
           try {
             await fetch('/SD_FINALPROJECT_GRP6/HariBorrow_backend/api/assets/upload_asset_image.php', {
@@ -1909,45 +1861,6 @@
     }
 
     function openDeleteModal(id) { deleteTarget = id; document.getElementById('deleteModal').classList.add('active'); }
-
-    function openEditModal(id) {
-      const a = assets.find(x => x.id === id);
-      if (!a) return;
-      document.getElementById('editAssetId').value = a.id;
-      document.getElementById('editMeetupLocation').value = a.meetupLocation !== '—' ? a.meetupLocation : '';
-      document.getElementById('editDescription').value = a.description || '';
-      document.getElementById('editPenalty').value = a.dailyPenalty ?? a.proposedPenaltyAmount ?? 0;
-      document.getElementById('editPenaltyType').value = a.penaltyType || 'per_day';
-      document.getElementById('editModal').classList.add('active');
-    }
-
-    async function saveEdit() {
-      const id = Number(document.getElementById('editAssetId').value);
-      const meetup_location = document.getElementById('editMeetupLocation').value.trim();
-      const description = document.getElementById('editDescription').value.trim();
-      const penalty = Math.max(0, Math.floor(Number(document.getElementById('editPenalty').value || 0)));
-      const penalty_type = document.getElementById('editPenaltyType').value;
-
-      const btn = document.querySelector('#editModal .btn-submit');
-      const orig = btn.innerHTML;
-      btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Saving...';
-      btn.style.pointerEvents = 'none';
-
-      try {
-        await window.api.authenticatedFetch('/assets/manage_my_assets.php', {
-          method: 'PUT',
-          body: { id, meetup_location, description, daily_penalty: penalty, proposed_penalty_amount: penalty, penalty_type }
-        });
-        closeModal('editModal');
-        showToast('Changes saved. Asset is pending admin review.');
-        await loadAssets();
-      } catch (err) {
-        alert('Failed to save changes: ' + (err.message || 'Server error'));
-      } finally {
-        btn.innerHTML = orig;
-        btn.style.pointerEvents = 'auto';
-      }
-    }
     async function confirmDelete() {
       if (!deleteTarget) return;
       try {
