@@ -461,6 +461,7 @@
 
     .filter-select {
       background: var(--glass);
+      background-color: #1a1a22;
       border: 1px solid var(--glass-border);
       border-radius: 10px;
       padding: 11px 36px 11px 14px;
@@ -474,6 +475,11 @@
       background-repeat: no-repeat;
       background-position: right 12px center;
       transition: border-color 0.2s;
+    }
+
+    .filter-select option {
+      background-color: #1a1a22;
+      color: var(--text-1);
     }
 
     .filter-select:focus {
@@ -946,6 +952,13 @@
     .form-select {
       appearance: none;
       cursor: pointer;
+      background-color: #1a1a22;
+      color: var(--text-1);
+    }
+
+    .form-select option {
+      background-color: #1a1a22;
+      color: var(--text-1);
     }
 
     .form-textarea {
