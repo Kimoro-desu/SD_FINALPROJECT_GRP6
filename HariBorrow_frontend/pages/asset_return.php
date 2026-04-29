@@ -1,102 +1,3 @@
-<?php
-require_once '../../HariBorrow_backend/config/database.php';
-use Config\Database;
-
-$database = new Database();
-$db = $database->getConnection();
-
-// Form handler for Return
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'return_asset') {
-    $transaction_id = isset($_POST['transaction_id']) ? (int)$_POST['transaction_id'] : 0;
-    
-    if ($transaction_id > 0) {
-        try {
-            $db->beginTransaction();
-            
-            $now = date('Y-m-d H:i:s');
-            // Update transaction
-            $query = "UPDATE transactions SET request_status = 'Returned', return_date = :return_date WHERE transaction_id = :id AND request_status = 'Approved'";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':return_date', $now);
-            $stmt->bindParam(':id', $transaction_id);
-            $stmt->execute();
-            
-            // Get asset_id
-            $queryAsset = "SELECT asset_id FROM transactions WHERE transaction_id = :id";
-            $stmtAsset = $db->prepare($queryAsset);
-            $stmtAsset->bindParam(':id', $transaction_id);
-            $stmtAsset->execute();
-            $row = $stmtAsset->fetch(\PDO::FETCH_ASSOC);
-            
-            if ($row) {
-                // Update asset availability
-                $updateAsset = "UPDATE assets SET availability = 'Available' WHERE Asset_ID = :asset_id";
-                $stmtA = $db->prepare($updateAsset);
-                $stmtA->bindParam(':asset_id', $row['asset_id']);
-                $stmtA->execute();
-            }
-            
-            $db->commit();
-            echo json_encode(['success' => true]);
-        } catch (\Exception $e) {
-            $db->rollBack();
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-        }
-    } else {
-        echo json_encode(['success' => false, 'error' => 'Invalid transaction ID']);
-    }
-    exit;
-}
-
-// Fetch active loans
-$query = "
-    SELECT 
-        t.transaction_id,
-        t.due_date,
-        a.Asset_ID,
-        a.asset_name,
-        a.description
-    FROM transactions t
-    JOIN assets a ON t.asset_id = a.Asset_ID
-    WHERE t.request_status = 'Approved'
-";
-$stmt = $db->prepare($query);
-$stmt->execute();
-$active_loans_raw = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-$loansForJs = [];
-foreach ($active_loans_raw as $loan) {
-    $dueDateStr = $loan['due_date'] ? date('M j, Y', strtotime($loan['due_date'])) : 'N/A';
-    
-    $isOverdue = false;
-    $statusLabel = 'Active';
-    $statusClass = 'active';
-    
-    if ($loan['due_date']) {
-        $due = strtotime($loan['due_date']);
-        $now = time();
-        if ($now > $due) {
-            $isOverdue = true;
-            $statusLabel = 'Overdue';
-            $statusClass = 'overdue';
-        } else if ($due - $now < 86400 * 3) {
-            $statusLabel = 'Due Soon';
-            $statusClass = 'due-soon';
-        }
-    }
-    
-    $loansForJs[$loan['transaction_id']] = [
-        'name' => htmlspecialchars($loan['asset_name'] ?? 'Unknown Asset'),
-        'tag' => 'AST-' . str_pad($loan['Asset_ID'], 4, '0', STR_PAD_LEFT),
-        'location' => 'Designated Location', // Adjust if you add location to DB
-        'due' => $dueDateStr,
-        'statusLabel' => $statusLabel,
-        'statusClass' => $statusClass,
-        'isOverdue' => $isOverdue
-    ];
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -535,29 +436,11 @@ foreach ($active_loans_raw as $loan) {
       <div class="card-title">Active Loans</div>
       <div class="card-desc">Select the asset you wish to return. Only currently borrowed items are shown below.</div>
 
-      <div class="loans-list">
-        <?php if (empty($loansForJs)): ?>
-          <div class="empty-state" style="padding: 20px; text-align: center;">
-            <i class="ph ph-package" style="font-size: 32px; color: var(--text-3);"></i>
-            <p style="color: var(--text-2); margin-top: 10px;">No active loans to return.</p>
-          </div>
-        <?php else: ?>
-          <?php foreach ($loansForJs as $id => $l): ?>
-            <div class="loan-card" id="loan-<?= $id ?>" onclick="selectLoan(<?= $id ?>)">
-              <div class="loan-icon"><i class="ph ph-circuit-board"></i></div>
-              <div class="loan-details">
-                <div class="loan-name"><?= $l['name'] ?></div>
-                <div class="loan-meta">
-                  <span><i class="ph ph-hash"></i> <?= $l['tag'] ?></span>
-                  <span><i class="ph ph-map-pin"></i> <?= $l['location'] ?></span>
-                  <span><i class="ph ph-calendar-check"></i> Due: <?= $l['due'] ?></span>
-                </div>
-              </div>
-              <span class="loan-status status-<?= $l['statusClass'] ?>"><?= $l['statusLabel'] ?></span>
-              <div class="loan-select-indicator"><i class="ph-fill ph-check"></i></div>
-            </div>
-          <?php endforeach; ?>
-        <?php endif; ?>
+      <div class="loans-list" id="loansList">
+        <div class="empty-state" style="padding: 20px; text-align: center;">
+          <i class="ph ph-spinner-gap ph-spin" style="font-size: 32px; color: var(--text-3);"></i>
+          <p style="color: var(--text-2); margin-top: 10px;">Loading active loans...</p>
+        </div>
       </div>
 
       <div class="btn-group">
@@ -812,19 +695,99 @@ foreach ($active_loans_raw as $loan) {
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-      // Initialize notifications if user is logged in
       if(window.api && window.api.isAuthenticated()) {
           fetchNotifications();
           setInterval(fetchNotifications, 15000);
+          loadActiveLoans();
+      } else {
+          window.location.href = 'login.php';
       }
   });
 
-
   /* ── LOAN DATA ── */
-  const loans = <?php echo json_encode($loansForJs); ?>;
-
+  let loans = {};
   let selectedLoan = null;
   let selectedCondition = null;
+
+  async function loadActiveLoans() {
+      try {
+          const res = await window.api.authenticatedFetch('/transactions/history.php');
+          const history = Array.isArray(res?.history) ? res.history : [];
+          
+          const activeLoans = history.filter(tx => 
+              String(tx?.status || '').toLowerCase() === 'approved' && 
+              tx.is_current_user_borrower === true
+          );
+
+          const listEl = document.getElementById('loansList');
+          listEl.innerHTML = '';
+
+          if (activeLoans.length === 0) {
+              listEl.innerHTML = `
+                  <div class="empty-state" style="padding: 20px; text-align: center;">
+                      <i class="ph ph-package" style="font-size: 32px; color: var(--text-3);"></i>
+                      <p style="color: var(--text-2); margin-top: 10px;">No active loans to return.</p>
+                  </div>
+              `;
+              return;
+          }
+
+          activeLoans.forEach(loan => {
+              const id = loan.transaction_id;
+              const dueStr = loan.dates.due ? new Date(loan.dates.due.replace(' ', 'T')).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A';
+              
+              let isOverdue = false;
+              let statusLabel = 'Active';
+              let statusClass = 'active';
+              
+              if (loan.dates.due) {
+                  const due = new Date(loan.dates.due.replace(' ', 'T')).getTime();
+                  const now = Date.now();
+                  if (now > due) {
+                      isOverdue = true;
+                      statusLabel = 'Overdue';
+                      statusClass = 'overdue';
+                  } else if (due - now < 86400 * 3 * 1000) {
+                      statusLabel = 'Due Soon';
+                      statusClass = 'due-soon';
+                  }
+              }
+
+              loans[id] = {
+                  id: id,
+                  name: loan.asset.name,
+                  tag: 'AST-' + String(loan.asset.id).padStart(4, '0'),
+                  location: loan.asset.meetup_location || 'Designated Location',
+                  due: dueStr,
+                  statusLabel: statusLabel,
+                  statusClass: statusClass,
+                  isOverdue: isOverdue
+              };
+
+              const card = document.createElement('div');
+              card.className = 'loan-card';
+              card.id = 'loan-' + id;
+              card.onclick = () => selectLoan(id);
+              card.innerHTML = `
+                  <div class="loan-icon"><i class="ph ph-circuit-board"></i></div>
+                  <div class="loan-details">
+                      <div class="loan-name">${loan.asset.name}</div>
+                      <div class="loan-meta">
+                          <span><i class="ph ph-hash"></i> AST-${String(loan.asset.id).padStart(4, '0')}</span>
+                          <span><i class="ph ph-map-pin"></i> ${loan.asset.meetup_location || 'Designated Location'}</span>
+                          <span><i class="ph ph-calendar-check"></i> Due: ${dueStr}</span>
+                      </div>
+                  </div>
+                  <span class="loan-status status-${statusClass}">${statusLabel}</span>
+                  <div class="loan-select-indicator"><i class="ph-fill ph-check"></i></div>
+              `;
+              listEl.appendChild(card);
+          });
+      } catch (error) {
+          console.error("Failed to load active loans:", error);
+          document.getElementById('loansList').innerHTML = `<div style="color:var(--danger); padding:20px;">Failed to load your active loans. Please try again later.</div>`;
+      }
+  }
 
   /* ── SELECT LOAN ── */
   function selectLoan(id) {
@@ -896,7 +859,7 @@ foreach ($active_loans_raw as $loan) {
   }
 
   /* ── SUBMIT ── */
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!selectedCondition) {
       alert('Please select the asset condition before submitting.');
       return;
@@ -913,37 +876,37 @@ foreach ($active_loans_raw as $loan) {
       hour: '2-digit', minute: '2-digit'
     });
 
-    // Make AJAX request to PHP backend
-    const formData = new FormData();
-    formData.append('action', 'return_asset');
-    formData.append('transaction_id', selectedLoan);
-    formData.append('condition', selectedCondition);
-    formData.append('notes', notes);
+    const proceedBtn = document.querySelector('#step2 .btn-primary');
+    const originalText = proceedBtn.innerHTML;
+    proceedBtn.innerHTML = '<i class="ph ph-spinner-gap ph-spin"></i> Processing...';
+    proceedBtn.disabled = true;
 
-    fetch('asset_return.php', {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        document.getElementById('s-name').textContent       = loan.name;
-        document.getElementById('s-tag').textContent        = loan.tag;
-        document.getElementById('s-location').textContent   = loan.location;
-        document.getElementById('s-datetime').textContent   = now;
-        document.getElementById('s-condition').textContent  = selectedCondition;
-        document.getElementById('s-loan-status').textContent = loan.isOverdue ? 'Returned Late' : 'Returned On Time';
-        document.getElementById('s-notes').textContent      = notes;
-        
-        goToStep(3);
-      } else {
-        alert('Error returning asset: ' + (data.error || 'Unknown error'));
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('An error occurred while submitting the return.');
-    });
+    try {
+        const response = await window.api.authenticatedFetch('/transactions/return.php', {
+            method: 'PUT',
+            body: { transaction_id: selectedLoan }
+        });
+
+        if (response && response.status === 'success') {
+            document.getElementById('s-name').textContent       = loan.name;
+            document.getElementById('s-tag').textContent        = loan.tag;
+            document.getElementById('s-location').textContent   = loan.location;
+            document.getElementById('s-datetime').textContent   = now;
+            document.getElementById('s-condition').textContent  = selectedCondition;
+            document.getElementById('s-loan-status').textContent = loan.isOverdue ? 'Returned Late' : 'Returned On Time';
+            document.getElementById('s-notes').textContent      = notes;
+            
+            goToStep(3);
+        } else {
+            alert('Error returning asset: ' + (response?.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while submitting the return.');
+    } finally {
+        proceedBtn.innerHTML = originalText;
+        proceedBtn.disabled = false;
+    }
   }
 </script>
 </body>
