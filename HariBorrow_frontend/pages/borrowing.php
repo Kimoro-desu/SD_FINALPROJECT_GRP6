@@ -737,8 +737,12 @@
     </div>
 
     <div class="data-panel" id="borrowsPanel">
-      <div class="panel-header">
+      <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
         <div class="panel-title">Transaction History</div>
+        <div class="role-toggle" style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 40px; padding: 4px; display: inline-flex;">
+          <button class="role-btn active" id="tabBorrower" onclick="switchHistoryTab('borrower')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--gold-light); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">Borrowing</button>
+          <button class="role-btn" id="tabLender" onclick="switchHistoryTab('lender')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--text-2); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">Lending</button>
+        </div>
       </div>
       <div style="overflow-x:auto;">
         <table>
@@ -832,6 +836,14 @@
     let typeFilter = '';
     let myBorrowings = [];
     let borrowingsById = {};
+    let currentHistoryTab = 'borrower';
+
+    function switchHistoryTab(tab) {
+      currentHistoryTab = tab;
+      document.getElementById('tabBorrower').style.color = tab === 'borrower' ? 'var(--gold-light)' : 'var(--text-2)';
+      document.getElementById('tabLender').style.color = tab === 'lender' ? 'var(--gold-light)' : 'var(--text-2)';
+      renderBorrowsPanel();
+    }
 
     function toInputDateTimeLocal(d) {
       const pad = (n) => String(n).padStart(2, '0');
@@ -1047,12 +1059,14 @@
       const tbody = document.getElementById('borrowsTableBody');
       if (!tbody) return;
 
-      if (!myBorrowings.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; color: var(--text-3); text-align: center;">You have no borrow requests yet.</td></tr>';
+      const filteredHistory = myBorrowings.filter(tx => tx.role === currentHistoryTab);
+
+      if (!filteredHistory.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; color: var(--text-3); text-align: center;">You have no ' + currentHistoryTab + ' history yet.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = myBorrowings.map(tx => {
+      tbody.innerHTML = filteredHistory.map(tx => {
         const statusData = getStatusData(tx);
         const item = tx?.asset?.name || `Asset #${tx?.asset?.id || '—'}`;
         const borrowedAt = tx?.dates?.borrowed || tx?.dates?.requested || null;
