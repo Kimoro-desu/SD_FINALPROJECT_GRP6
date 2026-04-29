@@ -1141,6 +1141,86 @@
       color: var(--gold);
     }
 
+    /* ── LENDING HISTORY INJECT ── */
+    .data-panel {
+      display: none;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      animation: fadeUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-top: 20px;
+    }
+    .data-panel.active { display: block; }
+    
+    .panel-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-1);
+      letter-spacing: 0.02em;
+    }
+    
+    .status-pill {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: inline-block;
+    }
+    .status-pill.pending { background: rgba(229, 192, 123, 0.1); color: var(--gold); border: 1px solid rgba(229, 192, 123, 0.3); }
+    .status-pill.active { background: rgba(74, 222, 128, 0.1); color: var(--success); border: 1px solid rgba(74, 222, 128, 0.3); }
+    .status-pill.overdue { background: rgba(255, 107, 122, 0.1); color: var(--danger); border: 1px solid rgba(255, 107, 122, 0.3); }
+
+    .rating-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(229, 192, 123, 0.25);
+      background: rgba(229, 192, 123, 0.1);
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .rate-btn {
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      background: rgba(96, 165, 250, 0.12);
+      color: #93c5fd;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .rate-btn:hover {
+      border-color: #60a5fa;
+      background: rgba(96, 165, 250, 0.18);
+    }
+    
+    .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .btn-outline {
+      display: flex; align-items: center; gap: 8px;
+      background: transparent; border: 1px solid var(--glass-border);
+      padding: 12px 24px; border-radius: 30px; color: var(--text-2);
+      font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s;
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
     @keyframes fadeUp {
       from {
         opacity: 0;
@@ -1260,9 +1340,17 @@
         <h1>Asset Management</h1>
         <p>View, create, toggle availability, and remove equipment from the system.</p>
       </div>
-      <button class="btn-primary" onclick="openCreateModal()">
-        <i class="ph ph-plus"></i> Add New Asset
-      </button>
+      <div class="header-actions">
+        <button class="btn-outline" id="btnOpenHistory" onclick="openHistory()">
+          <i class="ph ph-clock-counter-clockwise"></i> My Lending History
+        </button>
+        <button class="btn-outline" id="btnCloseHistory" onclick="closeHistory()" style="display:none;">
+          <i class="ph ph-arrow-left"></i> Back to Assets
+        </button>
+        <button class="btn-primary" onclick="openCreateModal()">
+          <i class="ph ph-plus"></i> Add New Asset
+        </button>
+      </div>
     </div>
 
     <div class="stats-bar">
@@ -1324,7 +1412,7 @@
       </div>
     </div>
 
-    <div class="asset-table-wrap">
+    <div class="asset-table-wrap" id="catalogTable">
       <table id="assetTable">
         <thead>
           <tr>
@@ -1338,7 +1426,13 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="assetTableBody"></tbody>
+        <tbody id="assetTableBody">
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-3);">
+              Loading your assets...
+            </td>
+          </tr>
+        </tbody>
       </table>
       <div class="pagination">
         <span class="pagination-info" id="paginationInfo"></span>
@@ -1347,6 +1441,35 @@
           <button class="page-btn">2</button>
           <button class="page-btn"><i class="ph ph-caret-right"></i></button>
         </div>
+      </div>
+    </div>
+
+    <div class="data-panel" id="historyPanel">
+      <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 16px;">
+        <div class="panel-title">Lending History</div>
+        <div class="role-toggle" style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 40px; padding: 4px; display: inline-flex;">
+          <button class="role-btn active" id="tabAll" onclick="switchHistoryTab('all')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--gold-light); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">All History</button>
+          <button class="role-btn" id="tabActive" onclick="switchHistoryTab('active')" style="background: transparent; border: none; padding: 8px 16px; border-radius: 30px; color: var(--text-2); cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 13px;">Active Borrows</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Borrower</th>
+              <th>Status</th>
+              <th>Borrow Date</th>
+              <th>Return Due</th>
+              <th>Returned At</th>
+              <th>Penalty</th>
+              <th>Rating</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr><td colspan="8" style="padding:16px;color:var(--text-3);text-align:center;">Loading your lending history...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -1490,6 +1613,38 @@
       <div class="form-footer">
         <button class="btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
         <button class="btn-danger" onclick="confirmDelete()">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="ratingModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Rate Borrower</h2>
+      </div>
+      <div class="modal-body">
+        <div style="color: var(--text-2); font-size: 13px; margin-bottom: 16px;" id="ratingModalCounterparty">Rate your transaction counterpart.</div>
+        <input type="hidden" id="ratingTxnId">
+        <div class="form-group">
+          <label class="form-label" for="ratingValueInput">Rating (1-5)</label>
+          <select class="form-select" id="ratingValueInput">
+            <option value="5">5 - Excellent</option>
+            <option value="4">4 - Good</option>
+            <option value="3">3 - Okay</option>
+            <option value="2">2 - Poor</option>
+            <option value="1">1 - Very Poor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ratingCommentInput">Comment (optional)</label>
+          <textarea class="form-textarea" id="ratingCommentInput" placeholder="How was this borrower?"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="form-footer">
+          <button class="btn-ghost" onclick="closeModal('ratingModal')">Cancel</button>
+          <button class="btn-submit" onclick="submitRating()">Submit Rating</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1814,8 +1969,170 @@
     document.addEventListener('click', e => { if (!document.querySelector('.profile-menu').contains(e.target)) document.getElementById('settingsDropdown').classList.remove('active'); });
     document.addEventListener('mousemove', e => { document.getElementById('glow').style.setProperty('--mouse-x', e.clientX + 'px'); document.getElementById('glow').style.setProperty('--mouse-y', e.clientY + 'px'); });
 
+    /* ── LENDING HISTORY LOGIC ── */
+    let myLendings = [];
+    let lendingsById = {};
+    let currentHistoryTab = 'all';
+
+    function openHistory() {
+      document.getElementById('historyPanel').classList.add('active');
+      document.getElementById('catalogTable').style.display = 'none';
+      document.getElementById('assetGrid').style.display = 'none';
+      document.querySelector('.toolbar').style.display = 'none';
+      document.querySelector('.stats-bar').style.display = 'none';
+      document.getElementById('btnOpenHistory').style.display = 'none';
+      document.getElementById('btnCloseHistory').style.display = 'flex';
+      renderHistoryPanel();
+    }
+
+    function closeHistory() {
+      document.getElementById('historyPanel').classList.remove('active');
+      document.getElementById('catalogTable').style.display = document.body.classList.contains('grid-view') ? 'none' : 'block';
+      document.getElementById('assetGrid').style.display = document.body.classList.contains('grid-view') ? 'grid' : 'none';
+      document.querySelector('.toolbar').style.display = 'flex';
+      document.querySelector('.stats-bar').style.display = 'grid';
+      document.getElementById('btnOpenHistory').style.display = 'flex';
+      document.getElementById('btnCloseHistory').style.display = 'none';
+    }
+
+    function switchHistoryTab(tab) {
+      currentHistoryTab = tab;
+      document.getElementById('tabAll').style.color = tab === 'all' ? 'var(--gold-light)' : 'var(--text-2)';
+      document.getElementById('tabActive').style.color = tab === 'active' ? 'var(--gold-light)' : 'var(--text-2)';
+      renderHistoryPanel();
+    }
+
+    function getStatusData(tx) {
+      const raw = String(tx?.status || '').toLowerCase();
+      if (tx?.dates?.returned) return { label: 'Returned', class: 'active' };
+      if (tx?.is_overdue) return { label: 'Overdue', class: 'overdue' };
+      if (raw === 'approved' || raw === 'confirmed' || raw === 'active') return { label: 'Active', class: 'active' };
+      if (raw === 'rejected') return { label: 'Rejected', class: 'overdue' };
+      return { label: 'Pending', class: 'pending' };
+    }
+
+    function fmtDateSafe(v) {
+      if (!v) return '—';
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString();
+    }
+
+    async function loadMyLendings() {
+      try {
+        const res = await window.api.authenticatedFetch('/transactions/history.php');
+        const history = Array.isArray(res?.history) ? res.history : [];
+        myLendings = history.filter(tx => tx?.is_current_user_lender === true).sort((a, b) => {
+          const aTs = new Date(a?.dates?.borrowed || a?.dates?.requested || 0).getTime() || 0;
+          const bTs = new Date(b?.dates?.borrowed || b?.dates?.requested || 0).getTime() || 0;
+          return bTs - aTs;
+        });
+
+        lendingsById = {};
+        myLendings.forEach(tx => {
+          lendingsById[String(tx?.transaction_id)] = tx;
+        });
+      } catch (error) {
+        console.error('Failed to load my lendings:', error);
+      }
+    }
+
+    function renderHistoryPanel() {
+      const tbody = document.getElementById('historyTableBody');
+      if (!tbody) return;
+
+      let filteredHistory = myLendings;
+
+      if (currentHistoryTab === 'active') {
+        filteredHistory = filteredHistory.filter(tx => {
+          const st = String(tx?.status || '').toLowerCase();
+          const returned = Boolean(tx?.dates?.returned);
+          return ((st === 'approved' || st === 'confirmed' || st === 'active') && !returned) || st === 'pending' || (st === 'overdue' && !returned);
+        });
+      }
+
+      if (!filteredHistory.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; color: var(--text-3); text-align: center;">You have no ' + (currentHistoryTab === 'active' ? 'active borrows' : 'lending history') + ' yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filteredHistory.map(tx => {
+        const statusData = getStatusData(tx);
+        const item = tx?.asset?.name || `Asset #${tx?.asset?.id || '—'}`;
+        const borrowedAt = tx?.dates?.borrowed || tx?.dates?.requested || null;
+        const dueAt = tx?.dates?.due || null;
+        const returnedAt = tx?.dates?.returned || null;
+        const penalty = Number(tx?.penalty_amount || 0);
+        const counterpartyName = tx?.counterparty?.name || '—';
+        const myRating = tx?.my_rating?.rating ? Number(tx.my_rating.rating) : null;
+        const ratingCell = myRating
+          ? `<span class="rating-chip"><i class="ph ph-star-fill"></i> ${myRating}/5</span>`
+          : (tx?.can_rate
+              ? `<button class="rate-btn" onclick="openRatingModal(${Number(tx?.transaction_id || 0)})"><i class="ph ph-star"></i> Rate</button>`
+              : '—');
+        return `
+          <tr>
+            <td style="color: var(--text-1); font-weight: 500;">${item}</td>
+            <td>${counterpartyName}</td>
+            <td><span class="status-pill ${statusData.class}">${statusData.label}</span></td>
+            <td>${fmtDateSafe(borrowedAt)}</td>
+            <td>${fmtDateSafe(dueAt)}</td>
+            <td>${fmtDateSafe(returnedAt)}</td>
+            <td style="color: ${penalty > 0 ? 'var(--danger)' : 'inherit'}">${penalty > 0 ? 'PHP ' + penalty : '—'}</td>
+            <td>${ratingCell}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openRatingModal(transactionId) {
+      const tx = lendingsById[String(transactionId)];
+      if (!tx) return;
+      document.getElementById('ratingTxnId').value = String(transactionId);
+      document.getElementById('ratingCommentInput').value = '';
+      document.getElementById('ratingValueInput').value = '5';
+      document.getElementById('ratingModalCounterparty').textContent = `Rate ${tx?.counterparty?.name || 'this user'} for transaction #TXN-${transactionId}.`;
+      document.getElementById('ratingModal').classList.add('active');
+    }
+
+    async function submitRating() {
+      const transactionId = Number(document.getElementById('ratingTxnId').value || 0);
+      const rating = Number(document.getElementById('ratingValueInput').value || 0);
+      const reviewText = document.getElementById('ratingCommentInput').value || '';
+      if (!transactionId || rating < 1 || rating > 5) {
+        alert('Please provide a valid rating.');
+        return;
+      }
+      try {
+        const res = await window.api.authenticatedFetch('/transactions/rate.php', {
+          method: 'POST',
+          body: { transaction_id: transactionId, rating, review_text: reviewText }
+        });
+        alert(res?.message || 'Rating submitted.');
+        closeModal('ratingModal');
+        await loadMyLendings();
+        if (document.getElementById('historyPanel')?.classList.contains('active')) {
+          renderHistoryPanel();
+        }
+      } catch (e) {
+        alert(e?.message || 'Failed to submit rating.');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       await loadAssets();
+      await loadMyLendings();
+
+      if (new URLSearchParams(window.location.search).get('view') === 'history') {
+        openHistory();
+      }
+
+      // Keep lending history fresh
+      setInterval(async () => {
+        await loadMyLendings();
+        if (document.getElementById('historyPanel')?.classList.contains('active')) {
+          renderHistoryPanel();
+        }
+      }, 15000);
 
       // Auto-open the Add Asset modal when arriving from the "Submit Asset" dashboard card
       if (new URLSearchParams(window.location.search).get('action') === 'submit') {
