@@ -38,7 +38,23 @@ CREATE TABLE `assets` (
   `daily_penalty` decimal(10,2) NOT NULL DEFAULT 0.00,
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
   `availability` varchar(50) DEFAULT 'unavailable',
-  `time_created` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `time_created` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `asset_image` varchar(512) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `return_photos`
+--
+
+CREATE TABLE `return_photos` (
+  `photo_id` int(11) NOT NULL AUTO_INCREMENT,
+  `transaction_id` int(11) NOT NULL,
+  `photo_path` varchar(512) NOT NULL,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`photo_id`),
+  KEY `fk_return_photos_txn` (`transaction_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -164,6 +180,12 @@ ALTER TABLE `users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `return_photos`
+--
+ALTER TABLE `return_photos`
+  ADD CONSTRAINT `fk_return_photos_txn` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`transaction_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `penalties`
