@@ -226,6 +226,26 @@ CREATE TABLE `registration_requests` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Table structure for table `transaction_ratings`
+--
+CREATE TABLE `transaction_ratings` (
+  `rating_id` int(11) NOT NULL AUTO_INCREMENT,
+  `transaction_id` int(11) NOT NULL,
+  `rater_id` int(11) NOT NULL,
+  `ratee_id` int(11) NOT NULL,
+  `rating` tinyint(3) UNSIGNED NOT NULL,
+  `points_awarded` int(11) NOT NULL DEFAULT 0,
+  `review_text` varchar(500) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`rating_id`),
+  UNIQUE KEY `uniq_tx_rater` (`transaction_id`,`rater_id`),
+  KEY `idx_tx` (`transaction_id`),
+  KEY `idx_ratee` (`ratee_id`),
+  KEY `idx_rater` (`rater_id`),
+  CONSTRAINT `chk_rating_range` CHECK (`rating` >= 1 and `rating` <= 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
 -- Seed Data for `users`
 --
 INSERT INTO `users` (`school_id_number`, `first_name`, `last_name`, `password_hash`, `user_role`, `plm_email`) VALUES
