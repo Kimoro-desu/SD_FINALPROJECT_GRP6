@@ -603,17 +603,17 @@
       <div class="stat-card">
         <div class="stat-title">Active Borrowings</div>
         <div class="stat-value" id="statActiveTransactions">—</div>
-        <div class="stat-sub positive"><i class="ph ph-trend-up"></i> 14 dispatched today</div>
+        <div class="stat-sub positive"><i class="ph ph-trend-up"></i> Currently dispatched</div>
       </div>
       <div class="stat-card">
         <div class="stat-title">Overdue Assets</div>
         <div class="stat-value" id="statOverdueAssets" style="color: var(--danger);">—</div>
-        <div class="stat-sub negative"><i class="ph ph-warning"></i> Administrative holds pending</div>
+        <div class="stat-sub negative"><i class="ph ph-warning"></i> Require administrative action</div>
       </div>
       <div class="stat-card">
         <div class="stat-title">Total Registered Users</div>
         <div class="stat-value" id="statTotalUsers">—</div>
-        <div class="stat-sub"><i class="ph ph-users"></i> 5 new sign-ups this week</div>
+        <div class="stat-sub"><i class="ph ph-users"></i> Active platform users</div>
       </div>
     </div>
 
