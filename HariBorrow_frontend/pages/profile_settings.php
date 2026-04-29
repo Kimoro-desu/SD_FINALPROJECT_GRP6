@@ -785,7 +785,7 @@
             </div>
           </div>
 
-          <button class="save-btn" onclick="saveFeedback(this)"><span>Save Changes</span></button>
+          <button class="save-btn" onclick="saveFeedback(this, 'profile')"><span>Save Changes</span></button>
           <div style="clear: both;"></div>
         </div>
 
@@ -874,7 +874,7 @@
             </div>
           </div>
 
-          <button class="save-btn" onclick="saveFeedback(this)"><span>Save Preferences</span></button>
+          <button class="save-btn" onclick="saveFeedback(this, 'preferences')"><span>Save Preferences</span></button>
           <div style="clear: both;"></div>
         </div>
 
@@ -885,21 +885,21 @@
           <div class="form-row">
             <div class="field">
               <label>Current Password</label>
-              <input type="password" placeholder="••••••••">
+              <input type="password" id="currentPasswordInput" placeholder="••••••••">
             </div>
           </div>
           <div class="form-row">
             <div class="field">
               <label>New Password</label>
-              <input type="password" placeholder="Minimum 8 characters">
+              <input type="password" id="newPasswordInput" placeholder="Minimum 8 characters">
             </div>
             <div class="field">
               <label>Confirm New Password</label>
-              <input type="password" placeholder="Must match new password">
+              <input type="password" id="confirmPasswordInput" placeholder="Must match new password">
             </div>
           </div>
 
-          <button class="save-btn" onclick="saveFeedback(this)"><span>Update Security</span></button>
+          <button class="save-btn" onclick="saveFeedback(this, 'security')"><span>Update Security</span></button>
           <div style="clear: both;"></div>
         </div>
 
@@ -987,16 +987,55 @@
       document.getElementById(role + 'Config').classList.add('active');
     }
 
-    function saveFeedback(btn) {
+    async function saveFeedback(btn, action) {
       const textSpan = btn.querySelector('span');
       const originalText = textSpan.textContent;
       textSpan.textContent = 'Saving...';
       btn.disabled = true;
 
-      setTimeout(() => {
+      try {
+        let payload = null;
+        if (action === 'profile') {
+          payload = {
+            action: 'profile',
+            full_name: document.getElementById('legalNameInput').value,
+            email: document.getElementById('emailInput').value
+          };
+        } else if (action === 'security') {
+          const newPass = document.getElementById('newPasswordInput').value;
+          const confirmPass = document.getElementById('confirmPasswordInput').value;
+          if (newPass !== confirmPass) {
+            alert("New passwords do not match.");
+            textSpan.textContent = originalText;
+            btn.disabled = false;
+            return;
+          }
+          payload = {
+            action: 'password',
+            current_password: document.getElementById('currentPasswordInput').value,
+            new_password: newPass
+          };
+        }
+
+        if (payload) {
+          const res = await window.api.authenticatedFetch('/api/users/update_profile.php', {
+            method: 'PUT',
+            body: payload
+          });
+          if (res && res.status === 'error') throw new Error(res.message);
+        }
+
         textSpan.textContent = '✓ Saved Successfully';
         btn.style.borderColor = '#4ade80';
         btn.style.color = '#4ade80';
+
+        if (action === 'profile') {
+            loadUserProfile(); // refresh data
+        } else if (action === 'security') {
+            document.getElementById('currentPasswordInput').value = '';
+            document.getElementById('newPasswordInput').value = '';
+            document.getElementById('confirmPasswordInput').value = '';
+        }
 
         setTimeout(() => {
           textSpan.textContent = originalText;
@@ -1004,7 +1043,11 @@
           btn.style.borderColor = 'var(--gold)';
           btn.style.color = 'var(--gold)';
         }, 2000);
-      }, 800);
+      } catch (e) {
+        alert(e.message || "Failed to save changes.");
+        textSpan.textContent = originalText;
+        btn.disabled = false;
+      }
     }
 
     // Live Avatar Preview Logic
