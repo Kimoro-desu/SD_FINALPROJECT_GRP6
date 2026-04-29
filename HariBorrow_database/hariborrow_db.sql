@@ -71,7 +71,8 @@ CREATE TABLE `transactions` (
   `borrowed_at` datetime DEFAULT NULL,
   `due_date` datetime DEFAULT NULL,
   `return_date` datetime DEFAULT NULL,
-  `penalty_amount` decimal(10,2) NOT NULL DEFAULT 0.00
+  `penalty_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `rating_locked` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -93,6 +94,7 @@ CREATE TABLE `users` (
   `plm_email` varchar(50) DEFAULT NULL,
   `profile_picture` varchar(255) DEFAULT NULL,
   `background_picture` varchar(255) DEFAULT NULL,
+  `reward_points` int(11) NOT NULL DEFAULT 0,
   UNIQUE KEY `plm_email` (`plm_email`),
   UNIQUE KEY `school_id_number` (`school_id_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
