@@ -1784,7 +1784,7 @@
           body: { id, meetup_location, description, daily_penalty: penalty, proposed_penalty_amount: penalty, penalty_type }
         });
         closeModal('editModal');
-        showToast('Asset details updated successfully.');
+        showToast('Changes saved. Asset is pending admin review.');
         await loadAssets();
       } catch (err) {
         alert('Failed to save changes: ' + (err.message || 'Server error'));

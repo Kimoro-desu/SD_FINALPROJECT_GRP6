@@ -104,9 +104,15 @@ try {
             die(json_encode(["message" => "availability must be 'available' or 'unavailable'.", "status" => "error"]));
         }
 
+        $isCoreEdit = $hasPenalty || $hasProposedPenalty || $hasMeetupLocation || $hasPenaltyType || $hasDescription;
+
         $setParts = [];
         $params = [':id' => $assetId, ':uid' => $lenderId];
-        if ($hasAvailability) {
+        
+        if ($isCoreEdit) {
+            $setParts[] = "status = 'pending'";
+            $setParts[] = "availability = 'unavailable'";
+        } elseif ($hasAvailability) {
             $setParts[] = "availability = :availability";
             $params[':availability'] = $availability;
         }
