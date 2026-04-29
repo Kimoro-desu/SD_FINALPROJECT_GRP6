@@ -68,7 +68,7 @@ if (!empty($data->transaction_id)) {
         $transaction_id = htmlspecialchars(strip_tags($data->transaction_id));
         
         // Fetch the transaction strictly locking it
-        $check_query = "SELECT asset_id, borrower_id, request_status, due_date FROM transactions WHERE transaction_id = :tid FOR UPDATE";
+        $check_query = "SELECT t.asset_id, t.borrower_id, t.request_status, t.due_date, a.Lender_ID, a.asset_name FROM transactions t JOIN assets a ON t.asset_id = a.Asset_ID WHERE t.transaction_id = :tid FOR UPDATE";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(':tid', $transaction_id);
         $check_stmt->execute();
@@ -82,6 +82,8 @@ if (!empty($data->transaction_id)) {
         $trans_row = $check_stmt->fetch(\PDO::FETCH_ASSOC);
         $asset_id = $trans_row['asset_id'];
         $borrower_id = $trans_row['borrower_id'];
+        $lender_id = $trans_row['Lender_ID'] ?? 0;
+        $asset_name = $trans_row['asset_name'] ?? 'Asset';
 
         // If the item hasn't been approved yet or is already returned, ignore request
         if ($trans_row['request_status'] !== Database::STATUS_APPROVED) {
@@ -151,6 +153,10 @@ if (!empty($data->transaction_id)) {
             } else {
                 pushUserNotification($db, (int)$borrower_id, 'Return Completed', 'Your borrowing was returned successfully with no penalty.', 'info', 'ph-check-circle');
             }
+        }
+        
+        if ((int)$lender_id > 0) {
+            pushUserNotification($db, (int)$lender_id, 'Asset Returned', 'Your asset "' . $asset_name . '" has been returned.', 'info', 'ph-check-circle');
         }
 
         $db->commit();
