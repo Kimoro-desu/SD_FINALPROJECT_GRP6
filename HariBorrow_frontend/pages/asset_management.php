@@ -1396,6 +1396,18 @@
             </select>
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Asset Photo (optional)</label>
+          <div id="assetImagePreviewWrap" style="display:none; margin-bottom:12px; position:relative; width:120px; height:120px; border-radius:12px; overflow:hidden; border:1px solid var(--glass-border);">
+            <img id="assetImagePreview" src="" alt="Preview" style="width:100%;height:100%;object-fit:cover;">
+            <button type="button" onclick="clearAssetImage()" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);border:1px solid var(--glass-border);color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-x"></i></button>
+          </div>
+          <label for="assetImageInput" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px dashed var(--glass-border);border-radius:10px;padding:14px 20px;cursor:pointer;color:var(--text-2);font-size:13px;transition:all 0.2s;width:100%;justify-content:center;" onmouseover="this.style.borderColor='rgba(229,192,123,0.4)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+            <i class="ph ph-camera" style="font-size:20px;color:var(--gold);"></i>
+            <span id="assetImageLabel">Click to upload a photo of the asset</span>
+          </label>
+          <input type="file" id="assetImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;" onchange="previewAssetImage(this)">
+        </div>
         <div class="form-timestamp">
           <i class="ph ph-clock"></i>
           <span id="timestampDisplay">Timestamp will be auto-generated on save</span>
@@ -1606,8 +1618,29 @@
       document.getElementById('assetMeetupLocation').value = '';
       document.getElementById('assetPenalty').value = '0';
       document.getElementById('assetPenaltyType').value = 'per_day';
+      document.getElementById('assetImageInput').value = '';
+      document.getElementById('assetImagePreviewWrap').style.display = 'none';
+      document.getElementById('assetImageLabel').textContent = 'Click to upload a photo of the asset';
       document.getElementById('timestampDisplay').textContent = 'Will be stamped: ' + new Date().toLocaleString();
       document.getElementById('createModal').classList.add('active');
+    }
+
+    function previewAssetImage(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('assetImagePreview').src = e.target.result;
+          document.getElementById('assetImagePreviewWrap').style.display = 'block';
+          document.getElementById('assetImageLabel').textContent = input.files[0].name;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function clearAssetImage() {
+      document.getElementById('assetImageInput').value = '';
+      document.getElementById('assetImagePreviewWrap').style.display = 'none';
+      document.getElementById('assetImageLabel').textContent = 'Click to upload a photo of the asset';
     }
 
     async function saveAsset() {
@@ -1621,10 +1654,31 @@
       if (!name) { alert('Please fill in Asset Name.'); return; }
 
       try {
-        await window.api.authenticatedFetch('/assets/add_asset.php', {
+        // 1. Create the asset record
+        const res = await window.api.authenticatedFetch('/assets/add_asset.php', {
           method: 'POST',
           body: { name, type, description, meetup_location, proposed_penalty_amount, daily_penalty, penalty_type }
         });
+
+        // 2. If an image was selected, upload it
+        const imageFile = document.getElementById('assetImageInput').files[0];
+        if (imageFile && res?.asset_id) {
+          const formData = new FormData();
+          formData.append('asset_id', res.asset_id);
+          formData.append('asset_image', imageFile);
+          
+          const token = window.api.getToken();
+          try {
+            await fetch('/SD_FINALPROJECT_GRP6/HariBorrow_backend/api/assets/upload_asset_image.php', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: formData
+            }).then(r => r.json());
+          } catch (imgErr) {
+            console.warn('Image upload failed, but asset was created:', imgErr);
+          }
+        }
+
         closeModal('createModal');
         showToast(`"${name}" submitted for approval.`);
         await loadAssets();

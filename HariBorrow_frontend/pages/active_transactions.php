@@ -436,6 +436,18 @@
             border: 1px solid rgba(255, 107, 122, 0.3);
         }
 
+        .status-pill.return-pending {
+            background: rgba(229, 192, 123, 0.15);
+            color: var(--gold);
+            border: 1px solid rgba(229, 192, 123, 0.3);
+            animation: pulse-gold 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-gold {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(229, 192, 123, 0); }
+            50% { box-shadow: 0 0 0 4px rgba(229, 192, 123, 0.15); }
+        }
+
         /* MODAL */
         .modal-overlay {
             position: fixed;
@@ -751,9 +763,10 @@
             </div>
 
             <select class="filter-select" id="activeStatusFilter" name="status_filter">
-                <option value="">All Active Statuses</option>
+                <option value="">All Statuses</option>
                 <option value="active">On Loan (Active)</option>
                 <option value="overdue">Overdue</option>
+                <option value="return_pending">Return Pending Review</option>
             </select>
         </div>
 
@@ -803,18 +816,17 @@
 
                 <div class="form-group">
                     <label class="form-label">Borrower's Submitted Proof</label>
-                    <div class="proof-viewer">
-                        <div class="proof-thumb-wrap">
-                            <i class="ph ph-image" id="proofIcon"></i>
-                            <img src="" id="proofImage" style="display:none;" alt="Proof Thumbnail">
+                    <div id="proofContainer">
+                        <div class="proof-viewer" id="noProofMsg">
+                            <div class="proof-thumb-wrap">
+                                <i class="ph ph-image"></i>
+                            </div>
+                            <div class="proof-info">
+                                <span class="proof-filename">No photos uploaded</span>
+                                <span class="proof-timestamp">Borrower did not submit return photos</span>
+                            </div>
                         </div>
-                        <div class="proof-info">
-                            <span class="proof-filename" id="proofFileName">filename.jpg</span>
-                            <span class="proof-timestamp">Uploaded upon return request</span>
-                        </div>
-                        <button type="button" class="btn-view-proof" onclick="viewFullProof()">
-                            <i class="ph ph-arrows-out"></i> View
-                        </button>
+                        <div id="proofGallery" style="display:none; display:flex; flex-wrap:wrap; gap:10px;"></div>
                     </div>
                 </div>
 
@@ -834,8 +846,11 @@
                         placeholder="Note any missing accessories, specific damage details, or reasons for late return penalties..."></textarea>
                 </div>
 
-                <button type="submit" class="btn-submit" onclick="submitReturn(event, this)">
-                    <i class="ph ph-check-circle"></i> Confirm Return & Complete TXN
+                <button type="button" class="btn-submit" id="approveReturnBtn" onclick="approveReturn(this)" style="background: var(--success); margin-top:12px;">
+                    <i class="ph ph-check-circle"></i> Approve Return
+                </button>
+                <button type="button" class="btn-submit" id="rejectReturnBtn" onclick="rejectReturn(this)" style="background: var(--danger); margin-top:8px;">
+                    <i class="ph ph-x-circle"></i> Reject Return
                 </button>
 
             </form>
@@ -851,7 +866,6 @@
         });
 
         let allActiveTransactions = [];
-        let currentProofUrl = '';
 
         function esc(v) {
             return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -878,14 +892,21 @@
             const statusFilter = (document.getElementById('activeStatusFilter')?.value || '').trim().toLowerCase();
 
             const filtered = allActiveTransactions.filter(tx => {
-                const overdue = isOverdue(tx?.dates?.due);
-                const statusKey = overdue ? 'overdue' : 'active';
+                const st = String(tx?.status || '').toLowerCase();
+                const isReturnPending = st === 'return_pending';
+                const overdue = !isReturnPending && isOverdue(tx?.dates?.due);
+                let statusKey;
+                if (isReturnPending) statusKey = 'return_pending';
+                else if (overdue) statusKey = 'overdue';
+                else statusKey = 'active';
                 const blob = `${tx?.transaction_id} ${tx?.borrower?.name} ${tx?.borrower?.school_id} ${tx?.asset?.name}`.toLowerCase();
                 return (!q || blob.includes(q)) && (!statusFilter || statusFilter === statusKey);
             });
 
             tbody.innerHTML = filtered.map(tx => {
-                const overdue = isOverdue(tx?.dates?.due);
+                const st = String(tx?.status || '').toLowerCase();
+                const isReturnPending = st === 'return_pending';
+                const overdue = !isReturnPending && isOverdue(tx?.dates?.due);
                 const due = fmtDateTime(tx?.dates?.due);
                 const borrowed = fmtDateTime(tx?.dates?.borrowed || tx?.dates?.requested);
                 const txNum = tx?.transaction_id ?? '';
@@ -898,6 +919,19 @@
                         penalty = lateDays * dailyPenalty;
                     }
                 }
+                const returnPhotos = JSON.stringify(tx?.return_photos || []);
+                let statusPill, statusLabel;
+                if (isReturnPending) {
+                    statusPill = 'return-pending';
+                    statusLabel = 'Return Pending';
+                } else if (overdue) {
+                    statusPill = 'overdue';
+                    statusLabel = 'Overdue';
+                } else {
+                    statusPill = 'active';
+                    statusLabel = 'On Loan';
+                }
+                const actionLabel = isReturnPending ? 'Review Return' : 'View Details';
                 return `
                     <tr>
                         <td style="color: var(--text-1); font-family: monospace;">#TXN-${esc(txNum)}</td>
@@ -906,11 +940,11 @@
                         <td style="white-space: nowrap;">${esc(borrowed)}</td>
                         <td style="white-space: nowrap;"><span style="color: ${overdue ? 'var(--danger)' : 'var(--text-1)'};">${esc(due)}</span></td>
                         <td style="white-space: nowrap; color: ${penalty > 0 ? 'var(--danger)' : 'var(--text-2)'};">PHP ${penalty.toFixed(2)}</td>
-                        <td><span class="status-pill ${overdue ? 'overdue' : 'active'}">${overdue ? 'Overdue' : 'On Loan'}</span></td>
+                        <td><span class="status-pill ${statusPill}">${statusLabel}</span></td>
                         <td>
                             <button class="btn-outline btn-primary"
-                                onclick='openReturnModal(${JSON.stringify(txNum)}, ${JSON.stringify(tx?.borrower?.name || '')}, ${JSON.stringify(tx?.asset?.name || '')}, ${JSON.stringify(borrowed)}, ${JSON.stringify(due)}, ${JSON.stringify(`PHP ${penalty.toFixed(2)}`)})'>
-                                <i class="ph ph-arrow-u-down-left"></i> Review Return
+                                onclick='openReturnModal(${JSON.stringify(txNum)}, ${JSON.stringify(tx?.borrower?.name || '')}, ${JSON.stringify(tx?.asset?.name || '')}, ${JSON.stringify(borrowed)}, ${JSON.stringify(due)}, ${JSON.stringify(`PHP ${penalty.toFixed(2)}`)}, ${returnPhotos.replace(/'/g, "&#39;")}, ${JSON.stringify(isReturnPending)})'>
+                                <i class="ph ph-arrow-u-down-left"></i> ${actionLabel}
                             </button>
                         </td>
                     </tr>
@@ -922,7 +956,11 @@
             try {
                 const res = await window.api.authenticatedFetch('/api/transactions/history.php');
                 const history = Array.isArray(res?.history) ? res.history : [];
-                allActiveTransactions = history.filter(tx => String(tx?.status || '').toLowerCase() === 'approved' && !tx?.dates?.returned);
+                // Include both Approved (active loans) and Return_Pending
+                allActiveTransactions = history.filter(tx => {
+                    const st = String(tx?.status || '').toLowerCase();
+                    return (st === 'approved' && !tx?.dates?.returned) || st === 'return_pending';
+                });
                 renderActiveTransactions();
             } catch (e) {
                 console.error('Failed loading active transactions:', e);
@@ -931,7 +969,7 @@
             }
         }
 
-        function openReturnModal(txnId, borrower, asset, borrowDate, dueDate, penalty) {
+        function openReturnModal(txnId, borrower, asset, borrowDate, dueDate, penalty, returnPhotos, isReturnPending) {
             document.getElementById('hiddenTxnId').value = txnId;
             document.getElementById('modalTxnId').textContent = `#TXN-${txnId}`;
             document.getElementById('modalBorrower').textContent = borrower;
@@ -939,13 +977,37 @@
             document.getElementById('modalBorrowDate').textContent = borrowDate;
             document.getElementById('modalDueDate').textContent = dueDate;
             document.getElementById('modalPenalty').textContent = penalty;
-            document.getElementById('proofFileName').textContent = 'No file attached';
-            currentProofUrl = '';
-            const icon = document.getElementById('proofIcon');
-            const img = document.getElementById('proofImage');
-            icon.style.display = 'block';
-            icon.className = 'ph ph-image';
-            img.style.display = 'none';
+
+            // Display return photos
+            const gallery = document.getElementById('proofGallery');
+            const noProof = document.getElementById('noProofMsg');
+            const photos = Array.isArray(returnPhotos) ? returnPhotos : [];
+
+            if (photos.length > 0) {
+                noProof.style.display = 'none';
+                gallery.style.display = 'flex';
+                gallery.innerHTML = photos.map(p => `
+                    <div class="proof-thumb-wrap" style="width:80px;height:80px;cursor:pointer;" onclick="window.open('${esc(p.photo_path)}','_blank')">
+                        <img src="${esc(p.photo_path)}" alt="Return photo" style="display:block;">
+                    </div>
+                `).join('');
+            } else {
+                noProof.style.display = 'flex';
+                gallery.style.display = 'none';
+                gallery.innerHTML = '';
+            }
+
+            // Show/hide approve/reject buttons based on status
+            const approveBtn = document.getElementById('approveReturnBtn');
+            const rejectBtn = document.getElementById('rejectReturnBtn');
+            if (isReturnPending) {
+                approveBtn.style.display = 'flex';
+                rejectBtn.style.display = 'flex';
+            } else {
+                approveBtn.style.display = 'none';
+                rejectBtn.style.display = 'none';
+            }
+
             document.getElementById('returnModal').classList.add('active');
         }
 
@@ -954,41 +1016,63 @@
             document.getElementById('returnForm').reset();
         }
 
-        function viewFullProof() {
-            if (currentProofUrl) window.open(currentProofUrl, '_blank');
-            else alert("No proof file attached.");
-        }
-
-        function submitReturn(event, btn) {
-            event.preventDefault();
+        async function approveReturn(btn) {
+            const txnId = document.getElementById('hiddenTxnId').value;
+            if (!txnId) return;
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Processing Update...';
+            btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Approving...';
             btn.style.pointerEvents = 'none';
 
-            window.api.authenticatedFetch('/api/transactions/return.php', {
-                method: 'PUT',
-                body: { transaction_id: document.getElementById('hiddenTxnId').value }
-            }).then(async (res) => {
-                btn.innerHTML = '<i class="ph ph-check"></i> Return processed';
-                btn.style.background = 'var(--success)';
-                btn.style.color = 'var(--bg-deep)';
+            try {
+                const res = await window.api.authenticatedFetch('/api/transactions/approve_return.php', {
+                    method: 'PUT',
+                    body: { transaction_id: txnId, action: 'approve' }
+                });
+                btn.innerHTML = '<i class="ph ph-check"></i> Approved!';
                 const p = Number(res?.penalty_amount || 0);
                 if (p > 0) {
-                    alert(`Return processed. Penalty due: PHP ${p.toFixed(2)}`);
+                    alert(`Return approved. Penalty due: PHP ${p.toFixed(2)}`);
+                } else {
+                    alert('Return approved successfully. Asset released back to catalog.');
                 }
                 await loadActiveTransactions();
                 setTimeout(() => {
                     closeReturnModal();
                     btn.innerHTML = originalText;
-                    btn.style.background = '';
-                    btn.style.color = '';
                     btn.style.pointerEvents = 'auto';
-                }, 800);
-            }).catch((err) => {
-                alert(err?.message || 'Failed to process return.');
+                }, 600);
+            } catch (err) {
+                alert(err?.message || 'Failed to approve return.');
                 btn.innerHTML = originalText;
                 btn.style.pointerEvents = 'auto';
-            });
+            }
+        }
+
+        async function rejectReturn(btn) {
+            const txnId = document.getElementById('hiddenTxnId').value;
+            if (!txnId) return;
+            if (!confirm('Are you sure you want to reject this return? The transaction will revert to active.')) return;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Rejecting...';
+            btn.style.pointerEvents = 'none';
+
+            try {
+                await window.api.authenticatedFetch('/api/transactions/approve_return.php', {
+                    method: 'PUT',
+                    body: { transaction_id: txnId, action: 'reject' }
+                });
+                alert('Return rejected. Transaction reverted to active loan.');
+                await loadActiveTransactions();
+                setTimeout(() => {
+                    closeReturnModal();
+                    btn.innerHTML = originalText;
+                    btn.style.pointerEvents = 'auto';
+                }, 600);
+            } catch (err) {
+                alert(err?.message || 'Failed to reject return.');
+                btn.innerHTML = originalText;
+                btn.style.pointerEvents = 'auto';
+            }
         }
     </script>
 

@@ -797,6 +797,7 @@
                         <th>Pending Asset ID</th>
                         <th>Asset</th>
                         <th>Lender</th>
+                        <th>Photo</th>
                         <th>Submitted</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -831,6 +832,9 @@
                     <div class="review-section">
                         <div class="review-label">Fulfillment Details</div>
                         <div class="review-data"><span>Asset</span><strong id="modalAsset">—</strong></div>
+                        <div id="modalAssetImageWrap" style="display:none; margin-bottom:12px;">
+                            <img id="modalAssetImage" src="" alt="Asset photo" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;border:1px solid var(--glass-border);">
+                        </div>
                         <div class="review-data"><span>Designated Location</span><strong id="modalLocation" style="color: var(--gold);">—</strong></div>
                         <div class="review-data"><span>Schedule</span><strong id="modalSchedule">—</strong></div>
                         <div class="review-data"><span>Duration / Penalty</span><strong id="modalDuration">—</strong></div>
@@ -952,11 +956,16 @@
                 allPendingAssets = pending;
                 const tbody = document.getElementById('pendingAssetsBody');
                 if (!tbody) return;
-                tbody.innerHTML = pending.map(a => `
+                tbody.innerHTML = pending.map(a => {
+                    const imgHtml = a.asset_image
+                        ? `<img src="${esc(a.asset_image)}" alt="${esc(a.name)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--glass-border);">`
+                        : `<div style="width:48px;height:48px;border-radius:8px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;border:1px solid rgba(229,192,123,0.15);"><i class="ph ph-image" style="font-size:20px;color:var(--gold-dark);"></i></div>`;
+                    return `
                     <tr>
                         <td style="color: var(--text-1); font-family: monospace;">#AST-${esc(a.id)}</td>
                         <td style="color: var(--text-1);">${esc(a.name || '—')}</td>
                         <td>${esc(a.lender_name || '—')}</td>
+                        <td>${imgHtml}</td>
                         <td>${esc(fmtDateTime(a.created_at))}</td>
                         <td><span class="status-pill pending">${esc(a.status || 'pending')}</span></td>
                         <td>
@@ -968,7 +977,7 @@
                             </button>
                         </td>
                     </tr>
-                `).join('') || `<tr><td colspan="6" style="padding:18px; color: var(--text-3);">No pending assets found.</td></tr>`;
+                `}).join('') || `<tr><td colspan="7" style="padding:18px; color: var(--text-3);">No pending assets found.</td></tr>`;
                 updatePendingBadge();
             } catch (e) {
                 console.error('Failed to load pending assets', e);
@@ -1078,6 +1087,17 @@
                 document.getElementById('modalSchoolId').textContent = req?.borrower?.school_id || '—';
                 document.getElementById('modalEmail').textContent = req?.borrower?.email || '—';
                 document.getElementById('modalAsset').textContent = req?.asset?.name || '—';
+
+                // Show asset image if available
+                const imgWrap = document.getElementById('modalAssetImageWrap');
+                const imgEl = document.getElementById('modalAssetImage');
+                if (req?.asset?.asset_image) {
+                    imgEl.src = req.asset.asset_image;
+                    imgWrap.style.display = 'block';
+                } else {
+                    imgWrap.style.display = 'none';
+                    imgEl.src = '';
+                }
             }
 
             // Set dynamic schedule and location data

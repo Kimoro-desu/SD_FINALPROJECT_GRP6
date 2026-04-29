@@ -1,3 +1,8 @@
+<?php
+// PHP block kept empty for any future auth checks
+$loansForJs = []; // We now use the JWT API in JS to populate loans securely
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -348,6 +353,54 @@
   .empty-state i { font-size: 48px; color: var(--text-3); }
   .empty-state h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--text-2); font-weight: 400; }
   .empty-state p { font-size: 13px; color: var(--text-3); max-width: 280px; line-height: 1.5; }
+
+  /* ── PHOTO UPLOAD ── */
+  .photo-upload-area {
+    border: 1px dashed var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    background: rgba(255,255,255,0.02);
+    margin-bottom: 8px;
+  }
+  .photo-upload-area:hover {
+    border-color: rgba(229,192,123,0.4);
+    background: rgba(229,192,123,0.03);
+  }
+  .photo-upload-area i { font-size: 28px; color: var(--gold-dark); margin-bottom: 6px; }
+  .photo-upload-area .upload-text { font-size: 13px; color: var(--text-2); }
+  .photo-upload-area .upload-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+  .photo-previews {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;
+  }
+  .photo-preview-item {
+    position: relative; width: 80px; height: 80px;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--glass-border);
+  }
+  .photo-preview-item img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .photo-preview-item .remove-photo {
+    position: absolute; top: 2px; right: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border);
+    color: var(--danger); font-size: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-preview-item .remove-photo:hover { background: var(--danger); color: #fff; }
+
+  /* ── SUMMARY PHOTOS ── */
+  .summary-photos {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .summary-photos img {
+    width: 72px; height: 72px; object-fit: cover;
+    border-radius: 8px; border: 1px solid var(--glass-border);
+  }
 </style>
 </head>
 <body>
@@ -436,11 +489,29 @@
       <div class="card-title">Active Loans</div>
       <div class="card-desc">Select the asset you wish to return. Only currently borrowed items are shown below.</div>
 
-      <div class="loans-list" id="loansList">
-        <div class="empty-state" style="padding: 20px; text-align: center;">
-          <i class="ph ph-spinner-gap ph-spin" style="font-size: 32px; color: var(--text-3);"></i>
-          <p style="color: var(--text-2); margin-top: 10px;">Loading active loans...</p>
-        </div>
+      <div class="loans-list">
+        <?php if (empty($loansForJs)): ?>
+          <div class="empty-state" style="padding: 20px; text-align: center;">
+            <i class="ph ph-package" style="font-size: 32px; color: var(--text-3);"></i>
+            <p style="color: var(--text-2); margin-top: 10px;">No active loans to return.</p>
+          </div>
+        <?php else: ?>
+          <?php foreach ($loansForJs as $id => $l): ?>
+            <div class="loan-card" id="loan-<?= $id ?>" onclick="selectLoan(<?= $id ?>)">
+              <div class="loan-icon"><i class="ph ph-circuit-board"></i></div>
+              <div class="loan-details">
+                <div class="loan-name"><?= $l['name'] ?></div>
+                <div class="loan-meta">
+                  <span><i class="ph ph-hash"></i> <?= $l['tag'] ?></span>
+                  <span><i class="ph ph-map-pin"></i> <?= $l['location'] ?></span>
+                  <span><i class="ph ph-calendar-check"></i> Due: <?= $l['due'] ?></span>
+                </div>
+              </div>
+              <span class="loan-status status-<?= $l['statusClass'] ?>"><?= $l['statusLabel'] ?></span>
+              <div class="loan-select-indicator"><i class="ph-fill ph-check"></i></div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </div>
 
       <div class="btn-group">
@@ -520,6 +591,17 @@
         <textarea class="form-textarea" id="returnNotes" placeholder="Note any observations about the asset's condition, accessories returned, or other relevant remarks."></textarea>
       </div>
 
+      <div class="form-group">
+        <label class="form-label"><i class="ph ph-camera"></i> Upload Return Photos <span style="color:var(--text-3); font-weight:300; text-transform:none; letter-spacing:0;">(optional, up to 5)</span></label>
+        <label for="returnPhotoInput" class="photo-upload-area">
+          <i class="ph ph-cloud-arrow-up"></i>
+          <div class="upload-text">Click to upload photos of the returned item</div>
+          <div class="upload-sub">JPEG, PNG, GIF, or WebP — max 5MB each</div>
+        </label>
+        <input type="file" id="returnPhotoInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none;" onchange="previewReturnPhotos(this)">
+        <div class="photo-previews" id="returnPhotoPreviews"></div>
+      </div>
+
       <div class="terms-wrap">
         <input type="checkbox" id="terms">
         <label for="terms">I confirm that I am returning this asset to its designated location in the stated condition, and that all included accessories have been accounted for. I understand that any damage or loss will be reported to the department administrator.</label>
@@ -536,12 +618,12 @@
     </div>
 
     <div class="step" id="step3">
-      <div class="success-icon">
-        <i class="ph-fill ph-check-circle"></i>
+      <div class="success-icon" style="color:var(--gold);">
+        <i class="ph-fill ph-clock"></i>
       </div>
-      <div class="card-label" style="text-align:center;">Return Logged</div>
-      <div class="card-title" style="text-align:center; color:var(--success);">Asset Returned</div>
-      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return has been recorded and the asset's availability has been updated. Thank you for returning it on time.</div>
+      <div class="card-label" style="text-align:center;">Return Submitted</div>
+      <div class="card-title" style="text-align:center; color:var(--gold);">Pending Admin Review</div>
+      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return request has been submitted. An administrator will review the return photos and verify the asset condition before finalizing.</div>
 
       <div class="summary-grid">
         <div class="summary-section">
@@ -572,13 +654,18 @@
           </div>
           <div class="summary-row">
             <span>Loan Status</span>
-            <strong id="s-loan-status">—</strong>
+            <strong id="s-loan-status" style="color:var(--gold);">Pending Admin Review</strong>
           </div>
         </div>
       </div>
 
       <div class="summary-label" style="margin-bottom:8px;">Return Notes</div>
       <div class="notes-box" id="s-notes">—</div>
+
+      <div id="s-photos-section" style="display:none; margin-bottom:24px;">
+        <div class="summary-label" style="margin-bottom:8px;">Return Photos</div>
+        <div class="summary-photos" id="s-photos"></div>
+      </div>
 
       <div class="btn-group" style="margin-top:0;">
         <button class="btn btn-secondary" onclick="window.location.reload()">
@@ -587,6 +674,15 @@
         <button class="btn btn-primary" onclick="window.location.href='borrower_lender_dashboard.php'">
           <i class="ph ph-squares-four"></i> Go to Dashboard
         </button>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="returnToast" style="position:fixed;bottom:32px;right:32px;background:rgba(15,15,20,0.95);border:1px solid rgba(229,192,123,0.3);border-radius:14px;padding:18px 28px;display:none;align-items:center;gap:12px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);min-width:320px;">
+      <i class="ph ph-check-circle" style="font-size:24px;color:var(--gold);"></i>
+      <div>
+        <div style="font-size:14px;font-weight:500;color:var(--text-1);" id="toastTitle">Return Submitted</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:2px;" id="toastMsg">Pending admin review.</div>
       </div>
     </div>
 
@@ -695,99 +791,100 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+      // Initialize notifications if user is logged in
       if(window.api && window.api.isAuthenticated()) {
           fetchNotifications();
           setInterval(fetchNotifications, 15000);
-          loadActiveLoans();
-      } else {
-          window.location.href = 'login.php';
       }
   });
 
+
   /* ── LOAN DATA ── */
   let loans = {};
+
   let selectedLoan = null;
   let selectedCondition = null;
 
-  async function loadActiveLoans() {
-      try {
-          const res = await window.api.authenticatedFetch('/transactions/history.php');
-          const history = Array.isArray(res?.history) ? res.history : [];
-          
-          const activeLoans = history.filter(tx => 
-              String(tx?.status || '').toLowerCase() === 'approved' && 
-              tx.is_current_user_borrower === true
-          );
+  /* ── LOAD LOANS VIA API ── */
+  async function loadMyLoans() {
+    try {
+      const res = await window.api.authenticatedFetch('/transactions/history.php');
+      const history = Array.isArray(res?.history) ? res.history : [];
+      const user = window.api.getUser();
+      const uid = Number(user?.id || 0);
 
-          const listEl = document.getElementById('loansList');
-          listEl.innerHTML = '';
+      const activeLoans = history.filter(tx => {
+        const st = String(tx?.status || '').toLowerCase();
+        // Only show approved/active loans where I am the borrower
+        return (st === 'approved' || st === 'confirmed' || st === 'active') 
+               && !tx?.dates?.returned 
+               && Number(tx?.borrower?.id || 0) === uid;
+      });
 
-          if (activeLoans.length === 0) {
-              listEl.innerHTML = `
-                  <div class="empty-state" style="padding: 20px; text-align: center;">
-                      <i class="ph ph-package" style="font-size: 32px; color: var(--text-3);"></i>
-                      <p style="color: var(--text-2); margin-top: 10px;">No active loans to return.</p>
-                  </div>
-              `;
-              return;
-          }
-
-          activeLoans.forEach(loan => {
-              const id = loan.transaction_id;
-              const dueStr = loan.dates.due ? new Date(loan.dates.due.replace(' ', 'T')).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A';
-              
-              let isOverdue = false;
-              let statusLabel = 'Active';
-              let statusClass = 'active';
-              
-              if (loan.dates.due) {
-                  const due = new Date(loan.dates.due.replace(' ', 'T')).getTime();
-                  const now = Date.now();
-                  if (now > due) {
-                      isOverdue = true;
-                      statusLabel = 'Overdue';
-                      statusClass = 'overdue';
-                  } else if (due - now < 86400 * 3 * 1000) {
-                      statusLabel = 'Due Soon';
-                      statusClass = 'due-soon';
-                  }
-              }
-
-              loans[id] = {
-                  id: id,
-                  name: loan.asset.name,
-                  tag: 'AST-' + String(loan.asset.id).padStart(4, '0'),
-                  location: loan.asset.meetup_location || 'Designated Location',
-                  due: dueStr,
-                  statusLabel: statusLabel,
-                  statusClass: statusClass,
-                  isOverdue: isOverdue
-              };
-
-              const card = document.createElement('div');
-              card.className = 'loan-card';
-              card.id = 'loan-' + id;
-              card.onclick = () => selectLoan(id);
-              card.innerHTML = `
-                  <div class="loan-icon"><i class="ph ph-circuit-board"></i></div>
-                  <div class="loan-details">
-                      <div class="loan-name">${loan.asset.name}</div>
-                      <div class="loan-meta">
-                          <span><i class="ph ph-hash"></i> AST-${String(loan.asset.id).padStart(4, '0')}</span>
-                          <span><i class="ph ph-map-pin"></i> ${loan.asset.meetup_location || 'Designated Location'}</span>
-                          <span><i class="ph ph-calendar-check"></i> Due: ${dueStr}</span>
-                      </div>
-                  </div>
-                  <span class="loan-status status-${statusClass}">${statusLabel}</span>
-                  <div class="loan-select-indicator"><i class="ph-fill ph-check"></i></div>
-              `;
-              listEl.appendChild(card);
-          });
-      } catch (error) {
-          console.error("Failed to load active loans:", error);
-          document.getElementById('loansList').innerHTML = `<div style="color:var(--danger); padding:20px;">Failed to load your active loans. Please try again later.</div>`;
+      const grid = document.getElementById('loansGrid');
+      
+      if (activeLoans.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-3); background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 12px;">
+            <i class="ph ph-check-circle" style="font-size:32px; color:var(--text-3); margin-bottom:12px; display:block;"></i>
+            You have no active loans to return.
+          </div>
+        `;
+        return;
       }
+
+      loans = {};
+      grid.innerHTML = activeLoans.map(tx => {
+        const id = tx.transaction_id;
+        const dueTs = new Date(tx?.dates?.due || 0).getTime();
+        const isOverdue = dueTs > 0 && dueTs < Date.now();
+        const dueSoon = !isOverdue && dueTs > 0 && (dueTs - Date.now() < 86400000 * 3);
+        
+        let statusLabel = 'Active';
+        let statusClass = 'active';
+        if (isOverdue) { statusLabel = 'Overdue'; statusClass = 'overdue'; }
+        else if (dueSoon) { statusLabel = 'Due Soon'; statusClass = 'due-soon'; }
+
+        const dueDateStr = dueTs > 0 ? new Date(dueTs).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A';
+        const location = tx?.asset?.meetup_location || 'Designated Location';
+        const tag = `AST-${String(tx?.asset?.id).padStart(4, '0')}`;
+
+        loans[id] = {
+          name: tx?.asset?.name || 'Unknown Asset',
+          tag: tag,
+          location: location,
+          due: dueDateStr,
+          statusLabel: statusLabel,
+          statusClass: statusClass,
+          isOverdue: isOverdue
+        };
+
+        return `
+          <div class="loan-card" id="loan-${id}" onclick="selectLoan(${id})">
+            <div class="status-badge status-${statusClass}">${statusLabel}</div>
+            <div class="loan-title">${loans[id].name}</div>
+            <div class="loan-id">ID: ${tag}</div>
+            <div class="loan-meta">
+              <div class="meta-item"><i class="ph ph-map-pin"></i> ${location}</div>
+              <div class="meta-item" style="${isOverdue ? 'color: var(--danger); font-weight: 500;' : ''}">
+                <i class="ph ph-clock"></i> Due: ${dueDateStr}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('Failed loading loans:', e);
+      document.getElementById('loansGrid').innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: var(--danger);">Failed to load loans.</div>
+      `;
+    }
   }
+
+  // Load loans on startup
+  document.addEventListener('DOMContentLoaded', () => {
+    loadMyLoans();
+  });
 
   /* ── SELECT LOAN ── */
   function selectLoan(id) {
@@ -858,6 +955,40 @@
     document.getElementById('returnNotes').value = '';
   }
 
+  /* ── RETURN PHOTOS STATE ── */
+  let returnPhotoFiles = [];
+
+  function previewReturnPhotos(input) {
+    const newFiles = Array.from(input.files);
+    if (returnPhotoFiles.length + newFiles.length > 5) {
+      alert('Maximum 5 photos allowed.');
+      return;
+    }
+    newFiles.forEach(f => {
+      returnPhotoFiles.push(f);
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const idx = returnPhotoFiles.indexOf(f);
+        const container = document.getElementById('returnPhotoPreviews');
+        const item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.dataset.idx = idx;
+        item.innerHTML = `
+          <img src="${e.target.result}" alt="Return photo">
+          <button class="remove-photo" onclick="removeReturnPhoto(${idx}, this)" type="button"><i class="ph ph-x"></i></button>
+        `;
+        container.appendChild(item);
+      };
+      reader.readAsDataURL(f);
+    });
+    input.value = '';
+  }
+
+  function removeReturnPhoto(idx, btn) {
+    returnPhotoFiles[idx] = null;
+    btn.closest('.photo-preview-item').remove();
+  }
+
   /* ── SUBMIT ── */
   async function handleSubmit() {
     if (!selectedCondition) {
@@ -876,37 +1007,80 @@
       hour: '2-digit', minute: '2-digit'
     });
 
-    const proceedBtn = document.querySelector('#step2 .btn-primary');
-    const originalText = proceedBtn.innerHTML;
-    proceedBtn.innerHTML = '<i class="ph ph-spinner-gap ph-spin"></i> Processing...';
-    proceedBtn.disabled = true;
-
     try {
-        const response = await window.api.authenticatedFetch('/transactions/return.php', {
-            method: 'PUT',
-            body: { transaction_id: selectedLoan }
-        });
+      // 1. Call the JWT-authenticated return API
+      const res = await window.api.authenticatedFetch('/transactions/return.php', {
+        method: 'PUT',
+        body: { transaction_id: selectedLoan }
+      });
 
-        if (response && response.status === 'success') {
-            document.getElementById('s-name').textContent       = loan.name;
-            document.getElementById('s-tag').textContent        = loan.tag;
-            document.getElementById('s-location').textContent   = loan.location;
-            document.getElementById('s-datetime').textContent   = now;
-            document.getElementById('s-condition').textContent  = selectedCondition;
-            document.getElementById('s-loan-status').textContent = loan.isOverdue ? 'Returned Late' : 'Returned On Time';
-            document.getElementById('s-notes').textContent      = notes;
-            
-            goToStep(3);
-        } else {
-            alert('Error returning asset: ' + (response?.message || 'Unknown error'));
+      // 2. Upload return photos if any
+      const validPhotos = returnPhotoFiles.filter(f => f !== null);
+      let uploadedUrls = [];
+      if (validPhotos.length > 0) {
+        const formData = new FormData();
+        formData.append('transaction_id', selectedLoan);
+        validPhotos.forEach(f => formData.append('return_photos[]', f));
+
+        const token = window.api.getToken();
+        try {
+          const uploadRes = await fetch('/SD_FINALPROJECT_GRP6/HariBorrow_backend/api/transactions/upload_return_photos.php', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+          }).then(r => r.json());
+          if (uploadRes?.photos) {
+            uploadedUrls = uploadRes.photos;
+          }
+        } catch (photoErr) {
+          console.warn('Photo upload failed:', photoErr);
         }
+      }
+
+      // 3. Show success summary
+      document.getElementById('s-name').textContent       = loan.name;
+      document.getElementById('s-tag').textContent        = loan.tag;
+      document.getElementById('s-location').textContent   = loan.location;
+      document.getElementById('s-datetime').textContent   = now;
+      document.getElementById('s-condition').textContent  = selectedCondition;
+      document.getElementById('s-loan-status').textContent = 'Pending Admin Review';
+      document.getElementById('s-loan-status').style.color = 'var(--gold)';
+      document.getElementById('s-notes').textContent      = notes;
+
+      // Show penalty estimate if any
+      if (res?.penalty_amount && Number(res.penalty_amount) > 0) {
+        document.getElementById('s-loan-status').textContent += ` — Est. Penalty: PHP ${Number(res.penalty_amount).toLocaleString()}`;
+        document.getElementById('s-loan-status').style.color = 'var(--danger)';
+      }
+
+      // Show uploaded photos in summary
+      const photosSection = document.getElementById('s-photos-section');
+      const photosContainer = document.getElementById('s-photos');
+      if (uploadedUrls.length > 0) {
+        photosSection.style.display = 'block';
+        photosContainer.innerHTML = uploadedUrls.map(url => `<img src="${url}" alt="Return photo">`).join('');
+      }
+
+      goToStep(3);
+      returnPhotoFiles = [];
+
+      // Show toast
+      showReturnToast('Return Submitted Successfully', 'Your return is pending admin review. You\'ll be notified once approved.');
     } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred while submitting the return.');
-    } finally {
-        proceedBtn.innerHTML = originalText;
-        proceedBtn.disabled = false;
+      console.error('Error:', error);
+      alert('Error submitting return: ' + (error?.message || 'Unknown error'));
     }
+  }
+
+  function showReturnToast(title, msg) {
+    const toast = document.getElementById('returnToast');
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastMsg').textContent = msg;
+    toast.style.display = 'flex';
+    toast.style.animation = 'none';
+    toast.offsetHeight; // force reflow
+    toast.style.animation = 'fadeIn 0.4s ease';
+    setTimeout(() => { toast.style.display = 'none'; }, 5000);
   }
 </script>
 </body>
