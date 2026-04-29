@@ -489,29 +489,11 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
       <div class="card-title">Active Loans</div>
       <div class="card-desc">Select the asset you wish to return. Only currently borrowed items are shown below.</div>
 
-      <div class="loans-list">
-        <?php if (empty($loansForJs)): ?>
-          <div class="empty-state" style="padding: 20px; text-align: center;">
-            <i class="ph ph-package" style="font-size: 32px; color: var(--text-3);"></i>
-            <p style="color: var(--text-2); margin-top: 10px;">No active loans to return.</p>
-          </div>
-        <?php else: ?>
-          <?php foreach ($loansForJs as $id => $l): ?>
-            <div class="loan-card" id="loan-<?= $id ?>" onclick="selectLoan(<?= $id ?>)">
-              <div class="loan-icon"><i class="ph ph-circuit-board"></i></div>
-              <div class="loan-details">
-                <div class="loan-name"><?= $l['name'] ?></div>
-                <div class="loan-meta">
-                  <span><i class="ph ph-hash"></i> <?= $l['tag'] ?></span>
-                  <span><i class="ph ph-map-pin"></i> <?= $l['location'] ?></span>
-                  <span><i class="ph ph-calendar-check"></i> Due: <?= $l['due'] ?></span>
-                </div>
-              </div>
-              <span class="loan-status status-<?= $l['statusClass'] ?>"><?= $l['statusLabel'] ?></span>
-              <div class="loan-select-indicator"><i class="ph-fill ph-check"></i></div>
-            </div>
-          <?php endforeach; ?>
-        <?php endif; ?>
+      <div class="loans-list" id="loansList">
+        <div class="empty-state" style="padding: 20px; text-align: center;">
+          <i class="ph ph-spinner-gap" style="font-size: 32px; color: var(--text-3);"></i>
+          <p style="color: var(--text-2); margin-top: 10px;">Loading active loans...</p>
+        </div>
       </div>
 
       <div class="btn-group">
@@ -790,13 +772,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
       }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-      // Initialize notifications if user is logged in
-      if(window.api && window.api.isAuthenticated()) {
-          fetchNotifications();
-          setInterval(fetchNotifications, 15000);
-      }
-  });
+
 
 
   /* ── LOAN DATA ── */
@@ -806,84 +782,96 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   let selectedCondition = null;
 
   /* ── LOAD LOANS VIA API ── */
-  async function loadMyLoans() {
+  async function loadActiveLoans() {
     try {
       const res = await window.api.authenticatedFetch('/transactions/history.php');
       const history = Array.isArray(res?.history) ? res.history : [];
-      const user = window.api.getUser();
-      const uid = Number(user?.id || 0);
 
-      const activeLoans = history.filter(tx => {
-        const st = String(tx?.status || '').toLowerCase();
-        // Only show approved/active loans where I am the borrower
-        return (st === 'approved' || st === 'confirmed' || st === 'active') 
-               && !tx?.dates?.returned 
-               && Number(tx?.borrower?.id || 0) === uid;
-      });
+      const activeLoans = history.filter(tx =>
+        String(tx?.status || '').toLowerCase() === 'approved' &&
+        tx.is_current_user_borrower === true
+      );
 
-      const grid = document.getElementById('loansGrid');
-      
+      const listEl = document.getElementById('loansList');
+      listEl.innerHTML = '';
+
       if (activeLoans.length === 0) {
-        grid.innerHTML = `
-          <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-3); background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 12px;">
-            <i class="ph ph-check-circle" style="font-size:32px; color:var(--text-3); margin-bottom:12px; display:block;"></i>
-            You have no active loans to return.
+        listEl.innerHTML = `
+          <div class="empty-state" style="padding: 20px; text-align: center;">
+            <i class="ph ph-package" style="font-size: 32px; color: var(--text-3);"></i>
+            <p style="color: var(--text-2); margin-top: 10px;">No active loans to return.</p>
           </div>
         `;
         return;
       }
 
       loans = {};
-      grid.innerHTML = activeLoans.map(tx => {
-        const id = tx.transaction_id;
-        const dueTs = new Date(tx?.dates?.due || 0).getTime();
-        const isOverdue = dueTs > 0 && dueTs < Date.now();
-        const dueSoon = !isOverdue && dueTs > 0 && (dueTs - Date.now() < 86400000 * 3);
-        
+      activeLoans.forEach(loan => {
+        const id = loan.transaction_id;
+        const dueStr = loan.dates.due
+          ? new Date(loan.dates.due.replace(' ', 'T')).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})
+          : 'N/A';
+
+        let isOverdue = false;
         let statusLabel = 'Active';
         let statusClass = 'active';
-        if (isOverdue) { statusLabel = 'Overdue'; statusClass = 'overdue'; }
-        else if (dueSoon) { statusLabel = 'Due Soon'; statusClass = 'due-soon'; }
 
-        const dueDateStr = dueTs > 0 ? new Date(dueTs).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A';
-        const location = tx?.asset?.meetup_location || 'Designated Location';
-        const tag = `AST-${String(tx?.asset?.id).padStart(4, '0')}`;
+        if (loan.dates.due) {
+          const due = new Date(loan.dates.due.replace(' ', 'T')).getTime();
+          const now = Date.now();
+          if (now > due) {
+            isOverdue = true; statusLabel = 'Overdue'; statusClass = 'overdue';
+          } else if (due - now < 86400 * 3 * 1000) {
+            statusLabel = 'Due Soon'; statusClass = 'due-soon';
+          }
+        }
 
         loans[id] = {
-          name: tx?.asset?.name || 'Unknown Asset',
-          tag: tag,
-          location: location,
-          due: dueDateStr,
-          statusLabel: statusLabel,
-          statusClass: statusClass,
-          isOverdue: isOverdue
+          name: loan.asset.name,
+          tag: 'AST-' + String(loan.asset.id).padStart(4, '0'),
+          location: loan.asset.meetup_location || 'Designated Location',
+          due: dueStr,
+          statusLabel,
+          statusClass,
+          isOverdue
         };
 
-        return `
-          <div class="loan-card" id="loan-${id}" onclick="selectLoan(${id})">
-            <div class="status-badge status-${statusClass}">${statusLabel}</div>
-            <div class="loan-title">${loans[id].name}</div>
-            <div class="loan-id">ID: ${tag}</div>
+        const card = document.createElement('div');
+        card.className = 'loan-card';
+        card.id = 'loan-' + id;
+        card.onclick = () => selectLoan(id);
+        card.innerHTML = `
+          <div class="loan-icon"><i class="ph ph-circuit-board"></i></div>
+          <div class="loan-details">
+            <div class="loan-name">${loans[id].name}</div>
             <div class="loan-meta">
-              <div class="meta-item"><i class="ph ph-map-pin"></i> ${location}</div>
-              <div class="meta-item" style="${isOverdue ? 'color: var(--danger); font-weight: 500;' : ''}">
-                <i class="ph ph-clock"></i> Due: ${dueDateStr}
-              </div>
+              <span><i class="ph ph-hash"></i> ${loans[id].tag}</span>
+              <span><i class="ph ph-map-pin"></i> ${loans[id].location}</span>
+              <span><i class="ph ph-calendar-check"></i> Due: ${dueStr}</span>
             </div>
           </div>
+          <span class="loan-status status-${statusClass}">${statusLabel}</span>
+          <div class="loan-select-indicator"><i class="ph-fill ph-check"></i></div>
         `;
-      }).join('');
+        listEl.appendChild(card);
+      });
     } catch (e) {
       console.error('Failed loading loans:', e);
-      document.getElementById('loansGrid').innerHTML = `
-        <div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: var(--danger);">Failed to load loans.</div>
+      document.getElementById('loansList').innerHTML = `
+        <div style="padding: 20px; text-align: center; color: var(--danger);">Failed to load your loans. Please refresh.</div>
       `;
     }
   }
 
   // Load loans on startup
   document.addEventListener('DOMContentLoaded', () => {
-    loadMyLoans();
+    if (window.api && window.api.isAuthenticated()) {
+      fetchNotifications();
+      setInterval(fetchNotifications, 15000);
+      loadActiveLoans();
+    } else {
+      window.location.href = 'login.php';
+    }
   });
 
   /* ── SELECT LOAN ── */

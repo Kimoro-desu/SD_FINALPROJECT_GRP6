@@ -123,6 +123,8 @@ if (!empty($data->transaction_id)) {
                 if ($penaltyType === 'per_hour') {
                     $hoursLate = (int)ceil($secondsLate / 3600);
                     $penaltyAmount = max(0, $hoursLate * $penaltyRate);
+                } elseif ($penaltyType === 'one_time') {
+                    $penaltyAmount = max(0, $penaltyRate);
                 } else {
                     $daysLate = (int)ceil($secondsLate / 86400);
                     $penaltyAmount = max(0, $daysLate * $penaltyRate);

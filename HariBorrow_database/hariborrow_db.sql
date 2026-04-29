@@ -278,3 +278,82 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+Y `User_ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `penalties`
+--
+ALTER TABLE `penalties`
+  ADD CONSTRAINT `fk_penalty_borrower` FOREIGN KEY (`borrower_id`) REFERENCES `users` (`User_ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `fk_penalty_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`transaction_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table `transactions`
+--
+ALTER TABLE `transactions`
+  ADD CONSTRAINT `fk_transaction_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`Asset_ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `fk_transaction_borrower` FOREIGN KEY (`borrower_id`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Table structure for table `user_notifications`
+--
+CREATE TABLE `user_notifications` (
+  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `severity` varchar(32) NOT NULL DEFAULT 'info',
+  `icon_class` varchar(64) NOT NULL DEFAULT 'ph-info',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`notification_id`),
+  KEY `idx_user_notifications_user_time` (`user_id`,`created_at`),
+  CONSTRAINT `fk_user_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `system_logs`
+--
+CREATE TABLE `system_logs` (
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
+  `event_type` varchar(32) NOT NULL,
+  `description` text NOT NULL,
+  `actor` varchar(255) DEFAULT NULL,
+  `ip_address` varchar(64) DEFAULT NULL,
+  `status` varchar(32) NOT NULL DEFAULT 'Success',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`log_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `registration_requests`
+--
+CREATE TABLE `registration_requests` (
+  `request_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `status` varchar(32) NOT NULL DEFAULT 'Pending',
+  `requested_at` timestamp NULL DEFAULT current_timestamp(),
+  `processed_at` datetime DEFAULT NULL,
+  `processed_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`request_id`),
+  UNIQUE KEY `uniq_user_request` (`user_id`),
+  CONSTRAINT `fk_regreq_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Seed Data for `users`
+--
+INSERT INTO `users` (`school_id_number`, `first_name`, `last_name`, `password_hash`, `user_role`, `plm_email`) VALUES
+('ADMIN-01', 'System', 'Admin', '$2y$10$gxe7hLE7dsSLA2cNG15mn.duXbzRYqm4CaeAdiV/ECi0zoxV1dvNm', 'Admin', 'admin@plm.edu.ph');
+
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+SET FOREIGN_KEY_CHECKS=1;
