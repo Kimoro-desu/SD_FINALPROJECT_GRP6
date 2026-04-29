@@ -1,0 +1,979 @@
+<?php require_once '../includes/config.php'; ?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HariBorrow — Dashboard</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="../js/auth_guard.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-deep: #030304;
+            --glass: rgba(15, 15, 20, 0.45);
+            --glass-heavy: rgba(10, 10, 13, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --gold: #E5C07B;
+            --gold-light: #FCEBAF;
+            --gold-dark: #A68A48;
+            --gold-dim: rgba(229, 192, 123, 0.1);
+            --gold-glow: rgba(229, 192, 123, 0.25);
+            --danger: #ef4444;
+            --danger-dim: rgba(239, 68, 68, 0.1);
+            --warning: #f59e0b;
+            --warning-dim: rgba(245, 158, 11, 0.1);
+            --info: #3b82f6;
+            --info-dim: rgba(59, 130, 246, 0.1);
+            --text-1: #FFFFFF;
+            --text-2: #A39E93;
+            --text-3: #6B665A;
+        }
+
+        html,
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-1);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-3);
+            border-radius: 10px;
+        }
+
+        .bg-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            background:
+                radial-gradient(circle at 15% 50%, rgba(229, 192, 123, 0.05), transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(166, 138, 72, 0.07), transparent 50%),
+                var(--bg-deep);
+            animation: pulseBg 15s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseBg {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.03);
+            }
+        }
+
+        .ambient-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
+            z-index: 9999;
+            mix-blend-mode: screen;
+            transition: background 0.1s;
+        }
+
+        /* ── TOP NAVIGATION ── */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: var(--glass-heavy);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5%;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo {
+            height: 56px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(229, 192, 123, 0.4)) brightness(1.2) contrast(1.3) saturate(1.4);
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        .nav-logo:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 18px var(--gold)) brightness(1.4) contrast(1.4) saturate(1.6);
+        }
+
+        .nav-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #FFF 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.02em;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        /* Notifications */
+        .notif-wrapper {
+            position: relative;
+        }
+
+        .notif-btn {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: var(--text-1);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .notif-btn:hover {
+            border-color: var(--gold);
+            background: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--danger);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--bg-deep);
+        }
+
+        .notif-dropdown {
+            position: absolute;
+            top: 120%;
+            right: -60px;
+            width: 340px;
+            background: rgba(15, 15, 20, 0.95);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .notif-dropdown.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .notif-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--glass-border);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gold-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notif-header span {
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-2);
+            cursor: pointer;
+        }
+
+        .notif-header span:hover {
+            color: var(--text-1);
+        }
+
+        .notif-list {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+
+        .notif-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .notif-list::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+        }
+
+        .notif-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+
+        .notif-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .notif-item:last-child {
+            border-bottom: none;
+        }
+
+        .notif-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .notif-icon.danger {
+            background: var(--danger-dim);
+            color: var(--danger);
+        }
+
+        .notif-icon.warning {
+            background: var(--warning-dim);
+            color: var(--warning);
+        }
+
+        .notif-icon.info {
+            background: var(--info-dim);
+            color: var(--info);
+        }
+
+        .notif-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .notif-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-1);
+        }
+
+        .notif-desc {
+            font-size: 12px;
+            color: var(--text-2);
+            line-height: 1.4;
+        }
+
+        .notif-time {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+
+        /* Settings / Profile Dropdown */
+        .profile-menu {
+            position: relative;
+        }
+
+        .profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 30px;
+            color: var(--text-1);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .profile-btn:hover {
+            border-color: var(--gold);
+            background: var(--gold-dim);
+        }
+
+        .profile-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--gold-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--bg-deep);
+            overflow: hidden;
+        }
+
+        .dropdown {
+            position: absolute;
+            top: 120%;
+            right: 0;
+            width: 220px;
+            background: rgba(15, 15, 20, 0.85);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .dropdown.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .drop-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-2);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            text-align: left;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .drop-item i {
+            font-size: 18px;
+            color: var(--gold);
+            opacity: 0.7;
+        }
+
+        .drop-item:hover {
+            background: var(--gold-dim);
+            color: var(--gold-light);
+        }
+
+        .drop-divider {
+            height: 1px;
+            background: var(--glass-border);
+            margin: 6px 0;
+        }
+
+        .drop-item.logout {
+            color: #ff6b7a;
+        }
+
+        .drop-item.logout:hover {
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        /* ── DASHBOARD CONTENT ── */
+        .dashboard {
+            position: relative;
+            z-index: 10;
+            padding: 140px 5% 60px;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 48px;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .welcome h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 48px;
+            font-weight: 400;
+            color: var(--text-1);
+            line-height: 1.1;
+        }
+
+        .welcome .aesthetic-script {
+            font-family: 'Pinyon Script', cursive;
+            font-size: 1.3em;
+            color: var(--gold-light);
+            text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
+        }
+
+        .welcome p {
+            font-size: 14px;
+            color: var(--text-2);
+            font-weight: 300;
+            margin-top: 8px;
+            letter-spacing: 0.03em;
+        }
+
+        .role-toggle {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 6px;
+            position: relative;
+        }
+
+        .role-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            color: var(--text-2);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 2;
+        }
+
+        .role-btn.active {
+            color: var(--bg-deep);
+            font-weight: 600;
+        }
+
+        .role-indicator {
+            position: absolute;
+            top: 6px;
+            bottom: 6px;
+            left: 6px;
+            width: calc(50% - 6px);
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+            border-radius: 30px;
+            z-index: 1;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 15px var(--gold-glow);
+        }
+
+        .role-toggle[data-mode="lender"] .role-indicator {
+            transform: translateX(100%);
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .module-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 32px;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 240px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(229, 192, 123, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-top {
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: var(--gold);
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 26px;
+            font-weight: 500;
+            color: var(--text-1);
+            margin-bottom: 8px;
+        }
+
+        .card-desc {
+            font-size: 13px;
+            font-weight: 300;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+
+        .card-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 32px;
+            position: relative;
+            z-index: 2;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 16px;
+        }
+
+        .card-action {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold);
+        }
+
+        .arrow-icon {
+            font-size: 18px;
+            color: var(--text-3);
+            transition: all 0.3s;
+        }
+
+        .lender-only {
+            display: none;
+        }
+
+        body[data-role="lender"] .borrower-only {
+            display: none;
+        }
+
+        body[data-role="lender"] .lender-only {
+            display: flex;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dash-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .role-toggle {
+                width: 100%;
+            }
+
+            .notif-dropdown {
+                right: -20px;
+                width: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body data-role="borrower">
+
+    <div class="bg-mesh"></div>
+    <div class="ambient-glow" id="glow"></div>
+
+    <nav class="top-nav">
+        <a href="#" class="nav-brand">
+            <img src="<?php echo htmlspecialchars($logoPath); ?>" alt="HariBorrow Logo" class="nav-logo">
+            <span class="nav-title">HariBorrow</span>
+        </a>
+
+        <div class="nav-controls">
+            <div class="notif-wrapper">
+                <button class="notif-btn" onclick="toggleMenu('notifDropdown')">
+                    <i class="ph ph-bell"></i>
+                    <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+                </button>
+
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header">
+                        Notifications
+                        <span style="cursor:pointer;" onclick="markAllNotificationsRead(event)">Mark all as read</span>
+                    </div>
+                    <div class="notif-list" id="notifList">
+                        <div class="notif-item">
+                            <div class="notif-content"><span class="notif-desc">Loading notifications...</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-menu">
+                <button class="profile-btn" onclick="toggleMenu('settingsDropdown')">
+                    <div class="profile-avatar" id="navAvatar">UN</div>
+                    <span id="navUserName">User Name</span>
+                    <i class="ph ph-caret-down"></i>
+                </button>
+
+                <div class="dropdown" id="settingsDropdown">
+                    <button class="drop-item" onclick="window.location.href='my_profile.php'"><i class="ph ph-user"></i> My Profile</button>
+                    <button class="drop-item" onclick="window.location.href='profile_settings.php'"><i class="ph ph-gear"></i> Account Settings</button>
+                    <button class="drop-item" onclick="window.location.href='report_issue.php'"><i class="ph ph-warning-circle"></i> Report an Issue</button>
+                    <div class="drop-divider"></div>
+                    <button class="drop-item logout"
+                        onclick="window.api.removeToken(); window.location.href='login.php'"><i
+                            class="ph ph-sign-out"></i> Secure Log Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+
+        <div class="dash-header">
+            <div class="welcome">
+                <h1>Welcome back, <span class="aesthetic-script">
+                        User.
+                    </span></h1>
+                <p>Pamantasan ng Lungsod ng Maynila — College of Engineering</p>
+            </div>
+
+            <div class="role-toggle" id="roleToggle" data-mode="borrower">
+                <div class="role-indicator"></div>
+                <button class="role-btn active" onclick="setRole('borrower', this)">Borrower</button>
+                <button class="role-btn" onclick="setRole('lender', this)">Lender</button>
+            </div>
+        </div>
+
+        <div class="module-grid">
+            <a href="borrowing.php" class="module-card borrower-only">
+                <div class="card-top">
+                    <div class="card-icon"><i class="ph ph-magnifying-glass"></i></div>
+                    <div class="card-title">Asset Catalog</div>
+                    <div class="card-desc">Browse available university equipment and submit secure borrow requests.
+                    </div>
+                </div>
+                <div class="card-bottom">
+                    <span class="card-action">Browse Catalog</span>
+                    <i class="ph ph-arrow-right arrow-icon"></i>
+                </div>
+            </a>
+
+            <a href="asset_management.php" class="module-card lender-only">
+                <div class="card-top">
+                    <div class="card-icon"><i class="ph ph-folders"></i></div>
+                    <div class="card-title">Asset Management</div>
+                    <div class="card-desc">Manage university equipment inventory, availability, and catalog listings.
+                    </div>
+                </div>
+                <div class="card-bottom">
+                    <span class="card-action">Manage Catalog</span>
+                    <i class="ph ph-arrow-right arrow-icon"></i>
+                </div>
+            </a>
+
+            <a href="asset_return.php" class="module-card borrower-only">
+                <div class="card-top">
+                    <div class="card-icon"><i class="ph ph-clock-counter-clockwise"></i></div>
+                    <div class="card-title">My Borrowings</div>
+                    <div class="card-desc" id="borrowerStats">Track status, due dates, and initiate return protocols.</div>
+                </div>
+                <div class="card-bottom">
+                    <span class="card-action">View Active</span>
+                    <i class="ph ph-arrow-right arrow-icon"></i>
+                </div>
+            </a>
+
+            <a href="asset_management.php?action=submit" class="module-card lender-only">
+                <div class="card-top">
+                    <div class="card-icon" style="color: #60a5fa;"><i class="ph ph-upload-simple"></i></div>
+                    <div class="card-title">Submit Asset</div>
+                    <div class="card-desc">List a new asset to the catalog — define availability, condition, and lending terms.</div>
+                </div>
+                <div class="card-bottom">
+                    <span class="card-action" style="color: #60a5fa;">Add New Asset</span>
+                    <i class="ph ph-arrow-right arrow-icon"></i>
+                </div>
+            </a>
+
+            <a href="lender_request_approval.php" class="module-card lender-only">
+                <div class="card-top">
+                    <div class="card-icon" style="color: #4ade80;"><i class="ph ph-check-circle"></i></div>
+                    <div class="card-title">Request Approvals</div>
+                    <div class="card-desc" id="lenderStats">Review and manage incoming borrow requests.</div>
+                </div>
+                <div class="card-bottom">
+                    <span class="card-action" style="color: #4ade80;">Review Pending</span>
+                    <i class="ph ph-arrow-right arrow-icon"></i>
+                </div>
+            </a>
+        </div>
+
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            let user = window.api.getUser();
+
+            if (user && user.name) {
+                const firstName = user.name.split(' ')[0] || 'User';
+                const lastName = user.name.split(' ').slice(1).join(' ') || '';
+
+                const welcomeScript = document.querySelector('.welcome .aesthetic-script');
+                if (welcomeScript) welcomeScript.textContent = `${firstName}.`;
+            }
+
+            fetchDashboardStats();
+            fetchNotifications();
+            setInterval(fetchDashboardStats, 15000);
+            setInterval(fetchNotifications, 15000);
+        });
+
+        async function fetchDashboardStats() {
+            try {
+                const response = await window.api.authenticatedFetch('/transactions/dashboard_stats.php');
+                if (response && response.status === 'success') {
+                    const stats = response.stats;
+
+                    // Fetch full history to get highly accurate dynamic states
+                    const historyRes = await window.api.authenticatedFetch('/transactions/history.php');
+                    const history = Array.isArray(historyRes?.history) ? historyRes.history : [];
+                    const me = window.api.getUser();
+                    const uid = Number(me?.id || 0);
+
+                    // --- BORROWER STATS ---
+                    const borrowerStatsEl = document.getElementById('borrowerStats');
+                    if (borrowerStatsEl) {
+                        const mine = history.filter(tx => Number(tx?.borrower?.id || 0) === uid);
+                        const pendingMine = mine.filter(tx => String(tx?.status || '').toLowerCase() === 'pending').length;
+
+                        borrowerStatsEl.textContent = `You have ${stats.active_borrowings} active borrowing${stats.active_borrowings !== 1 ? 's' : ''} and ${pendingMine} pending request${pendingMine !== 1 ? 's' : ''}.`;
+                        
+                        if (stats.active_borrowings > 0 || pendingMine > 0) {
+                            borrowerStatsEl.style.color = 'var(--gold-light)';
+                            borrowerStatsEl.style.fontWeight = '500';
+                        } else {
+                            borrowerStatsEl.style.color = 'var(--text-2)';
+                            borrowerStatsEl.style.fontWeight = '300';
+                        }
+                    }
+
+                    // --- LENDER STATS ---
+                    const lenderStatsEl = document.getElementById('lenderStats');
+                    if (lenderStatsEl) {
+                        // Filter history for transactions where the user is the lender
+                        const lenderHistory = history.filter(tx => tx?.is_current_user_lender === true);
+                        // Count how many are pending
+                        const pendingLender = lenderHistory.filter(tx => String(tx?.status || '').toLowerCase() === 'pending').length;
+
+                        lenderStatsEl.textContent = `You have ${pendingLender} pending request${pendingLender !== 1 ? 's' : ''} to review.`;
+                        
+                        // Light up the text if there are pending requests
+                        if (pendingLender > 0) {
+                            lenderStatsEl.style.color = 'var(--gold-light)';
+                            lenderStatsEl.style.fontWeight = '500';
+                        } else {
+                            lenderStatsEl.style.color = 'var(--text-2)';
+                            lenderStatsEl.style.fontWeight = '300';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard stats:", error);
+            }
+        }
+
+        async function fetchNotifications() {
+            try {
+                const response = await window.api.authenticatedFetch('/transactions/notifications.php');
+                if (response && response.status === 'success') {
+                    const notifs = response.notifications;
+                    const notifList = document.getElementById('notifList');
+                    const notifBadge = document.getElementById('notifBadge');
+                    
+                    notifList.innerHTML = '';
+                    
+                    if (notifs.length > 0) {
+                        const unreadCount = notifs.filter(n => n.notification_id && !n.is_read).length;
+                        notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                        notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                        
+                        notifs.forEach(notif => {
+                            const date = new Date(notif.time_ago.replace(' ', 'T'));
+                            const timeAgo = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                            
+                            const item = document.createElement('a');
+                            item.href = '#';
+                            item.className = 'notif-item';
+                            item.style.opacity = notif.is_read ? '0.6' : '1';
+                            item.innerHTML = `
+                                <div class="notif-icon ${notif.severity}">
+                                    <i class="ph ${notif.icon_class}"></i>
+                                </div>
+                                <div class="notif-content">
+                                    <span class="notif-title">${notif.title}</span>
+                                    <span class="notif-desc">${notif.message}</span>
+                                    <span class="notif-time">${timeAgo}</span>
+                                </div>
+                            `;
+                            if (notif.notification_id && !notif.is_read) {
+                                item.addEventListener('click', async (e) => {
+                                    e.preventDefault();
+                                    await markNotificationRead(notif.notification_id);
+                                });
+                            }
+                            notifList.appendChild(item);
+                        });
+                    } else {
+                        notifBadge.style.display = 'none';
+                        notifList.innerHTML = `
+                            <div class="notif-item">
+                                <div class="notif-content"><span class="notif-desc">No new notifications.</span></div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch notifications:", error);
+            }
+        }
+
+        async function markNotificationRead(notificationId) {
+            try {
+                await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+                    method: 'PUT',
+                    body: { notification_id: notificationId }
+                });
+                await fetchNotifications();
+            } catch (error) {
+                console.error("Failed to mark notification read:", error);
+            }
+        }
+
+        async function markAllNotificationsRead(event) {
+            if (event) event.stopPropagation();
+            try {
+                await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+                    method: 'PUT',
+                    body: {}
+                });
+                await fetchNotifications();
+            } catch (error) {
+                console.error("Failed to mark all notifications read:", error);
+            }
+        }
+
+        // Mouse Glow Effect
+        const glow = document.getElementById('glow');
+        document.addEventListener('mousemove', (e) => {
+            glow.style.setProperty('--mouse-x', e.clientX + 'px');
+            glow.style.setProperty('--mouse-y', e.clientY + 'px');
+        });
+
+        // Toggle dropdowns (updated to support both profile and notifications)
+        function toggleMenu(menuId) {
+            const targetMenu = document.getElementById(menuId);
+
+            document.querySelectorAll('.dropdown, .notif-dropdown').forEach(el => {
+                if (el.id !== menuId) el.classList.remove('active');
+            });
+
+            targetMenu.classList.toggle('active');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('.profile-menu') && !event.target.closest('.notif-wrapper')) {
+                document.querySelectorAll('.dropdown, .notif-dropdown').forEach(el => {
+                    el.classList.remove('active');
+                });
+            }
+        });
+
+        function setRole(role, btnEl) {
+            document.getElementById('roleToggle').setAttribute('data-mode', role);
+            const btns = document.querySelectorAll('.role-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+            document.body.setAttribute('data-role', role);
+        }
+    </script>
+
+</body>
+
+</html>
