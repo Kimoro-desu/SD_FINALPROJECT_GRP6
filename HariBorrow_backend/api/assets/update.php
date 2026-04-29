@@ -93,7 +93,7 @@ if (!empty($asset_id) && !empty($data)) {
                 $stmt->bindParam(":daily_penalty", $daily_penalty, \PDO::PARAM_INT);
             }
             if (isset($data->penalty_type)) {
-                $penalty_type = in_array($data->penalty_type, ['per_day', 'per_hour'], true) ? $data->penalty_type : 'per_day';
+                $penalty_type = in_array($data->penalty_type, ['per_day', 'per_hour', 'one_time'], true) ? $data->penalty_type : 'per_day';
                 $stmt->bindParam(":penalty_type", $penalty_type);
             }
             if ($decodedData['role'] !== Database::ROLE_ADMIN) {

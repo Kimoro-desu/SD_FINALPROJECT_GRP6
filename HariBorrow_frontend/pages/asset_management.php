@@ -1406,6 +1406,7 @@
             <select class="form-select" id="assetPenaltyType">
               <option value="per_day">Per Day</option>
               <option value="per_hour">Per Hour</option>
+              <option value="one_time">One-Time Flat Fee</option>
             </select>
           </div>
         </div>
@@ -1430,6 +1431,51 @@
         <div class="form-footer">
           <button class="btn-ghost" onclick="closeModal('createModal')">Cancel</button>
           <button class="btn-submit" onclick="saveAsset()">Create Asset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT ASSET MODAL -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Edit Asset Details</div>
+        <button class="modal-close" onclick="closeModal('editModal')"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editAssetId">
+        <div class="form-group">
+          <label class="form-label">Designated Meetup Location</label>
+          <input class="form-input" id="editMeetupLocation" type="text" placeholder="e.g. Engineering Lobby, Room 201">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description (optional)</label>
+          <textarea class="form-textarea" id="editDescription" placeholder="Brief description of this asset…"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Penalty Amount (PHP)</label>
+            <input class="form-input" id="editPenalty" type="number" min="0" step="1" value="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Penalty Type</label>
+            <select class="form-select" id="editPenaltyType">
+              <option value="per_day">Per Day</option>
+              <option value="per_hour">Per Hour</option>
+              <option value="one_time">One-Time Flat Fee</option>
+            </select>
+          </div>
+        </div>
+        <p style="font-size:12px; color:var(--text-3); margin-top:-8px;">
+          <i class="ph ph-info"></i>
+          <em>One-Time</em> charges the penalty amount once upon late/damaged return, regardless of how many days/hours overdue.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <div class="form-footer">
+          <button class="btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+          <button class="btn-submit" onclick="saveEdit()"><i class="ph ph-floppy-disk"></i> Save Changes</button>
         </div>
       </div>
     </div>
@@ -1486,6 +1532,7 @@
             id: a.id,
             name: n,
             type,
+            description: a.description || '',
             created: a.created_at || '',
             meetupLocation: a.meetup_location || '—',
             proposedPenaltyAmount: Number(a.proposed_penalty_amount || 0),
@@ -1538,6 +1585,9 @@
             <td><span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span></td>
             <td>
               <div class="action-btns">
+                <button class="action-btn" title="Edit Details" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="openEditModal(${a.id})">
+                  <i class="ph ph-pencil"></i>
+                </button>
                 <button class="action-btn toggle-btn" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
                   ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
                 </button>
@@ -1563,6 +1613,9 @@
             <div class="grid-card-meta">${`<span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span>`}</div>
             <div style="font-size:11px;color:var(--text-3);margin-bottom:16px;">${esc(a.created)}</div>
             <div class="grid-card-actions">
+              <button class="action-btn" title="Edit" style="flex:0;" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="openEditModal(${a.id})">
+                <i class="ph ph-pencil"></i>
+              </button>
               <button class="action-btn toggle-btn" style="flex:1;justify-content:center" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
                 ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
               </button>
@@ -1701,6 +1754,45 @@
     }
 
     function openDeleteModal(id) { deleteTarget = id; document.getElementById('deleteModal').classList.add('active'); }
+
+    function openEditModal(id) {
+      const a = assets.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('editAssetId').value = a.id;
+      document.getElementById('editMeetupLocation').value = a.meetupLocation !== '—' ? a.meetupLocation : '';
+      document.getElementById('editDescription').value = a.description || '';
+      document.getElementById('editPenalty').value = a.dailyPenalty ?? a.proposedPenaltyAmount ?? 0;
+      document.getElementById('editPenaltyType').value = a.penaltyType || 'per_day';
+      document.getElementById('editModal').classList.add('active');
+    }
+
+    async function saveEdit() {
+      const id = Number(document.getElementById('editAssetId').value);
+      const meetup_location = document.getElementById('editMeetupLocation').value.trim();
+      const description = document.getElementById('editDescription').value.trim();
+      const penalty = Math.max(0, Math.floor(Number(document.getElementById('editPenalty').value || 0)));
+      const penalty_type = document.getElementById('editPenaltyType').value;
+
+      const btn = document.querySelector('#editModal .btn-submit');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Saving...';
+      btn.style.pointerEvents = 'none';
+
+      try {
+        await window.api.authenticatedFetch('/assets/manage_my_assets.php', {
+          method: 'PUT',
+          body: { id, meetup_location, description, daily_penalty: penalty, proposed_penalty_amount: penalty, penalty_type }
+        });
+        closeModal('editModal');
+        showToast('Asset details updated successfully.');
+        await loadAssets();
+      } catch (err) {
+        alert('Failed to save changes: ' + (err.message || 'Server error'));
+      } finally {
+        btn.innerHTML = orig;
+        btn.style.pointerEvents = 'auto';
+      }
+    }
     async function confirmDelete() {
       if (!deleteTarget) return;
       try {

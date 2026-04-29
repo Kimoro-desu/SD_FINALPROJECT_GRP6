@@ -87,13 +87,15 @@ try {
         $hasPenalty = isset($payload->daily_penalty);
         $hasProposedPenalty = isset($payload->proposed_penalty_amount);
         $hasMeetupLocation = property_exists($payload, 'meetup_location');
-        $hasPenaltyType = isset($payload->penalty_type) && in_array($payload->penalty_type, ['per_day', 'per_hour'], true);
+        $hasPenaltyType = isset($payload->penalty_type) && in_array($payload->penalty_type, ['per_day', 'per_hour', 'one_time'], true);
+        $hasDescription = property_exists($payload, 'description');
         $dailyPenalty = $hasPenalty ? max(0, (int)$payload->daily_penalty) : 0;
         $proposedPenalty = $hasProposedPenalty ? max(0, (int)$payload->proposed_penalty_amount) : 0;
         $meetupLocation = $hasMeetupLocation ? trim((string)$payload->meetup_location) : '';
         $penaltyType = $hasPenaltyType ? $payload->penalty_type : 'per_day';
+        $description = $hasDescription ? trim((string)$payload->description) : '';
 
-        if (!$hasAvailability && !$hasPenalty && !$hasProposedPenalty && !$hasMeetupLocation && !$hasPenaltyType) {
+        if (!$hasAvailability && !$hasPenalty && !$hasProposedPenalty && !$hasMeetupLocation && !$hasPenaltyType && !$hasDescription) {
             http_response_code(400);
             die(json_encode(["message" => "Provide at least one field to update (availability, daily_penalty, penalty_type, proposed_penalty_amount, meetup_location).", "status" => "error"]));
         }
@@ -119,6 +121,10 @@ try {
         if ($hasMeetupLocation) {
             $setParts[] = "meetup_location = :meetup_location";
             $params[':meetup_location'] = $meetupLocation !== '' ? $meetupLocation : null;
+        }
+        if ($hasDescription) {
+            $setParts[] = "description = :description";
+            $params[':description'] = $description !== '' ? $description : null;
         }
         if ($hasPenaltyType) {
             $setParts[] = "penalty_type = :penalty_type";
