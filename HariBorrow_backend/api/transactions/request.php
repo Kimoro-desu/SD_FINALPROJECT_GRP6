@@ -50,7 +50,7 @@ if (!empty($data->asset_id)) {
 
         // Check if the asset exists and is strictly 'Available'
         $asset_id = htmlspecialchars(strip_tags($data->asset_id));
-        $check_query = "SELECT availability, status FROM assets WHERE Asset_ID = :asset_id FOR UPDATE";
+        $check_query = "SELECT availability, status, Lender_ID FROM assets WHERE Asset_ID = :asset_id FOR UPDATE";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(':asset_id', $asset_id);
         $check_stmt->execute();
@@ -69,6 +69,12 @@ if (!empty($data->asset_id)) {
             $db->rollBack();
             http_response_code(409);
             die(json_encode(["message" => "Asset is not yet approved for borrowing.", "status" => "error"]));
+        }
+
+        if ($asset_row['Lender_ID'] == $decodedData['id']) {
+            $db->rollBack();
+            http_response_code(409);
+            die(json_encode(["message" => "You cannot borrow your own asset.", "status" => "error"]));
         }
 
         if ($assetAvailability !== 'available' && $asset_row['availability'] !== Database::AVAILABILITY_AVAILABLE) {
