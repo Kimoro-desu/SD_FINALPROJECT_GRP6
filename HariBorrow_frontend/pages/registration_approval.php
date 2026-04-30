@@ -52,8 +52,8 @@
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
-    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
+    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
   }
 
   /* Sidebar */

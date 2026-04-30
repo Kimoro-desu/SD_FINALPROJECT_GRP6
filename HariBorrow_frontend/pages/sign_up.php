@@ -72,9 +72,9 @@
       inset: 0;
       pointer-events: none;
       z-index: 9999;
-      background: radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.07), transparent 50%);
+      background: radial-gradient(430px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
       mix-blend-mode: screen;
-      transition: background 0.2s ease;
+      transition: background 0.08s ease-out;
     }
 
     /* texture overlay */

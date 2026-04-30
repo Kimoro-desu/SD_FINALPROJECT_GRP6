@@ -82,10 +82,10 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
             z-index: 9999;
             mix-blend-mode: screen;
-            transition: background 0.1s;
+            transition: background 0.08s ease-out;
         }
 
         /* SIDEBAR */
@@ -767,7 +767,7 @@
         <span class="nav-badge" id="pendingNavBadge" style="display:none;">0</span>
       </a>
       <a href="active_transactions.php" class="nav-link active"><i class="ph ph-clock-counter-clockwise"></i> All Transactions</a>
-            <div class="nav-section-title">Database</div>
+            <div class="nav-section-title">Database</div>       
             <a href="asset_inventory.php" class="nav-link"><i class="ph ph-stack"></i> Asset Inventory</a>
             <a href="registered_users.php" class="nav-link"><i class="ph ph-users"></i> Registered Users</a>
 
