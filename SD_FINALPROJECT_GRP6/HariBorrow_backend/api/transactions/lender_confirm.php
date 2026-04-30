@@ -152,7 +152,11 @@ if (!empty($data->transaction_id) && !empty($data->action)) {
             if ($new_status === Database::STATUS_APPROVED) {
                 pushUserNotification($db, $borrowerId, 'Request Approved', 'Your borrowing request was approved and is now active.', 'info', 'ph-check-circle');
             } else {
-                pushUserNotification($db, $borrowerId, 'Request Rejected', 'Your borrowing request was rejected by the lender.', 'danger', 'ph-x-circle');
+                $reasonMsg = 'Your borrowing request was rejected by the lender.';
+                if (!empty($data->remarks)) {
+                    $reasonMsg .= ' Reason: ' . htmlspecialchars(strip_tags((string)$data->remarks));
+                }
+                pushUserNotification($db, $borrowerId, 'Request Rejected', $reasonMsg, 'danger', 'ph-x-circle');
             }
         }
 
