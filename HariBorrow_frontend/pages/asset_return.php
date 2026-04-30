@@ -651,8 +651,8 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
         <i class="ph-fill ph-clock"></i>
       </div>
       <div class="card-label" style="text-align:center;">Return Submitted</div>
-      <div class="card-title" style="text-align:center; color:var(--gold);">Pending Admin Review</div>
-      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return request has been submitted. An administrator will review the return photos and verify the asset condition before finalizing.</div>
+      <div class="card-title" style="text-align:center; color:var(--gold);">Pending Review</div>
+      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return request has been submitted. The lender will review the return photos and verify the asset condition before finalizing.</div>
 
       <div class="summary-grid">
         <div class="summary-section">
