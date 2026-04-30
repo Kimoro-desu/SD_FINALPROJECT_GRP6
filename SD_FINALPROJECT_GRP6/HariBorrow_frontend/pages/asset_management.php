@@ -1360,6 +1360,23 @@
     <div class="nav-right">
       <a href="borrower_lender_dashboard.php" class="nav-back"><i class="ph ph-arrow-left"></i> Dashboard</a>
 
+      
+      <div class="notif-wrapper" style="position:relative;">
+          <button class="profile-btn notif-btn" onclick="toggleNotifMenu(event)" style="border-radius: 50%; width: 40px; height: 40px; justify-content: center; padding: 0;">
+              <i class="ph ph-bell" style="font-size: 20px;"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-2px; right:-2px; background:var(--danger); color:#fff; font-size:10px; padding:2px 6px; border-radius:10px; font-weight:bold;">0</span>
+          </button>
+          <div class="dropdown notif-dropdown" id="notifDropdown" style="width: 320px; right: 0;">
+              <div style="padding: 12px 16px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color:var(--text-1); font-family: 'Cormorant Garamond', serif; font-size: 16px;">Notifications</strong>
+                  <span style="font-size: 12px; cursor: pointer; color: var(--gold);" onclick="markAllNotificationsRead(event)">Mark all read</span>
+              </div>
+              <div id="notifList" style="max-height: 300px; overflow-y: auto;">
+                  <div style="padding: 16px; text-align: center; color: var(--text-3); font-size: 12px;">Loading...</div>
+              </div>
+          </div>
+      </div>
+
       <div class="profile-menu">
         <button class="profile-btn" onclick="toggleDropdown()">
           <div class="profile-avatar" id="navAvatar">UN</div>
@@ -2017,15 +2034,18 @@
           : (tx?.can_rate
               ? `<button class="rate-btn" onclick="openRatingModal(${Number(tx?.transaction_id || 0)})"><i class="ph ph-star"></i> Rate</button>`
               : '—');
-        return `
-          <tr>
-            <td style="color: var(--text-1); font-weight: 500;">${item}</td>
-            <td>${counterpartyName}</td>
-            <td><span class="status-pill ${statusData.class}">${statusData.label}</span></td>
-            <td>${fmtDateSafe(borrowedAt)}</td>
-            <td>${fmtDateSafe(dueAt)}</td>
-            <td>${fmtDateSafe(returnedAt)}</td>
-            <td style="color: ${penalty > 0 ? 'var(--danger)' : 'inherit'}">${penalty > 0 ? 'PHP ' + penalty : '—'}</td>
+            const penaltyCell = penalty > 0 
+              ? \`PHP \${penalty} <button class="action-btn toggle-btn" onclick="resolvePenalty(\${tx.transaction_id})" style="margin-left: 8px; display: inline-block; color: var(--gold); border-color: var(--gold); padding: 2px 8px; font-size: 11px;">Resolve</button>\` 
+              : '—';
+            return \`
+              <tr>
+                <td style="color: var(--text-1); font-weight: 500;">\${item}</td>
+                <td>\${counterpartyName}</td>
+                <td><span class="status-pill \${statusData.class}">\${statusData.label}</span></td>
+                <td>\${fmtDateSafe(borrowedAt)}</td>
+                <td>\${fmtDateSafe(dueAt)}</td>
+                <td>\${fmtDateSafe(returnedAt)}</td>
+                <td style="color: \${penalty > 0 ? 'var(--danger)' : 'inherit'}">\${penaltyCell}</td>
             <td>${ratingCell}</td>
           </tr>
         `;
@@ -2087,7 +2107,125 @@
         openCreateModal();
       }
     });
+
+    async function resolvePenalty(transactionId) {
+      if (!confirm("Are you sure you want to mark this penalty as resolved/paid? This will clear the penalty amount.")) return;
+      try {
+        const response = await window.api.authenticatedFetch('/penalties/lender_resolve.php?tid=' + transactionId, {
+          method: 'PUT',
+          body: { transaction_id: transactionId }
+        });
+        if (response && response.status === 'success') {
+          alert("Penalty resolved successfully.");
+          await loadMyLendings();
+          if (document.getElementById('historyView')?.classList.contains('active')) {
+            renderHistoryPanel();
+          }
+        } else {
+          alert(response?.message || "Failed to resolve penalty.");
+        }
+      } catch (err) {
+        console.error("Error resolving penalty:", err);
+        alert("An error occurred while resolving the penalty.");
+      }
+    }
   </script>
+
+  <script>
+  function toggleNotifMenu(e) {
+      if(e) e.stopPropagation();
+      document.getElementById('notifDropdown')?.classList.toggle('active');
+  }
+
+  document.addEventListener('click', function (event) {
+      if (!event.target.closest('.notif-wrapper')) {
+          document.getElementById('notifDropdown')?.classList.remove('active');
+      }
+  });
+
+  async function fetchNotifications() {
+      try {
+          const response = await window.api.authenticatedFetch('/transactions/notifications.php');
+          if (response && response.status === 'success') {
+              const notifs = response.notifications;
+              const notifList = document.getElementById('notifList');
+              const notifBadge = document.getElementById('notifBadge');
+              if(!notifList) return;
+              
+              notifList.innerHTML = '';
+              
+              if (notifs.length > 0) {
+                  const unreadCount = notifs.filter(n => n.notification_id && !n.is_read).length;
+                  notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                  notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                  
+                  notifs.forEach(notif => {
+                      const date = new Date(notif.time_ago.replace(' ', 'T'));
+                      const timeAgo = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                      
+                      const item = document.createElement('div');
+                      item.style.padding = '12px 16px';
+                      item.style.borderBottom = '1px solid var(--glass-border)';
+                      item.style.cursor = notif.is_read ? 'default' : 'pointer';
+                      item.style.opacity = notif.is_read ? '0.6' : '1';
+                      item.innerHTML = `
+                          <div style="display:flex; gap:10px;">
+                              <div style="flex:1;">
+                                  <div style="font-size:13px; font-weight:500; color:var(--text-1);">${notif.title}</div>
+                                  <div style="font-size:12px; color:var(--text-2); margin-top:4px;">${notif.message}</div>
+                                  <div style="font-size:11px; color:var(--text-3); margin-top:6px;">${timeAgo}</div>
+                              </div>
+                          </div>
+                      `;
+                      if (notif.notification_id && !notif.is_read) {
+                          item.addEventListener('click', async (e) => {
+                              e.preventDefault();
+                              await markNotificationRead(notif.notification_id);
+                          });
+                      }
+                      notifList.appendChild(item);
+                  });
+              } else {
+                  notifBadge.style.display = 'none';
+                  notifList.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-3); font-size: 12px;">No new notifications.</div>';
+              }
+          }
+      } catch (error) {
+          console.error("Failed to fetch notifications:", error);
+      }
+  }
+
+  async function markNotificationRead(notificationId) {
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: { notification_id: notificationId }
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark notification read:", error);
+      }
+  }
+
+  async function markAllNotificationsRead(event) {
+      if (event) event.stopPropagation();
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: {}
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark all notifications read:", error);
+      }
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+      fetchNotifications();
+      setInterval(fetchNotifications, 15000);
+  });
+  </script>
+
 </body>
 
 </html>
