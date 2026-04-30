@@ -174,8 +174,9 @@
       border-radius: 8px;
       font-size: 14px;
       font-weight: 400;
-      transition: all 0.2s;
+      transition: all 0.3s;
       border: 1px solid transparent;
+      position: relative;
     }
 
     .nav-link i {
@@ -199,16 +200,40 @@
       color: var(--gold);
     }
 
+    /* ── NOTIFICATION-STYLE HIGHLIGHT FOR PENDING ITEMS ── */
+    .nav-link.has-notif {
+      background: rgba(239, 68, 68, 0.06);
+      border-color: rgba(239, 68, 68, 0.18);
+      color: var(--text-1);
+    }
+    .nav-link.has-notif i { color: #f87171; }
+    .nav-link.has-notif:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    /* Active + has-notif: keep the gold active style but add a subtle danger accent */
+    .nav-link.active.has-notif {
+      background: linear-gradient(135deg, var(--gold-dim), rgba(239, 68, 68, 0.06));
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+
     .nav-badge {
       margin-left: auto;
       background: var(--danger);
       color: #fff;
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
       padding: 2px 8px;
       border-radius: 20px;
       min-width: 18px;
       text-align: center;
+      animation: badgePulse 2s ease-in-out infinite;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    }
+
+    @keyframes badgePulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+      50% { transform: scale(1.1); box-shadow: 0 0 14px rgba(239, 68, 68, 0.6); }
     }
 
     .sidebar-footer {
@@ -545,7 +570,7 @@
       </a>
 
       <div class="nav-section-title">Operations</div>
-      <a href="pendingrequest_approval.php" class="nav-link">
+      <a href="pendingrequest_approval.php" class="nav-link" id="pendingNavLink">
         <i class="ph ph-bell-ringing"></i> Pending Requests
         <span class="nav-badge" id="pendingNavBadge" style="display:none;">0</span>
       </a>
@@ -809,9 +834,18 @@
         const pendingTx = Number(document.getElementById('statPendingApprovals')?.textContent || 0);
         const pendingTotal = pendingTx + pending.length;
         const badge = document.getElementById('pendingNavBadge');
+        const pendingLink = document.getElementById('pendingNavLink');
         if (badge) {
           badge.textContent = String(pendingTotal);
           badge.style.display = pendingTotal > 0 ? 'inline-flex' : 'none';
+        }
+        // Highlight the sidebar link when there are pending items
+        if (pendingLink) {
+          if (pendingTotal > 0) {
+            pendingLink.classList.add('has-notif');
+          } else {
+            pendingLink.classList.remove('has-notif');
+          }
         }
       } catch (e) {
         console.error('Pending assets load failed:', e);

@@ -102,24 +102,48 @@
   .nav-link {
     display: flex; align-items: center; gap: 12px; padding: 12px 16px;
     color: var(--text-2); text-decoration: none; border-radius: 8px;
-    font-size: 14px; transition: all 0.2s; border: 1px solid transparent;
+    font-size: 14px; transition: all 0.3s; border: 1px solid transparent;
+    position: relative;
   }
   .nav-link i { font-size: 20px; color: var(--text-3); transition: color 0.2s; }
   .nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-1); }
   .nav-link.active { background: var(--gold-dim); border-color: rgba(229, 192, 123, 0.2); color: var(--gold-light); }
   .nav-link.active i { color: var(--gold); }
 
+  /* ── NOTIFICATION-STYLE HIGHLIGHT FOR PENDING ITEMS ── */
+  .nav-link.has-notif {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.18);
+    color: var(--text-1);
+  }
+  .nav-link.has-notif i { color: #f87171; }
+  .nav-link.has-notif:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  .nav-link.active.has-notif {
+    background: linear-gradient(135deg, var(--gold-dim), rgba(239, 68, 68, 0.06));
+    border-color: rgba(239, 68, 68, 0.25);
+  }
+
   .nav-badge {
             margin-left: auto;
             background: var(--danger);
             color: #fff;
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             padding: 2px 8px;
             border-radius: 20px;
             min-width: 18px;
             text-align: center;
+            animation: badgePulse 2s ease-in-out infinite;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
         }
+
+  @keyframes badgePulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+    50% { transform: scale(1.1); box-shadow: 0 0 14px rgba(239, 68, 68, 0.6); }
+  }
 
   .sidebar-footer { padding: 24px; border-top: 1px solid var(--glass-border); }
   .admin-profile { display: flex; align-items: center; gap: 12px; }
@@ -207,7 +231,7 @@
   <nav class="nav-menu">
     <a href="admin_dashboard.php" class="nav-link"><i class="ph ph-squares-four"></i> Command Center</a>
     <div class="nav-section-title">Operations</div>
-      <a href="pendingrequest_approval.php" class="nav-link"><i class="ph ph-bell-ringing"></i> Pending Requests
+      <a href="pendingrequest_approval.php" class="nav-link" id="pendingNavLink"><i class="ph ph-bell-ringing"></i> Pending Requests
         <span class="nav-badge" id="pendingNavBadge" style="display:none;">0</span>
       </a>
       <a href="active_transactions.php" class="nav-link"><i class="ph ph-clock-counter-clockwise"></i> All Transactions</a>
@@ -429,9 +453,17 @@
 
                 // 3. Update the Badge
                 const badge = document.getElementById('pendingNavBadge');
+                const pendingLink = document.getElementById('pendingNavLink');
                 if (badge) {
                     badge.textContent = String(totalPending);
                     badge.style.display = totalPending > 0 ? 'inline-flex' : 'none';
+                }
+                if (pendingLink) {
+                    if (totalPending > 0) {
+                        pendingLink.classList.add('has-notif');
+                    } else {
+                        pendingLink.classList.remove('has-notif');
+                    }
                 }
             } catch (error) {
                 console.error('Failed to update pending badge:', error);

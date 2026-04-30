@@ -107,12 +107,61 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   .nav-link {
     display: flex; align-items: center; gap: 12px; padding: 12px 16px;
     color: var(--text-2); text-decoration: none; border-radius: 8px;
-    font-size: 14px; font-weight: 400; transition: all 0.2s; border: 1px solid transparent;
+    font-size: 14px; font-weight: 400; transition: all 0.3s; border: 1px solid transparent;
+    position: relative;
   }
   .nav-link i { font-size: 20px; color: var(--text-3); transition: color 0.2s; }
   .nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-1); }
   .nav-link.active { background: var(--gold-dim); border-color: rgba(229,192,123,0.2); color: var(--gold-light); }
   .nav-link.active i { color: var(--gold); }
+
+  /* ── NOTIFICATION NAV HIGHLIGHT (like popular apps) ── */
+  .nav-link.has-notif {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.18);
+    color: var(--text-1);
+  }
+  .nav-link.has-notif i { color: #f87171; }
+  .nav-link.has-notif:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .notif-badge-pill {
+    margin-left: auto;
+    background: #ef4444;
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+    animation: badgePulse 2s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  }
+
+  @keyframes badgePulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+    50% { transform: scale(1.1); box-shadow: 0 0 14px rgba(239, 68, 68, 0.6); }
+  }
+
+  .notif-dot {
+    position: absolute;
+    top: 10px;
+    left: 28px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+    animation: dotPing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes dotPing {
+    0% { transform: scale(1); opacity: 1; }
+    75%, 100% { transform: scale(1.8); opacity: 0; }
+  }
 
   .sidebar-footer { padding: 24px; border-top: 1px solid var(--glass-border); }
   .user-profile { display: flex; align-items: center; gap: 12px; }
@@ -127,8 +176,15 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
       pointer-events: auto !important;
       transform: translateX(0) !important;
   }
-  .notif-item { padding: 16px; border-bottom: 1px solid var(--glass-border); display: flex; gap: 12px; align-items: flex-start; text-decoration: none; transition: background 0.2s; }
-  .notif-item:hover { background: rgba(255, 255, 255, 0.03); }
+  .notif-item {
+    padding: 16px; border-bottom: 1px solid var(--glass-border);
+    display: flex; gap: 12px; align-items: flex-start;
+    text-decoration: none; transition: background 0.2s;
+    cursor: pointer; color: inherit;
+  }
+  .notif-item:hover { background: rgba(255, 255, 255, 0.05); }
+  .notif-item.unread { background: rgba(239, 68, 68, 0.04); border-left: 3px solid #ef4444; }
+  .notif-item.unread:hover { background: rgba(239, 68, 68, 0.08); }
   .notif-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
   .notif-icon.info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
   .notif-icon.danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
@@ -425,19 +481,10 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     <a href="borrowing.php?view=borrows" class="nav-link"><i class="ph ph-clock-counter-clockwise"></i> My Borrowing History</a>
     
     <div style="position: relative;">
-      <a href="#" class="nav-link" onclick="toggleMenu('notifDropdown')">
+      <a href="notifications.php" class="nav-link" id="notifNavLink">
         <i class="ph ph-bell"></i> Notifications
-        <span class="notif-badge" id="notifBadge" style="display:none; margin-left: auto; background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold;">0</span>
+        <span class="notif-badge-pill" id="notifBadge" style="display:none;">0</span>
       </a>
-      <div class="notif-dropdown" id="notifDropdown" style="position: absolute; left: calc(100% + 10px); top: 0; width: 340px; background: rgba(15, 15, 20, 0.95); backdrop-filter: blur(24px); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); opacity: 0; pointer-events: none; transform: translateX(-10px); transition: all 0.3s ease; z-index: 1000;">
-        <div class="notif-header" style="padding: 16px; border-bottom: 1px solid var(--glass-border); font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--gold-light); display: flex; justify-content: space-between; align-items: center;">
-            Notifications
-            <span style="font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 400; color: var(--text-2); cursor: pointer;" onclick="markAllNotificationsRead(event)">Mark all as read</span>
-        </div>
-        <div class="notif-list" id="notifList" style="max-height: 360px; overflow-y: auto;">
-            <div class="notif-item" style="padding: 16px; color: var(--text-2); font-size: 12px;">Loading notifications...</div>
-        </div>
-      </div>
     </div>
 
     <div class="nav-section-title">Account</div>
@@ -681,65 +728,31 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   });
 
   /* ── NOTIFICATIONS LOGIC ── */
-  function toggleMenu(menuId) {
-      const targetMenu = document.getElementById(menuId);
-      targetMenu.classList.toggle('active');
-  }
-
-  document.addEventListener('click', function (event) {
-      if (!event.target.closest('.notif-dropdown') && !event.target.closest('[onclick="toggleMenu(\'notifDropdown\')"]')) {
-          document.getElementById('notifDropdown')?.classList.remove('active');
-      }
-  });
+  // No dropdown to toggle or close anymore
 
   async function fetchNotifications() {
       try {
           const response = await window.api.authenticatedFetch('/transactions/notifications.php');
           if (response && response.status === 'success') {
               const notifs = response.notifications;
-              const notifList = document.getElementById('notifList');
               const notifBadge = document.getElementById('notifBadge');
-              
-              notifList.innerHTML = '';
+              const notifNavLink = document.getElementById('notifNavLink');
               
               if (notifs.length > 0) {
                   const unreadCount = notifs.filter(n => n.notification_id && !n.is_read).length;
                   notifBadge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
                   notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
                   
-                  notifs.forEach(notif => {
-                      const date = new Date(notif.time_ago.replace(' ', 'T'));
-                      const timeAgo = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                      
-                      const item = document.createElement('a');
-                      item.href = '#';
-                      item.className = 'notif-item';
-                      item.style.opacity = notif.is_read ? '0.6' : '1';
-                      item.innerHTML = `
-                          <div class="notif-icon ${notif.severity}">
-                              <i class="ph ${notif.icon_class}"></i>
-                          </div>
-                          <div class="notif-content">
-                              <span class="notif-title">${notif.title}</span>
-                              <span class="notif-desc">${notif.message}</span>
-                              <span class="notif-time">${timeAgo}</span>
-                          </div>
-                      `;
-                      if (notif.notification_id && !notif.is_read) {
-                          item.addEventListener('click', async (e) => {
-                              e.preventDefault();
-                              await markNotificationRead(notif.notification_id);
-                          });
+                  if (notifNavLink) {
+                      if (unreadCount > 0) {
+                          notifNavLink.classList.add('has-notif');
+                      } else {
+                          notifNavLink.classList.remove('has-notif');
                       }
-                      notifList.appendChild(item);
-                  });
+                  }
               } else {
                   notifBadge.style.display = 'none';
-                  notifList.innerHTML = `
-                      <div class="notif-item">
-                          <div class="notif-content"><span class="notif-desc">No new notifications.</span></div>
-                      </div>
-                  `;
+                  if (notifNavLink) notifNavLink.classList.remove('has-notif');
               }
           }
       } catch (error) {
