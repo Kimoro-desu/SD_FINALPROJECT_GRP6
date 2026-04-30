@@ -714,6 +714,33 @@
           if (profile.department) {
             document.getElementById('departmentInput').value = profile.department;
           }
+          
+          // 4. Verification Status
+          const verifyBadge = document.getElementById('verifyBadge');
+          const verifyBtn = document.getElementById('verifyBtn');
+          const vStatus = profile.id_verification_status || 'unverified';
+          
+          if (vStatus === 'verified') {
+            verifyBadge.className = 'status-badge';
+            verifyBadge.style.backgroundColor = 'rgba(74, 222, 128, 0.1)';
+            verifyBadge.style.color = 'var(--green)';
+            verifyBadge.style.borderColor = 'rgba(74, 222, 128, 0.2)';
+            verifyBadge.textContent = 'Status: Verified';
+            verifyBtn.innerHTML = '<i class="ph ph-check-circle"></i> Verified';
+            verifyBtn.style.color = '#4ade80';
+            verifyBtn.style.borderColor = '#4ade80';
+            verifyBtn.disabled = true;
+          } else if (vStatus === 'pending') {
+            verifyBadge.className = 'status-badge pending';
+            verifyBadge.textContent = 'Status: Pending Verification';
+            verifyBtn.innerHTML = '<i class="ph ph-hourglass"></i> Pending Approval';
+            verifyBtn.disabled = true;
+          } else {
+            verifyBadge.className = 'status-badge unverified';
+            verifyBadge.textContent = 'Status: Unverified';
+            verifyBtn.innerHTML = '<i class="ph ph-identification-card"></i> Upload ID';
+            verifyBtn.disabled = false;
+          }
 
         }
       } catch (error) {
@@ -810,17 +837,42 @@
     }
 
     // School ID Upload Logic
-    function handleIdUpload(event) {
+    async function handleIdUpload(event) {
       if (event.target.files && event.target.files[0]) {
-        const badge = document.getElementById('verifyBadge');
+        const file = event.target.files[0];
         const btn = document.getElementById('verifyBtn');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = 'Uploading...';
+        btn.disabled = true;
+        
+        try {
+            const formData = new FormData();
+            formData.append('id_picture', file);
+            
+            const token = window.api.getToken();
+            const res = await fetch('/SD_FINALPROJECT_GRP6/HariBorrow_backend/api/users/upload_pictures.php', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            }).then(r => r.json());
+            
+            if (res && res.status === 'success') {
+                const badge = document.getElementById('verifyBadge');
+                badge.className = 'status-badge pending';
+                badge.textContent = 'Status: Pending Verification';
 
-        badge.className = 'status-badge pending';
-        badge.textContent = 'Status: Pending Verification';
-
-        btn.innerHTML = '<i class="ph ph-check-circle"></i> ID Submitted';
-        btn.style.color = '#4ade80';
-        btn.style.borderColor = '#4ade80';
+                btn.innerHTML = '<i class="ph ph-check-circle"></i> ID Submitted';
+                btn.style.color = '#4ade80';
+                btn.style.borderColor = '#4ade80';
+            } else {
+                throw new Error(res.message || 'Upload failed');
+            }
+        } catch (err) {
+            alert(err.message || 'Error uploading ID');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
       }
     }
   </script>

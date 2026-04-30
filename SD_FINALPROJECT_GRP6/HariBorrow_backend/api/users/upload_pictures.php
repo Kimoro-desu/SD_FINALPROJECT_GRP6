@@ -110,6 +110,37 @@ if (isset($_FILES['background_picture']) && $_FILES['background_picture']['error
     }
 }
 
+// Handle ID Picture
+if (isset($_FILES['id_picture']) && $_FILES['id_picture']['error'] === UPLOAD_ERR_OK) {
+    $fileTmpPath = $_FILES['id_picture']['tmp_name'];
+    $fileName = $_FILES['id_picture']['name'];
+    $fileNameCmps = explode(".", $fileName);
+    $fileExtension = strtolower(end($fileNameCmps));
+
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    if (in_array($fileExtension, $allowedExtensions)) {
+        $newFileName = "id_" . $userId . "_" . time() . "." . $fileExtension;
+        $destPath = $uploadDir . $newFileName;
+
+        if (move_uploaded_file($fileTmpPath, $destPath)) {
+            // Save the relative URL so the frontend can display it easily
+            $dbPath = "/SD_FINALPROJECT_GRP6/HariBorrow_backend/uploads/profiles/" . $newFileName;
+            $updates[] = "id_photo_url = :id_photo_url";
+            $updates[] = "id_verification_status = :id_verification_status";
+            $params[':id_photo_url'] = $dbPath;
+            $params[':id_verification_status'] = 'pending';
+            $response['id_photo_url'] = $dbPath;
+            $response['id_verification_status'] = 'pending';
+        } else {
+            $response['message'] = 'Error moving the uploaded file.';
+            $response['status'] = 'error';
+        }
+    } else {
+        $response['message'] = 'Upload failed. Allowed file types: ' . implode(',', $allowedExtensions);
+        $response['status'] = 'error';
+    }
+}
+
 if (!empty($updates)) {
     try {
         $query = "UPDATE users SET " . implode(', ', $updates) . " WHERE User_ID = :id";

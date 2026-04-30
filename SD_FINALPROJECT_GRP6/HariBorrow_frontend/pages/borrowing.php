@@ -756,7 +756,14 @@
         <i class="ph ph-arrow-left"></i>
         Asset Catalog
       </button>
+    </div>
 
+    <div id="unverifiedBanner" style="display: none; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px; color: var(--red); font-size: 14px; align-items: center; gap: 12px;">
+      <i class="ph ph-warning-circle" style="font-size: 24px;"></i>
+      <div style="flex: 1;">
+        <strong style="display: block; margin-bottom: 4px;">ID Verification Required</strong>
+        <span>You must upload your ID and have it verified by an admin before you can borrow any assets. <a href="profile_settings.php" style="color: var(--gold); text-decoration: underline;">Verify now</a>.</span>
+      </div>
     </div>
 
     <div class="toolbar" id="catalogToolbar">
@@ -949,6 +956,20 @@
       } catch (error) {
         console.error("Failed to load catalog:", error);
       }
+    }
+
+    async function checkVerificationStatus() {
+        try {
+            const res = await window.api.authenticatedFetch('/api/users/profile.php');
+            if (res && res.profile) {
+                const status = res.profile.id_verification_status || 'unverified';
+                if (status !== 'verified') {
+                    document.getElementById('unverifiedBanner').style.display = 'flex';
+                }
+            }
+        } catch (error) {
+            console.error("Failed to check verification status:", error);
+        }
     }
 
     async function loadMyBorrowings() {
@@ -1223,6 +1244,7 @@
           if (e.target.id === 'ratingModal') closeRatingModal();
         });
         
+        await checkVerificationStatus();
         await loadCatalog();
         await loadMyBorrowings();
         

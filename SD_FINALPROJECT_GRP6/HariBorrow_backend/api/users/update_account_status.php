@@ -48,7 +48,9 @@ $data = json_decode(file_get_contents("php://input")) ?: null;
 $userId = isset($data->user_id) ? (int)$data->user_id : 0;
 $newStatus = isset($data->account_status) ? strtolower(trim((string)$data->account_status)) : '';
 $notes = isset($data->admin_notes) ? trim((string)$data->admin_notes) : '';
+$newIdVerificationStatus = isset($data->id_verification_status) ? strtolower(trim((string)$data->id_verification_status)) : '';
 $allowed = ['active', 'restricted', 'suspended'];
+$allowedIdVerify = ['unverified', 'pending', 'verified', 'rejected'];
 
 if ($userId <= 0 || !in_array($newStatus, $allowed, true)) {
     http_response_code(400);
@@ -95,12 +97,18 @@ try {
         exit();
     }
 
-    $upd = $db->prepare(
-        "UPDATE users SET account_status = :st, account_notes = :notes WHERE User_ID = :uid"
-    );
+    $querySet = "account_status = :st, account_notes = :notes";
+    if ($newIdVerificationStatus !== '' && in_array($newIdVerificationStatus, $allowedIdVerify, true)) {
+        $querySet .= ", id_verification_status = :idv";
+    }
+
+    $upd = $db->prepare("UPDATE users SET $querySet WHERE User_ID = :uid");
     $upd->bindValue(':st', $newStatus);
     $notesParam = $notes !== '' ? $notes : null;
     $upd->bindValue(':notes', $notesParam, $notesParam === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
+    if ($newIdVerificationStatus !== '' && in_array($newIdVerificationStatus, $allowedIdVerify, true)) {
+        $upd->bindValue(':idv', $newIdVerificationStatus);
+    }
     $upd->bindValue(':uid', $userId, \PDO::PARAM_INT);
     $upd->execute();
 
