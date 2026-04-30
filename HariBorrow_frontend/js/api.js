@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost/SD_FINALPROJECT_GRP6/HariBorrow_backend/api';
+// Keep this XAMPP-relative so it works across host/port changes.
+const API_BASE_URL = '/SD_FINALPROJECT_GRP6/HariBorrow_backend/api';
 
 const api = {
     // Auth Token Management
@@ -25,7 +26,13 @@ const api = {
 
     // Wrapper for generic generic fetch without authentication
     async rawFetch(endpoint, options = {}) {
-        const url = `${API_BASE_URL}${endpoint}`;
+        // Allow callers to pass endpoints with or without the "/api" prefix
+        // (API_BASE_URL already ends with "/api")
+        const normalizedEndpoint = (endpoint || '').startsWith('/api/')
+            ? endpoint.slice(4)
+            : (endpoint || '');
+
+        const url = `${API_BASE_URL}${normalizedEndpoint}`;
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json'
@@ -33,6 +40,7 @@ const api = {
         };
 
         const finalOptions = {
+            cache: 'no-store',
             ...defaultOptions,
             ...options,
             headers: {
@@ -47,11 +55,20 @@ const api = {
 
         try {
             const response = await fetch(url, finalOptions);
-            const data = await response.json().catch(() => null);
-            
-            if (!response.ok) {
-                // Return structured error
-                throw { status: response.status, data: data, message: data?.message || 'API request failed' };
+            const text = await response.text();
+            let data = null;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (e) {
+                console.error('Failed to parse JSON:', text);
+            }
+
+            if (!response.ok || (data && data.status === 'error') || !data) {
+                throw {
+                    status: response.status,
+                    data: data,
+                    message: data?.message || text || 'API request failed'
+                };
             }
             return data;
         } catch (error) {
@@ -63,10 +80,10 @@ const api = {
     // Wrapper for authenticated fetch (adds token)
     async authenticatedFetch(endpoint, options = {}) {
         const token = this.getToken();
-        
+
         if (!token) {
             this.removeToken();
-            window.location.href = 'login.html';
+            window.location.href = 'login.php';
             throw new Error('No authentication token found');
         }
 
@@ -85,7 +102,7 @@ const api = {
             const msg = error.message || '';
             if (msg.includes('Access denied') || msg.includes('Token expired') || msg.includes('Invalid token') || error.status === 401) {
                 this.removeToken();
-                window.location.href = 'login.html';
+                window.location.href = 'login.php';
             }
             throw error;
         }
@@ -93,3 +110,39 @@ const api = {
 };
 
 window.api = api;
+
+(function () {
+    // Same directory as this file so it works even if the project folder name or host path differs.
+    var jsDir = '/SD_FINALPROJECT_GRP6/HariBorrow_frontend/js/';
+    try {
+        var cs = document.currentScript;
+        if (cs && cs.src) {
+            var pathname = new URL(cs.src).pathname;
+            var cut = pathname.lastIndexOf('/');
+            if (cut !== -1) {
+                jsDir = pathname.slice(0, cut + 1);
+            }
+        }
+    } catch (e) { /* keep default */ }
+
+    function tryLoadGlobalUserSearch() {
+        try {
+            var path = (window.location.pathname || '').toLowerCase();
+            if (path.indexOf('login.php') !== -1 || path.indexOf('sign_up.php') !== -1) return;
+            if (!window.api || typeof window.api.getToken !== 'function' || !window.api.getToken()) return;
+            if (document.querySelector('script[src*="global_user_search.js"]')) return;
+            var s = document.createElement('script');
+            s.src = jsDir + 'global_user_search.js';
+            s.async = false;
+            document.body.appendChild(s);
+        } catch (e) {
+            console.warn('Global search loader:', e);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryLoadGlobalUserSearch);
+    } else {
+        tryLoadGlobalUserSearch();
+    }
+})();

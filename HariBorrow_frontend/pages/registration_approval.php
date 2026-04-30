@@ -244,7 +244,6 @@
     <div class="nav-section-title">System</div>
     <a href="registration_approval.php" class="nav-link active">
       <i class="ph ph-shield-check"></i> Registration Approvals
-      <span class="nav-badge" id="regBadge" style="display:none;">0</span> 
     </a>
     <a href="system_logs.php" class="nav-link"><i class="ph ph-file-text"></i> System Logs</a>
   </nav>
@@ -279,9 +278,8 @@
 
   <div class="data-panel">
     <div class="panel-header">
-      <div class="panel-title">Pending Applications</div>
+      <div class="panel-title">New Account Applications</div>
     </div>
-    
     <table>
       <thead>
         <tr>
@@ -292,7 +290,25 @@
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody id="pendingTbody"></tbody>
+      <tbody id="newAccountsTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="data-panel" style="margin-top: 32px;">
+    <div class="panel-header">
+      <div class="panel-title">ID Verification Queue</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Applicant</th>
+          <th>Academic Profile</th>
+          <th>Role</th>
+          <th>ID Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="idVerificationTbody"></tbody>
     </table>
   </div>
 
@@ -332,92 +348,180 @@
     return `<span class="role-tag ${cls}"><i class="ph ${icon}"></i> ${titleCase(r) || 'User'}</span>`;
   }
 
-  async function processRequest(requestId, action) {
-    const ok = action === 'reject'
-      ? confirm('Are you sure you want to reject this application? This action cannot be undone.')
-      : true;
-    if (!ok) return;
+  function resolveFileUrl(rawUrl) {
+    const val = String(rawUrl || '').trim();
+    if (!val) return '';
+    if (/^https?:\/\//i.test(val)) return val;
+    if (val.startsWith('/')) return val;
+    return `/${val.replace(/^\/+/, '')}`;
+  }
+
+async function processRequest(userId, action, requestId = null) {
+    let bodyData = {};
+    let confirmMsg = '';
+
+    if (action === 'approve_account') {
+        confirmMsg = 'Approve this application and fully activate the user account?';
+        bodyData = { user_id: userId, account_status: 'active' };
+    } else if (action === 'reject_account') {
+        confirmMsg = 'Are you sure you want to completely reject and suspend this user account?';
+        bodyData = { user_id: userId, account_status: 'suspended', admin_notes: 'Registration rejected by admin.' };
+    } else if (action === 'verify_id') {
+        confirmMsg = 'Approve this ID photo?';
+        bodyData = { user_id: userId, id_verification_status: 'verified' };
+    } else if (action === 'reject_id') {
+        confirmMsg = 'Reject this ID photo? The user will need to upload a new one.';
+        bodyData = { user_id: userId, id_verification_status: 'rejected' };
+    }
+
+    if (!confirm(confirmMsg)) return;
 
     try {
-      const res = await window.api.authenticatedFetch('/api/admin/registration_process.php', {
+      // Keep registration request state in sync with account actions.
+      if ((action === 'approve_account' || action === 'reject_account') && requestId) {
+        const registrationAction = action === 'approve_account' ? 'approve' : 'reject';
+        const regRes = await window.api.authenticatedFetch('/api/admin/registration_process.php', {
+          method: 'POST',
+          body: { request_id: Number(requestId), action: registrationAction }
+        });
+        if (regRes?.status !== 'success') {
+          showAlert(regRes?.message || 'Failed to process registration request.', 'error');
+          return;
+        }
+      }
+
+      const res = await window.api.authenticatedFetch('/api/users/update_account_status.php', {
         method: 'POST',
-        body: { request_id: requestId, action }
+        body: bodyData
       });
       if (res?.status === 'success') {
-        showAlert(`Request ${action}d successfully.`, 'success');
+        showAlert(`Action completed successfully.`, 'success');
         await loadPending();
       } else {
-        showAlert(res?.message || 'Failed to update request.', 'error');
+        showAlert(res?.message || 'Failed to update user.', 'error');
       }
     } catch (e) {
-      showAlert(e?.message || 'Failed to update request.', 'error');
+      showAlert(e?.message || 'Failed to update user.', 'error');
     }
   }
 
   async function loadPending() {
-    const tbody = document.getElementById('pendingTbody');
-    const badge = document.getElementById('regBadge');
-    if (!tbody) return;
+    const newAccBody = document.getElementById('newAccountsTbody');
+    const idVerBody = document.getElementById('idVerificationTbody');
+    if (!newAccBody || !idVerBody) return;
 
     try {
-      const res = await window.api.authenticatedFetch('/api/admin/registration_pending.php');
-      const pending = Array.isArray(res?.pending) ? res.pending : [];
+      const [usersRes, regPendingRes] = await Promise.all([
+        window.api.authenticatedFetch('/api/users/list.php'),
+        window.api.authenticatedFetch('/api/admin/registration_pending.php')
+      ]);
+      const allUsers = Array.isArray(usersRes?.users) ? usersRes.users : [];
+      const pendingRegistrations = Array.isArray(regPendingRes?.pending) ? regPendingRes.pending : [];
+      
+      // Keep statuses normalized so queue separation is consistent.
+      const normalizedUsers = allUsers.map(u => ({
+        ...u,
+        account_status: String(u.account_status || '').trim().toLowerCase(),
+        id_verification_status: String(u.id_verification_status || '').trim().toLowerCase(),
+        role_normalized: String(u.role || '').trim().toLowerCase()
+      }));
 
-      if (badge) {
-        badge.textContent = String(pending.length);
-        badge.style.display = pending.length ? 'inline-flex' : 'none';
-      }
+      // 1. New Accounts: source from registration_requests (real pending approvals queue).
+      const newAccounts = pendingRegistrations.map(item => {
+        const u = item?.user || {};
+        return {
+          request_id: item?.request_id,
+          id: u.id,
+          school_id: u.school_id,
+          name: u.name,
+          department: u.department,
+          role: u.role,
+          email: u.email
+        };
+      });
+      const pendingRegistrationUserIds = new Set(
+        newAccounts.map(u => Number(u.id)).filter(id => Number.isFinite(id) && id > 0)
+      );
 
-      tbody.innerHTML = pending.map(item => {
-        const u = item.user || {};
+      // 2. ID Verification Queue:
+      //    - include users awaiting ID review (unverified or pending)
+      //    - keep users with pending account approval out of this queue
+      const idVerifications = normalizedUsers.filter(u =>
+        (u.id_verification_status === 'unverified' || u.id_verification_status === 'pending') &&
+        u.account_status !== 'suspended' &&
+        u.role_normalized !== 'admin' &&
+        !pendingRegistrationUserIds.has(Number(u.id))
+      );
+
+      // Render New Accounts Table
+      newAccBody.innerHTML = newAccounts.map(u => {
         const name = u.name || '—';
         const schoolId = u.school_id || '—';
         const dept = u.department || '—';
         const email = u.email || '—';
-        const contact = u.contact || 'Not provided';
         const role = u.role || '';
+
         return `
           <tr>
-            <td>
-              ${name}
-              <span class="sub-text" style="font-family: monospace; color: var(--gold);">ID: ${schoolId}</span>
-            </td>
+            <td>${name}<br><span class="sub-text" style="font-family: monospace; color: var(--gold);">ID: ${schoolId}</span></td>
             <td>${dept}</td>
             <td>${roleTag(role)}</td>
+            <td>${email}</td>
             <td>
-              ${email}
-              <span class="sub-text">${contact}</span>
-            </td>
-            <td>
-              <div class="action-form">
-                <button type="button" class="btn-action btn-approve" onclick="processRequest(${item.request_id}, 'approve')">
-                  <i class="ph ph-check"></i> Approve
+              <div class="action-form" style="display: flex; gap: 8px;">
+                <button type="button" class="btn-action btn-approve" onclick="processRequest(${u.id}, 'approve_account', ${u.request_id})">
+                  <i class="ph ph-check-circle"></i> Approve Account
                 </button>
-                <button type="button" class="btn-action btn-reject" onclick="processRequest(${item.request_id}, 'reject')">
-                  <i class="ph ph-x"></i> Reject
+                <button type="button" class="btn-action btn-reject" onclick="processRequest(${u.id}, 'reject_account', ${u.request_id})">
+                  <i class="ph ph-user-minus"></i> Reject
                 </button>
               </div>
             </td>
           </tr>
         `;
-      }).join('') || `
-        <tr>
-          <td colspan="5" class="empty-state">
-            <i class="ph ph-inbox"></i>
-            No pending applications right now.
-          </td>
-        </tr>
-      `;
+      }).join('') || `<tr><td colspan="5" class="empty-state"><i class="ph ph-check-circle"></i> No new account applications!</td></tr>`;
+
+      // Render ID Verifications Table
+      idVerBody.innerHTML = idVerifications.map(u => {
+        const name = u.name || '—';
+        const schoolId = u.school_id || '—';
+        const dept = u.department || '—';
+        const role = u.role || '';
+        
+        const idPhotoUrl = resolveFileUrl(u.id_photo_url);
+        const isPendingReview = String(u.id_verification_status).toLowerCase() === 'pending';
+        const idStatusLabel = isPendingReview ? 'Pending Review' : 'Unverified';
+        let idLink = idPhotoUrl
+            ? `<br><a href="${idPhotoUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--success); font-size: 11px; text-decoration: underline; margin-top: 4px; display: inline-block;"><i class="ph ph-image"></i> View Uploaded ID Photo</a>`
+            : `<br><span style="color: var(--text-3); font-size: 11px; margin-top: 4px; display: inline-block;"><i class="ph ph-image-broken"></i> No uploaded ID photo</span>`;
+
+        return `
+          <tr>
+            <td>${name}<br><span class="sub-text" style="font-family: monospace; color: var(--gold);">ID: ${schoolId}</span></td>
+            <td>${dept}</td>
+            <td>${roleTag(role)}</td>
+            <td>
+                <span style="color: var(--gold); font-size: 12px;"><i class="ph ph-hourglass"></i> ${idStatusLabel}</span>
+                ${idLink}
+            </td>
+            <td>
+              <div class="action-form" style="display: flex; gap: 8px;">
+                <button type="button" class="btn-action btn-approve" onclick="processRequest(${u.id}, 'verify_id')">
+                  <i class="ph ph-identification-card"></i> Verify ID
+                </button>
+                <button type="button" class="btn-action btn-reject" onclick="processRequest(${u.id}, 'reject_id')">
+                  <i class="ph ph-x"></i> Reject ID
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('') || `<tr><td colspan="5" class="empty-state"><i class="ph ph-check-circle"></i> No pending ID verifications!</td></tr>`;
+
     } catch (e) {
       console.error('Pending approvals load failed:', e);
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" class="empty-state">
-            <i class="ph ph-warning"></i>
-            Failed to load pending applications.
-          </td>
-        </tr>
-      `;
+      newAccBody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="ph ph-warning"></i> Failed to load applications.</td></tr>`;
+      idVerBody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="ph ph-warning"></i> Failed to load verifications.</td></tr>`;
     }
   }
 

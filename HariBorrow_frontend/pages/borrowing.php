@@ -416,6 +416,26 @@
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
     }
 
+    .card-image-wrap {
+      width: 100%;
+      height: 170px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.02);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
     .card-icon {
       width: 52px;
       height: 52px;
@@ -756,7 +776,14 @@
         <i class="ph ph-arrow-left"></i>
         Asset Catalog
       </button>
+    </div>
 
+    <div id="unverifiedBanner" style="display: none; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px; color: var(--red); font-size: 14px; align-items: center; gap: 12px;">
+      <i class="ph ph-warning-circle" style="font-size: 24px;"></i>
+      <div style="flex: 1;">
+        <strong style="display: block; margin-bottom: 4px;">ID Verification Required</strong>
+        <span>You must upload your ID and have it verified by an admin before you can borrow any assets. <a href="profile_settings.php" style="color: var(--gold); text-decoration: underline;">Verify now</a>.</span>
+      </div>
     </div>
 
     <div class="toolbar" id="catalogToolbar">
@@ -911,6 +938,14 @@
       return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString();
     }
 
+    function resolveAssetImageUrl(rawUrl) {
+      const val = String(rawUrl || '').trim();
+      if (!val) return '';
+      if (/^https?:\/\//i.test(val)) return val;
+      if (val.startsWith('/')) return val;
+      return '/' + val.replace(/^\/+/, '');
+    }
+
     // New logic to match admin status pills
     function getStatusData(tx) {
       const raw = String(tx?.status || '').toLowerCase();
@@ -940,6 +975,7 @@
               meetup_location: a.meetup_location || '',
               daily_penalty: a.daily_penalty || 0,
               penalty_type: a.penalty_type || 'per_day',
+              asset_image: a.asset_image || '',
               icon: iconMap[a.type] || 'ph-stack'
             };
           });
@@ -949,6 +985,20 @@
       } catch (error) {
         console.error("Failed to load catalog:", error);
       }
+    }
+
+    async function checkVerificationStatus() {
+        try {
+            const res = await window.api.authenticatedFetch('/api/users/profile.php');
+            if (res && res.profile) {
+                const status = res.profile.id_verification_status || 'unverified';
+                if (status !== 'verified') {
+                    document.getElementById('unverifiedBanner').style.display = 'flex';
+                }
+            }
+        } catch (error) {
+            console.error("Failed to check verification status:", error);
+        }
     }
 
     async function loadMyBorrowings() {
@@ -1013,8 +1063,13 @@
         const lenderRep = (a.lender_rating_count > 0)
           ? `<div class="card-meta-row"><i class="ph ph-star"></i> Lender ${Number(a.lender_rating_average).toFixed(2)} ★ (${a.lender_rating_count})</div>`
           : `<div class="card-meta-row" style="opacity:0.85;"><i class="ph ph-star"></i> Lender: no ratings yet</div>`;
+        const imageUrl = resolveAssetImageUrl(a.asset_image);
+        const imageHtml = imageUrl
+          ? `<div class="card-image-wrap"><img src="${imageUrl}" alt="${a.name}" class="card-image" loading="lazy"></div>`
+          : '';
         return `
         <div class="asset-card">
+          ${imageHtml}
           <div class="card-icon"><i class="ph ${a.icon}"></i></div>
           <div class="card-name">${a.name}</div>
           <div class="card-id">ID: ${a.id}</div>
@@ -1223,6 +1278,7 @@
           if (e.target.id === 'ratingModal') closeRatingModal();
         });
         
+        await checkVerificationStatus();
         await loadCatalog();
         await loadMyBorrowings();
         

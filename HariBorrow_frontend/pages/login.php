@@ -1,3 +1,4 @@
+<?php require_once '../includes/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -360,7 +361,7 @@
 
     .alert {
       display: none;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       padding: 14px 18px;
       border-radius: 6px;
@@ -368,6 +369,7 @@
       margin-bottom: 28px;
       letter-spacing: 0.03em;
       font-weight: 500;
+      white-space: pre-line;
     }
 
     .alert.err {
@@ -614,7 +616,7 @@
       border-bottom-color: var(--gold);
     }
 
-    /* ── FAQ MODAL OVERLAY ── */
+    /* ── MODAL OVERLAYS ── */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -637,7 +639,7 @@
 
     .modal-content {
       background: rgba(10, 10, 13, 0.8);
-      border: 1px solid var(--gold-border);
+      border: 1px solid var(--glass-border);
       border-radius: 12px;
       padding: 48px;
       max-width: 600px;
@@ -792,7 +794,7 @@
     <div class="left">
       <div class="brand">
         <div class="logo">
-          <img class="eagle-mark" src="../images/image_0.png" alt="HariBorrow Logo">
+          <img class="eagle-mark" src="<?php echo htmlspecialchars($logoPath); ?>" alt="HariBorrow Logo">
 
           <div class="brand-text">
             <div class="brand-name">HariBorrow</div>
@@ -857,7 +859,7 @@
     <div class="right">
 
       <div class="mobile-brand">
-        <img class="mobile-logo" src="../images/image_0.png" alt="HariBorrow Logo">
+        <img class="mobile-logo" src="<?php echo htmlspecialchars($logoPath); ?>" alt="HariBorrow Logo">
         <div class="mobile-name">HariBorrow</div>
         <div class="mobile-tagline">Pamantasan Asset Gateway</div>
       </div>
@@ -872,7 +874,7 @@
             <p>Authenticate your university credentials</p>
           </div>
 
-          <form onsubmit="handleAuth(event, 'loginBtn')">
+          <form onsubmit="event.preventDefault(); handleAuth(event, 'loginBtn')">
             <div class="field">
               <label>Student / Faculty Email</label>
               <div class="inp-wrap">
@@ -892,7 +894,7 @@
               <label class="remember">
                 <input type="checkbox"> Keep me signed in
               </label>
-              <a class="link">Reset Password</a>
+              <a class="link" onclick="showView('forgotView')">Forgot Password</a>
             </div>
 
             <button type="submit" class="btn" id="loginBtn">
@@ -907,8 +909,55 @@
           </div>
 
           <div class="form-foot">
-            Don't have an account? <a href="sign_up.html">Sign Up Here</a><br><br>
-            Need support? <a onclick="toggleFaq()">Read the FAQ</a>
+            Don't have an account? <a href="sign_up.php">Sign Up Here</a><br><br>
+            Need support? <a onclick="toggleFaq()">Read the FAQ</a> or <a onclick="toggleContact()">Contact Support</a>
+          </div>
+        </div>
+
+        <div id="forgotView" class="view-section">
+          <div class="form-head">
+            <h2>Forgot<br><span class="aesthetic-script">Password.</span></h2>
+            <p>Verify your account using your PLM email and student/employee ID.</p>
+          </div>
+
+          <form onsubmit="event.preventDefault(); handleForgotPassword(event, 'forgotBtn')">
+            <div class="field">
+              <label>PLM Email</label>
+              <div class="inp-wrap">
+                <input type="email" id="forgotEmail" placeholder="student@plm.edu.ph" autocomplete="email" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Student / Employee ID</label>
+              <div class="inp-wrap">
+                <input type="text" id="forgotSchoolId" placeholder="Enter your ID number" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>New Password</label>
+              <div class="inp-wrap">
+                <input type="password" id="forgotPassword" placeholder="Enter new password" minlength="8" required>
+                <button type="button" class="pw-btn" onclick="togglePw('forgotPassword', this)">Show</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Confirm New Password</label>
+              <div class="inp-wrap">
+                <input type="password" id="forgotConfirmPassword" placeholder="Re-enter new password" minlength="8" required>
+                <button type="button" class="pw-btn" onclick="togglePw('forgotConfirmPassword', this)">Show</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn" id="forgotBtn">
+              <span>Submit</span>
+            </button>
+          </form>
+
+          <div class="form-foot">
+            Back to login? <a onclick="showView('loginView')">Return to Secure Gateway</a>
           </div>
         </div>
 
@@ -952,6 +1001,25 @@
     </div>
   </div>
 
+  <div id="contactModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px; text-align: center; border-color: var(--gold-dark);">
+      <button class="close-btn" onclick="toggleContact()">×</button>
+
+      <h2 class="headline" style="font-size: 32px; margin-bottom: 16px;">
+        Contact<br><span class="aesthetic-script">Support.</span>
+      </h2>
+
+      <p style="font-size: 14px; font-weight: 300; color: var(--text-2); margin-bottom: 24px;">
+        If you need assistance with your account or have encountered an issue, please reach out to the system administrator.
+      </p>
+
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 20px; border-radius: 8px;">
+        <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px;">Admin PLM Email</div>
+        <div style="font-size: 18px; color: var(--gold-light); font-weight: 400; letter-spacing: 0.05em;"><i class="ph ph-envelope-simple" style="vertical-align: middle; margin-right: 4px;"></i> admin@plm.edu.ph</div>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/api.js"></script>
   <script>
     // Mouse Glow
@@ -964,6 +1032,12 @@
     // Toggle FAQ Modal
     function toggleFaq() {
       const modal = document.getElementById('faqModal');
+      modal.classList.toggle('active');
+    }
+
+    // Toggle Contact Modal
+    function toggleContact() {
+      const modal = document.getElementById('contactModal');
       modal.classList.toggle('active');
     }
 
@@ -983,6 +1057,21 @@
       el.className = 'alert ' + type;
     }
 
+    function showView(viewId) {
+      document.querySelectorAll('.view-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      const next = document.getElementById(viewId);
+      if (next) next.classList.add('active');
+
+      const alertEl = document.getElementById('alert');
+      if (alertEl) {
+        alertEl.style.display = 'none';
+        alertEl.className = 'alert';
+        alertEl.textContent = '';
+      }
+    }
+
     // Form Submission
     async function handleAuth(e, btnId) {
       e.preventDefault();
@@ -997,35 +1086,92 @@
       const password = document.getElementById('password').value;
 
       try {
-        // FIXED: Added /api/ prefix to match your actual folder structure
-        const response = await window.api.rawFetch('/auth/login.php', {
+        const response = await window.api.rawFetch('/api/auth/login.php', {
           method: 'POST',
           body: { email, password }
         });
-        
-        // FIXED: Added null safety check
+
         if (response && response.status === 'success') {
+          // Save data to local storage
           window.api.setToken(response.token);
           window.api.setUser(response.user);
+
           showAlert('✦ Login successful. Accessing dashboard...', 'ok');
+
+          // Route based on role
           setTimeout(() => {
-            window.location.href = 'borrower_lender_dashboard.html';
+            const role = (response.user && response.user.role) ? response.user.role.trim().toLowerCase() : '';
+
+            if (role === 'admin') {
+              window.location.href = 'admin_dashboard.php';
+            } else {
+              window.location.href = 'borrower_lender_dashboard.php';
+            }
           }, 1200);
+
         } else {
-          // Fallback if response is null
-          const errorMsg = (response && response.message) ? response.message : 'Invalid credentials or server error.';
+          const errorMsg = (response && response.message) ? response.message : 'Invalid credentials.';
           showAlert('✦ ' + errorMsg, 'err');
           textSpan.textContent = originalText;
           btn.disabled = false;
         }
       } catch (error) {
-        showAlert('✦ ' + (error.message || 'Server error occurred. Please try again later.'), 'err');
+        const msg =
+          (error && (error.message || error?.data?.message)) ||
+          'Server error occurred. Please try again later.';
+        showAlert('✦ ' + msg, 'err');
         textSpan.textContent = originalText;
         btn.disabled = false;
       }
     }
-  </script>
 
+    async function handleForgotPassword(e, btnId) {
+      e.preventDefault();
+      const btn = document.getElementById(btnId);
+      const textSpan = btn.querySelector('span');
+      const originalText = textSpan.textContent;
+
+      textSpan.textContent = 'Submitting...';
+      btn.disabled = true;
+
+      const email = document.getElementById('forgotEmail').value.trim();
+      const schoolId = document.getElementById('forgotSchoolId').value.trim();
+      const newPassword = document.getElementById('forgotPassword').value;
+      const confirmPassword = document.getElementById('forgotConfirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showAlert('✦ New password and confirm password do not match.', 'err');
+        textSpan.textContent = originalText;
+        btn.disabled = false;
+        return;
+      }
+
+      try {
+        const response = await window.api.rawFetch('/api/auth/forgot_password.php', {
+          method: 'POST',
+          body: { email, school_id: schoolId, new_password: newPassword }
+        });
+
+        if (response && response.status === 'success') {
+          showAlert('✦ Password updated successfully. You may now log in.', 'ok');
+          document.getElementById('forgotPassword').value = '';
+          document.getElementById('forgotConfirmPassword').value = '';
+          setTimeout(() => showView('loginView'), 900);
+        } else {
+          showAlert('✦ ' + (response?.message || 'Failed to reset password.'), 'err');
+        }
+      } catch (error) {
+        const msg =
+          (error && (error.message || error?.data?.message)) ||
+          'Server error occurred. Please try again later.';
+        showAlert('✦ ' + msg, 'err');
+      } finally {
+        textSpan.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+
+  </script>
 </body>
 
 </html>

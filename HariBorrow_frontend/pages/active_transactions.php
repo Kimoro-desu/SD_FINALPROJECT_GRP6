@@ -427,7 +427,7 @@
 
         th {
             text-align: left;
-            padding: 16px 20px;
+            padding: 12px 16px; /* Reduced padding */
             font-size: 10px;
             font-weight: 600;
             letter-spacing: 0.15em;
@@ -435,11 +435,12 @@
             color: var(--text-3);
             border-bottom: 1px solid var(--glass-border);
             background: rgba(0, 0, 0, 0.2);
+            white-space: nowrap; /* Prevents headers from wrapping weirdly */
         }
 
         td {
-            padding: 16px 20px;
-            font-size: 14px;
+            padding: 12px 16px; /* Reduced padding */
+            font-size: 13px; /* Smaller font to fit data */
             color: var(--text-2);
             font-weight: 300;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
@@ -771,7 +772,9 @@
             <a href="registered_users.php" class="nav-link"><i class="ph ph-users"></i> Registered Users</a>
 
             <div class="nav-section-title">System</div>
-            <a href="registration_approval.php" class="nav-link"><i class="ph ph-shield-check"></i> Registration Approvals</a>
+            <a href="registration_approval.php" class="nav-link"><i class="ph ph-shield-check"></i> Registration Approvals
+                <span class="nav-badge" id="regBadge" style="display:none;">0</span>
+            </a>
             <a href="system_logs.php" class="nav-link"><i class="ph ph-file-text"></i> System Logs</a>
         </nav>
 
@@ -813,22 +816,24 @@
         </div>
 
         <div class="data-panel">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Transaction ID</th>
-                        <th>Borrower Details</th>
-                        <th>Asset Information</th>
-                        <th>Borrow Date</th>
-                        <th>Expected Return</th>
-                        <th>Time Returned</th>
-                        <th>Penalty</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="activeTransactionsBody"></tbody>
-            </table>
+            <div style="width: 100%; overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Borrower Details</th>
+                            <th>Asset Information</th>
+                            <th>Borrow Date</th>
+                            <th>Expected Return</th>
+                            <th>Time Returned</th>
+                            <th>Penalty</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activeTransactionsBody"></tbody>
+                </table>
+            </div>
         </div>
 
     </main>
