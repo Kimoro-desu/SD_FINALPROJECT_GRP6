@@ -284,7 +284,7 @@
     .page {
       position: relative;
       z-index: 10;
-      padding: 120px 5% 60px;
+      padding: 140px 5% 60px;
       max-width: 1400px;
       margin: 0 auto;
     }

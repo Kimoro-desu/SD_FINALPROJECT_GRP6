@@ -106,7 +106,7 @@
     .profile-container {
       position: relative;
       z-index: 10;
-      padding: 100px 5% 60px;
+      padding: 140px 5% 60px;
       max-width: 1000px;
       margin: 0 auto;
     }

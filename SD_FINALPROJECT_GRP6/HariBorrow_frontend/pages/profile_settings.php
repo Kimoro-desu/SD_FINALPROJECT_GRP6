@@ -182,7 +182,7 @@
     .settings-container {
       position: relative;
       z-index: 10;
-      padding: 120px 5% 60px;
+      padding: 140px 5% 60px;
       max-width: 1200px;
       margin: 0 auto;
       animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
