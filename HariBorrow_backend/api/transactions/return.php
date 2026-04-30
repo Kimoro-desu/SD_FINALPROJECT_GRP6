@@ -6,9 +6,16 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-W
 
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
+require_once '../../utils/penalty_schema.php';
+require_once '../../utils/ratings_schema.php';
+require_once '../../utils/user_notifications.php';
 
 use Config\Database;
 use Utils\JwtHelper;
+use function Utils\ensurePenaltySchema;
+use function Utils\ensureRatingsSchema;
+use function Utils\ensureUserNotificationsTable;
+use function Utils\pushUserNotification;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -36,13 +43,32 @@ $db = $database->getConnection();
 $data = json_decode(file_get_contents("php://input"));
 
 if (!empty($data->transaction_id)) {
+    // ── Run all DDL / schema migrations BEFORE opening a transaction ──
+    // ALTER TABLE causes an implicit commit in MySQL which would silently
+    // close our PDO transaction and later trigger "There is no active transaction".
+    try {
+        ensurePenaltySchema($db);
+    } catch (\Exception $schemaEx) {
+        error_log('ensurePenaltySchema warning: ' . $schemaEx->getMessage());
+    }
+    try {
+        ensureRatingsSchema($db);
+    } catch (\Exception $schemaEx) {
+        error_log('ensureRatingsSchema warning: ' . $schemaEx->getMessage());
+    }
+    try {
+        ensureUserNotificationsTable($db);
+    } catch (\Exception $schemaEx) {
+        error_log('ensureUserNotificationsTable warning: ' . $schemaEx->getMessage());
+    }
+
     try {
         $db->beginTransaction();
 
         $transaction_id = htmlspecialchars(strip_tags($data->transaction_id));
         
         // Fetch the transaction strictly locking it
-        $check_query = "SELECT asset_id, borrower_id, request_status FROM transactions WHERE transaction_id = :tid FOR UPDATE";
+        $check_query = "SELECT t.asset_id, t.borrower_id, t.request_status, t.due_date, a.Lender_ID, a.asset_name FROM transactions t JOIN assets a ON t.asset_id = a.Asset_ID WHERE t.transaction_id = :tid FOR UPDATE";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(':tid', $transaction_id);
         $check_stmt->execute();
@@ -56,6 +82,8 @@ if (!empty($data->transaction_id)) {
         $trans_row = $check_stmt->fetch(\PDO::FETCH_ASSOC);
         $asset_id = $trans_row['asset_id'];
         $borrower_id = $trans_row['borrower_id'];
+        $lender_id = $trans_row['Lender_ID'] ?? 0;
+        $asset_name = $trans_row['asset_name'] ?? 'Asset';
 
         // If the item hasn't been approved yet or is already returned, ignore request
         if ($trans_row['request_status'] !== Database::STATUS_APPROVED) {
@@ -65,39 +93,83 @@ if (!empty($data->transaction_id)) {
         }
 
         // Only the original borrower OR an Admin/Lender/Staff can mark an item as returned
-        $allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF];
+        $allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF, Database::ROLE_STUDENT, Database::ROLE_FACULTY, Database::ROLE_RESEARCHER];
         if ($decodedData['id'] != $borrower_id && !in_array($decodedData['role'], $allowed_roles)) {
             $db->rollBack();
             http_response_code(403);
             die(json_encode(["message" => "Forbidden. You can only return your own items.", "status" => "error"]));
         }
 
-        $new_status = Database::STATUS_RETURNED;
         $return_date = date('Y-m-d H:i:s');
+        $due_date = $trans_row['due_date'] ?? null;
 
-        // Note: The Penalty system functionality will hook into this later to check if $return_date > due_date
+        $penaltyAmount = 0;
+        $is_overdue = false;
+        if (!empty($due_date)) {
+            $dueTs = strtotime($due_date);
+            $returnTs = strtotime($return_date);
+            if ($dueTs !== false && $returnTs !== false && $returnTs > $dueTs) {
+                $is_overdue = true;
+                $secondsLate = $returnTs - $dueTs;
+                $penaltyQ = "SELECT daily_penalty, penalty_type FROM assets WHERE Asset_ID = :asset_id LIMIT 1";
+                $penaltyStmt = $db->prepare($penaltyQ);
+                $penaltyStmt->bindParam(':asset_id', $asset_id);
+                $penaltyStmt->execute();
+                $penaltyRow = $penaltyStmt->fetch(\PDO::FETCH_ASSOC);
+                $penaltyRate = (int)($penaltyRow['daily_penalty'] ?? 0);
+                $penaltyType = $penaltyRow['penalty_type'] ?? 'per_day';
 
-        $update_trans = "UPDATE transactions SET request_status = :status, return_date = :return_date WHERE transaction_id = :tid";
+                if ($penaltyType === 'per_hour') {
+                    $hoursLate = (int)ceil($secondsLate / 3600);
+                    $penaltyAmount = max(0, $hoursLate * $penaltyRate);
+                } elseif ($penaltyType === 'one_time') {
+                    $penaltyAmount = max(0, $penaltyRate);
+                } else {
+                    $daysLate = (int)ceil($secondsLate / 86400);
+                    $penaltyAmount = max(0, $daysLate * $penaltyRate);
+                }
+            }
+        }
+
+        // The lender must always confirm the return first
+        $new_status = 'return_lender_confirm';
+
+        $update_trans = "UPDATE transactions
+                         SET request_status = :status, return_date = :return_date, penalty_amount = :penalty_amount
+                         WHERE transaction_id = :tid";
         $update_stmt = $db->prepare($update_trans);
         $update_stmt->bindParam(':status', $new_status);
         $update_stmt->bindParam(':return_date', $return_date);
+        $update_stmt->bindValue(':penalty_amount', $penaltyAmount);
         $update_stmt->bindParam(':tid', $transaction_id);
         $update_stmt->execute();
 
-        // Release the asset so others can borrow it
-        $new_avail = Database::AVAILABILITY_AVAILABLE;
-        $update_asset = "UPDATE assets SET availability = :avail WHERE Asset_ID = :asset_id";
-        $asset_stmt = $db->prepare($update_asset);
-        $asset_stmt->bindParam(':avail', $new_avail);
-        $asset_stmt->bindParam(':asset_id', $asset_id);
-        $asset_stmt->execute();
+        // ── Single notification on success ──
+        if ((int)$borrower_id > 0) {
+            if ($penaltyAmount > 0) {
+                pushUserNotification($db, (int)$borrower_id, 'Return Processed with Penalty', 'Your return was completed. Penalty due: PHP ' . number_format($penaltyAmount, 0) . '.', 'warning', 'ph-warning-circle');
+            } else {
+                pushUserNotification($db, (int)$borrower_id, 'Return Completed', 'Your borrowing was returned successfully with no penalty.', 'info', 'ph-check-circle');
+            }
+        }
+        
+        if ((int)$lender_id > 0) {
+            pushUserNotification($db, (int)$lender_id, 'Asset Returned', 'Your asset "' . $asset_name . '" has been returned.', 'info', 'ph-check-circle');
+        }
 
         $db->commit();
         http_response_code(200);
-        echo json_encode(["message" => "Item marked as returned successfully.", "return_date" => $return_date, "status" => "success"]);
+        echo json_encode([
+            "message" => "Item marked as returned successfully.",
+            "return_date" => $return_date,
+            "penalty_amount" => $penaltyAmount,
+            "status" => "success"
+        ]);
 
     } catch (\PDOException $e) {
-        $db->rollBack();
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
         http_response_code(500);
         echo json_encode(["message" => "Database error: " . $e->getMessage(), "status" => "error"]);
     }

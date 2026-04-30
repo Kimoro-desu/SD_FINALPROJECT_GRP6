@@ -32,7 +32,7 @@ if (!$decodedData) {
 }
 
 // Restrict this operation
-$allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF];
+$allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF, Database::ROLE_STUDENT, Database::ROLE_FACULTY, Database::ROLE_RESEARCHER];
 if (!in_array($decodedData['role'], $allowed_roles)) {
     http_response_code(403);
     die(json_encode(["message" => "Forbidden. You do not have permission to delete assets.", "status" => "error"]));
@@ -47,8 +47,17 @@ if (!empty($asset_id)) {
     try {
         // Delete the asset where the ID matches
         $query = "DELETE FROM assets WHERE Asset_ID = :id";
+        
+        if ($decodedData['role'] !== Database::ROLE_ADMIN) {
+            $query .= " AND Lender_ID = :lender_id";
+        }
+        
         $stmt = $db->prepare($query);
         $stmt->bindParam(":id", $asset_id);
+        
+        if ($decodedData['role'] !== Database::ROLE_ADMIN) {
+            $stmt->bindParam(":lender_id", $decodedData['id']);
+        }
 
         if ($stmt->execute() && $stmt->rowCount() > 0) {
             http_response_code(200);

@@ -9,9 +9,13 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 // Include database and helper
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
+require_once '../../utils/ratings_schema.php';
+require_once '../../utils/user_account_schema.php';
 
 use Config\Database;
 use Utils\JwtHelper;
+use function Utils\ensureRatingsSchema;
+use function Utils\ensureUserAccountSchema;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -20,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $database = new Database();
 $db = $database->getConnection();
+ensureRatingsSchema($db);
+ensureUserAccountSchema($db);
 
 // Get the Authorization header
 $authHeader = JwtHelper::getAuthorizationHeader();
@@ -40,9 +46,9 @@ $decodedData = JwtHelper::validateToken($jwt);
 if ($decodedData) {
     try {
         // We fetch the latest user info straight from DB just in case fields have changed
-        $query = "SELECT User_ID, first_name, middle_name, last_name, user_role, plm_email 
-                  FROM users 
-                  WHERE User_ID = :id LIMIT 0,1";
+        $query = "SELECT User_ID, school_id_number, department, first_name, middle_name, last_name, user_role, plm_email, profile_picture, background_picture, id_verification_status, id_photo_url
+          FROM users 
+          WHERE User_ID = :id LIMIT 0,1";
 
         $stmt = $db->prepare($query);
         $userId = $decodedData['id'];
@@ -53,18 +59,34 @@ if ($decodedData) {
         
         if ($num > 0) {
             $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $ratingStmt = $db->prepare("
+                SELECT COUNT(*) AS rating_count, COALESCE(AVG(rating), 0) AS rating_average
+                FROM transaction_ratings
+                WHERE ratee_id = :id
+            ");
+            $ratingStmt->bindParam(':id', $userId);
+            $ratingStmt->execute();
+            $ratingRow = $ratingStmt->fetch(\PDO::FETCH_ASSOC) ?: ['rating_count' => 0, 'rating_average' => 0];
 
             http_response_code(200);
             echo json_encode([
                 "message" => "Profile successfully retrieved.",
                 "profile" => [
                     "id" => $row['User_ID'],
+                    "school_id_number" => $row['school_id_number'], // Add this line
+                    "department" => $row['department'],
                     "first_name" => $row['first_name'],
                     "middle_name" => $row['middle_name'],
                     "last_name" => $row['last_name'],
                     "full_name" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
                     "email" => $row['plm_email'],
-                    "role" => $row['user_role']
+                    "role" => $row['user_role'],
+                    "profile_picture" => $row['profile_picture'],
+                    "background_picture" => $row['background_picture'],
+                    "id_verification_status" => $row['id_verification_status'],
+                    "id_photo_url" => $row['id_photo_url'],
+                    "rating_count" => (int)($ratingRow['rating_count'] ?? 0),
+                    "rating_average" => round((float)($ratingRow['rating_average'] ?? 0), 2)
                 ],
                 "status" => "success"
             ]);
