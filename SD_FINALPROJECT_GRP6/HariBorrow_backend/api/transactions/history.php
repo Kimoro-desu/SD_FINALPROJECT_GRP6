@@ -120,6 +120,75 @@ try {
         }
     }
 
+    // Received ratings (reputation) for borrowers and lenders on each row.
+    if (!empty($history_arr)) {
+        $uidSet = [];
+        foreach ($history_arr as $tx) {
+            $uidSet[(int)$tx['borrower']['id']] = true;
+            $lid = (int)($tx['lender']['id'] ?? 0);
+            if ($lid > 0) {
+                $uidSet[$lid] = true;
+            }
+        }
+        $ids = array_keys($uidSet);
+        $repMap = [];
+        if (!empty($ids)) {
+            $ph = implode(',', array_fill(0, count($ids), '?'));
+            $repStmt = $db->prepare(
+                "SELECT ratee_id, COUNT(*) AS c, COALESCE(AVG(rating), 0) AS av
+                 FROM transaction_ratings
+                 WHERE ratee_id IN ($ph)
+                 GROUP BY ratee_id"
+            );
+            foreach ($ids as $i => $uid) {
+                $repStmt->bindValue($i + 1, (int)$uid, \PDO::PARAM_INT);
+            }
+            $repStmt->execute();
+            while ($r = $repStmt->fetch(\PDO::FETCH_ASSOC)) {
+                $repMap[(int)$r['ratee_id']] = [
+                    'rating_count' => (int)$r['c'],
+                    'rating_average' => round((float)$r['av'], 2),
+                ];
+            }
+        }
+        foreach ($history_arr as &$txRep) {
+            $bid = (int)$txRep['borrower']['id'];
+            $lid = (int)($txRep['lender']['id'] ?? 0);
+            $b = $repMap[$bid] ?? ['rating_count' => 0, 'rating_average' => 0.0];
+            $txRep['borrower']['rating_count'] = $b['rating_count'];
+            $txRep['borrower']['rating_average'] = $b['rating_average'];
+            if ($lid > 0) {
+                $l = $repMap[$lid] ?? ['rating_count' => 0, 'rating_average' => 0.0];
+                $txRep['lender']['rating_count'] = $l['rating_count'];
+                $txRep['lender']['rating_average'] = $l['rating_average'];
+            } else {
+                $txRep['lender']['rating_count'] = 0;
+                $txRep['lender']['rating_average'] = 0.0;
+            }
+        }
+        unset($txRep);
+    }
+
+    // Attach return photos
+    if (!empty($txIds)) {
+        $idPlaceholders = implode(',', array_fill(0, count($txIds), '?'));
+        
+        $photoSql = "SELECT transaction_id, photo_path FROM return_photos WHERE transaction_id IN ($idPlaceholders)";
+        $photoStmt = $db->prepare($photoSql);
+        foreach ($txIds as $i => $txId) {
+            $photoStmt->bindValue($i + 1, $txId, \PDO::PARAM_INT);
+        }
+        $photoStmt->execute();
+        $photosByTx = [];
+        while ($p = $photoStmt->fetch(\PDO::FETCH_ASSOC)) {
+            $tid = (int)$p['transaction_id'];
+            if (!isset($photosByTx[$tid])) {
+                $photosByTx[$tid] = [];
+            }
+            $photosByTx[$tid][] = $p;
+        }
+    }
+
     // Attach current-user rating context for UI actions.
     if (!empty($txIds)) {
         $idPlaceholders = implode(',', array_fill(0, count($txIds), '?'));
@@ -166,9 +235,16 @@ try {
                 }
             }
 
+            // 1. Consider it returned if it has a return date OR the status says returned
+            $isReturned = !empty($txItem['dates']['returned']) || strtolower($txItem['status']) === 'returned';
+            
+            // 2. Check if there is an active, unpaid penalty
+            $hasUnpaidPenalty = ((float)$txItem['penalty_amount'] > 0);
+
+            // 3. Unlock rating only if returned, fully paid/resolved, and counterparty exists
             $canRate = (
-                $txItem['status'] === Database::STATUS_RETURNED &&
-                (int)$txItem['rating_locked'] === 1 &&
+                $isReturned &&
+                !$hasUnpaidPenalty &&
                 ($isBorrower || $isLender) &&
                 $myRating === null &&
                 (int)($counterparty['id'] ?? 0) > 0
@@ -180,6 +256,7 @@ try {
             $txItem['my_rating'] = $myRating;
             $txItem['counterparty_rating'] = $counterpartyRating;
             $txItem['can_rate'] = $canRate;
+            $txItem['return_photos'] = $photosByTx[$tid] ?? [];
         }
         unset($txItem);
     }

@@ -3,12 +3,6 @@ namespace Utils;
 
 function ensureRatingsSchema(\PDO $db): void
 {
-    // users.reward_points (simple ecommerce-style reputation points)
-    $userCols = $db->query("SHOW COLUMNS FROM users")->fetchAll(\PDO::FETCH_COLUMN, 0);
-    if (!in_array('reward_points', $userCols, true)) {
-        $db->exec("ALTER TABLE users ADD COLUMN reward_points INT NOT NULL DEFAULT 0");
-    }
-
     // transactions.rating_locked
     // 0 = no pending ratings for this transaction
     // 1 = transaction is waiting for post-transaction ratings
@@ -25,7 +19,6 @@ function ensureRatingsSchema(\PDO $db): void
             rater_id INT NOT NULL,
             ratee_id INT NOT NULL,
             rating TINYINT UNSIGNED NOT NULL,
-            points_awarded INT NOT NULL DEFAULT 0,
             review_text VARCHAR(500) NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uniq_tx_rater (transaction_id, rater_id),

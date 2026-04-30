@@ -110,3 +110,39 @@ const api = {
 };
 
 window.api = api;
+
+(function () {
+    // Same directory as this file so it works even if the project folder name or host path differs.
+    var jsDir = '/SD_FINALPROJECT_GRP6/HariBorrow_frontend/js/';
+    try {
+        var cs = document.currentScript;
+        if (cs && cs.src) {
+            var pathname = new URL(cs.src).pathname;
+            var cut = pathname.lastIndexOf('/');
+            if (cut !== -1) {
+                jsDir = pathname.slice(0, cut + 1);
+            }
+        }
+    } catch (e) { /* keep default */ }
+
+    function tryLoadGlobalUserSearch() {
+        try {
+            var path = (window.location.pathname || '').toLowerCase();
+            if (path.indexOf('login.php') !== -1 || path.indexOf('sign_up.php') !== -1) return;
+            if (!window.api || typeof window.api.getToken !== 'function' || !window.api.getToken()) return;
+            if (document.querySelector('script[src*="global_user_search.js"]')) return;
+            var s = document.createElement('script');
+            s.src = jsDir + 'global_user_search.js';
+            s.async = false;
+            document.body.appendChild(s);
+        } catch (e) {
+            console.warn('Global search loader:', e);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryLoadGlobalUserSearch);
+    } else {
+        tryLoadGlobalUserSearch();
+    }
+})();

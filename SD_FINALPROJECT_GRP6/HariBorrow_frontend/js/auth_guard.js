@@ -49,8 +49,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. THE FIX: Check if they are allowed to be on the Admin Dashboard
     const role = user.role ? user.role.trim().toLowerCase() : '';
 
-    // If they are on admin_dashboard.php, ONLY allow admin roles
-    if (currentUrl.includes('admin_dashboard') && role !== 'admin') {
+    // Admin console pages — only allow admins
+    if (
+        (
+            currentUrl.includes('admin_dashboard') ||
+            currentUrl.includes('registered_users.php')
+        ) &&
+        role !== 'admin'
+    ) {
         alert("Access Denied: Administrator privileges required.");
         window.location.href = 'borrower_lender_dashboard.php';
         return;

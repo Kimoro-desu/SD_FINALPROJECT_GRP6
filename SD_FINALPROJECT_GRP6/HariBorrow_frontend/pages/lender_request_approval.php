@@ -316,6 +316,7 @@
         <div class="review-section">
           <div class="review-label">Borrower Information</div>
           <div class="review-data"><span>Name</span><strong id="modalBorrowerName">-</strong></div>
+          <div class="review-data"><span>Reputation</span><strong id="modalBorrowerRating">—</strong></div>
           <div class="review-data"><span>School ID</span><strong id="modalSchoolId">-</strong></div>
           <div class="review-data"><span>Email</span><strong id="modalEmail">-</strong></div>
         </div>
@@ -399,7 +400,11 @@
               const tbody = document.getElementById('requestsTableBody');
               tbody.innerHTML = '';
               
-              const pendingRequests = response.history.filter(t => String(t.status || '').toLowerCase() === 'pending');
+              // Only requests this user must act on as the asset owner (lender), not their own borrower submissions.
+              const pendingRequests = response.history.filter(t =>
+                (String(t.status || '').toLowerCase() === 'pending' || String(t.status || '').toLowerCase() === 'return_lender_confirm') &&
+                t.is_current_user_lender === true
+              );
               
               if (pendingRequests.length === 0) {
                   tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No pending requests to confirm.</td></tr>';
@@ -418,17 +423,26 @@
               pendingRequests.forEach(req => {
                   const tr = document.createElement('tr');
                   
+                  const isReturn = String(req.status || '').toLowerCase() === 'return_lender_confirm';
                   // Format dates
                   const dueStr = req.dates.due ? new Date(req.dates.due).toLocaleDateString() : 'N/A';
-                  
+                  const br = req.borrower || {};
+                  const rc = Number(br.rating_count) || 0;
+                  const ra = Number(br.rating_average) || 0;
+                  const repLine = rc > 0
+                    ? `<br><span style="font-size: 11px; color: var(--gold); font-weight: 500;">${ra.toFixed(2)} ★ (${rc})</span>`
+                    : `<br><span style="font-size: 11px; color: var(--text-3);">No ratings yet</span>`;
+
+                  const statusDisplay = isReturn ? 'Return Review' : req.status;
+
                   tr.innerHTML = `
                       <td style="color: var(--text-1); font-family: monospace;">#TXN-${req.transaction_id}</td>
-                      <td>${req.borrower.name} <br><span style="font-size: 11px; color: var(--text-3);">${req.borrower.school_id}</span></td>
+                      <td>${req.borrower.name} <br><span style="font-size: 11px; color: var(--text-3);">${req.borrower.school_id}</span>${repLine}</td>
                       <td style="color: var(--text-1);">${req.asset.name}</td>
                       <td style="white-space: nowrap;">
                           <span style="color: var(--gold); font-weight: 500;">Due: ${dueStr}</span>
                       </td>
-                      <td><span class="status-pill pending">${req.status}</span></td>
+                      <td><span class="status-pill pending">${statusDisplay}</span></td>
                       <td>
                           <button class="btn-outline btn-primary" onclick="openReviewModal(${req.transaction_id})">
                               <i class="ph ph-magnifying-glass-plus"></i> Review
@@ -451,12 +465,48 @@
     document.getElementById('hiddenTxnId').value = txnId;
     
     document.getElementById('modalBorrowerName').textContent = req.borrower.name;
+    const brc = Number(req.borrower.rating_count) || 0;
+    const bra = Number(req.borrower.rating_average) || 0;
+    const ratingEl = document.getElementById('modalBorrowerRating');
+    if (ratingEl) {
+      ratingEl.textContent = brc > 0
+        ? `${bra.toFixed(2)} ★ average (${brc} rating${brc === 1 ? '' : 's'})`
+        : 'No ratings yet';
+    }
     document.getElementById('modalSchoolId').textContent = req.borrower.school_id;
     document.getElementById('modalEmail').textContent = req.borrower.email;
     
     document.getElementById('modalAsset').textContent = req.asset.name;
     document.getElementById('modalSchedule').textContent = req.dates.due ? new Date(req.dates.due).toLocaleString() : 'N/A';
     document.getElementById('modalRequestedDate').textContent = new Date(req.dates.requested).toLocaleString();
+
+    const isReturn = String(req.status || '').toLowerCase() === 'return_lender_confirm';
+    
+    // Add photo proof section if return review
+    let photoSection = document.getElementById('modalPhotoSection');
+    if (!photoSection) {
+      photoSection = document.createElement('div');
+      photoSection.id = 'modalPhotoSection';
+      photoSection.className = 'review-section';
+      photoSection.style.gridColumn = '1 / -1';
+      document.querySelector('.review-grid').appendChild(photoSection);
+    }
+    
+    if (isReturn) {
+      document.querySelector('.modal-title').innerHTML = `<i class="ph ph-file-text" style="color: var(--gold);"></i> Confirm Return <span id="modalTxnId" style="font-family: monospace; font-size: 20px; color: var(--text-3); margin-left: 8px;">#TXN-${txnId}</span>`;
+      const photos = req.return_photos || [];
+      const photosHtml = photos.length > 0 ? photos.map(p => `<img src="${p.photo_path}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--glass-border);cursor:pointer;" onclick="window.open('${p.photo_path}','_blank')">`).join(' ') : '<span>No photos submitted</span>';
+      
+      photoSection.style.display = 'block';
+      photoSection.innerHTML = `
+        <div class="review-label">Return Photo Proof & Details</div>
+        <div class="review-data"><span>Penalty Amount Due</span><strong style="color:var(--danger);">PHP ${Number(req.penalty_amount || 0).toFixed(2)}</strong></div>
+        <div class="review-data"><span>Photos</span><div style="display:flex;gap:10px;margin-top:8px;">${photosHtml}</div></div>
+      `;
+    } else {
+      document.querySelector('.modal-title').innerHTML = `<i class="ph ph-file-text" style="color: var(--gold);"></i> Review Request <span id="modalTxnId" style="font-family: monospace; font-size: 20px; color: var(--text-3); margin-left: 8px;">#TXN-${txnId}</span>`;
+      photoSection.style.display = 'none';
+    }
 
     document.getElementById('reviewModal').classList.add('active');
   }
@@ -487,7 +537,11 @@
     btns.forEach(b => b.disabled = true);
 
     try {
-        const response = await window.api.authenticatedFetch('/transactions/lender_confirm.php', {
+        const req = window.currentRequests.find(r => r.transaction_id == txnId);
+        const isReturn = req && String(req.status || '').toLowerCase() === 'return_lender_confirm';
+        const endpoint = isReturn ? '/transactions/lender_confirm_return.php' : '/transactions/lender_confirm.php';
+        
+        const response = await window.api.authenticatedFetch(endpoint, {
             method: 'PUT',
             body: {
                 transaction_id: txnId,

@@ -121,23 +121,16 @@ try {
         exit();
     }
 
-    $points = $rating * 10;
     $insertStmt = $db->prepare("
-        INSERT INTO transaction_ratings (transaction_id, rater_id, ratee_id, rating, points_awarded, review_text)
-        VALUES (:tid, :rater_id, :ratee_id, :rating, :points, :review_text)
+        INSERT INTO transaction_ratings (transaction_id, rater_id, ratee_id, rating, review_text)
+        VALUES (:tid, :rater_id, :ratee_id, :rating, :review_text)
     ");
     $insertStmt->bindValue(':tid', $transactionId, \PDO::PARAM_INT);
     $insertStmt->bindValue(':rater_id', $raterId, \PDO::PARAM_INT);
     $insertStmt->bindValue(':ratee_id', $rateeId, \PDO::PARAM_INT);
     $insertStmt->bindValue(':rating', $rating, \PDO::PARAM_INT);
-    $insertStmt->bindValue(':points', $points, \PDO::PARAM_INT);
     $insertStmt->bindValue(':review_text', $reviewText !== '' ? $reviewText : null, \PDO::PARAM_STR);
     $insertStmt->execute();
-
-    $pointsStmt = $db->prepare("UPDATE users SET reward_points = COALESCE(reward_points, 0) + :pts WHERE User_ID = :uid");
-    $pointsStmt->bindValue(':pts', $points, \PDO::PARAM_INT);
-    $pointsStmt->bindValue(':uid', $rateeId, \PDO::PARAM_INT);
-    $pointsStmt->execute();
 
     $countStmt = $db->prepare("
         SELECT COUNT(*) AS total
@@ -164,7 +157,6 @@ try {
     echo json_encode([
         "message" => "Rating submitted successfully.",
         "transaction_id" => $transactionId,
-        "points_awarded" => $points,
         "rating_locked" => $stillLocked,
         "status" => "success"
     ]);

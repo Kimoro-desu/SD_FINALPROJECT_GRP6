@@ -57,7 +57,10 @@ if (!empty($data->transaction_id) && !empty($data->action)) {
         $transaction_id = htmlspecialchars(strip_tags($data->transaction_id));
         $action = htmlspecialchars(strip_tags($data->action));
 
-        $check_query = "SELECT asset_id, borrower_id, request_status FROM transactions WHERE transaction_id = :tid FOR UPDATE";
+        $check_query = "SELECT t.asset_id, t.borrower_id, t.request_status, t.borrowed_at, t.due_date, a.Lender_ID
+            FROM transactions t
+            INNER JOIN assets a ON a.Asset_ID = t.asset_id
+            WHERE t.transaction_id = :tid FOR UPDATE";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(':tid', $transaction_id);
         $check_stmt->execute();
@@ -70,6 +73,15 @@ if (!empty($data->transaction_id) && !empty($data->action)) {
 
         $trans_row = $check_stmt->fetch(\PDO::FETCH_ASSOC);
         $asset_id = $trans_row['asset_id'];
+        $assetLenderId = (int)($trans_row['Lender_ID'] ?? 0);
+        $uid = (int)($decodedData['id']);
+        $roleLower = strtolower(trim((string)($decodedData['role'] ?? '')));
+        $isElevated = in_array($roleLower, ['admin', 'staff'], true);
+        if (!$isElevated && $assetLenderId !== $uid) {
+            $db->rollBack();
+            http_response_code(403);
+            die(json_encode(["message" => "Only the asset owner (lender) can confirm or reject this request.", "status" => "error"]));
+        }
 
         if ($trans_row['request_status'] !== Database::STATUS_PENDING) {
             $db->rollBack();
@@ -78,9 +90,34 @@ if (!empty($data->transaction_id) && !empty($data->action)) {
         }
 
         if ($action === 'confirm') {
+            // Keep borrower-requested dates from INSERT (borrowed_at / due_date).
+            // Only overwrite when the client explicitly sends new values (future lender reschedule UI).
             $new_status = Database::STATUS_APPROVED;
-            $borrowedAt = date('Y-m-d H:i:s');
-            $dueDate = isset($data->due_date) ? htmlspecialchars(strip_tags($data->due_date)) : date('Y-m-d H:i:s', strtotime('+3 days'));
+            $existingBorrowed = $trans_row['borrowed_at'] ?? null;
+            $existingDue = $trans_row['due_date'] ?? null;
+
+            if (!empty($data->borrowed_at)) {
+                $borrowedAt = trim(htmlspecialchars(strip_tags((string)$data->borrowed_at)));
+            } elseif (!empty($existingBorrowed)) {
+                $borrowedAt = $existingBorrowed;
+            } else {
+                $borrowedAt = date('Y-m-d H:i:s');
+            }
+
+            if (!empty($data->due_date)) {
+                $dueDate = trim(htmlspecialchars(strip_tags((string)$data->due_date)));
+            } elseif (!empty($existingDue)) {
+                $dueDate = $existingDue;
+            } else {
+                $dueDate = date('Y-m-d H:i:s', strtotime('+3 days'));
+            }
+
+            $bt = strtotime($borrowedAt);
+            $dt = strtotime($dueDate);
+            if ($bt !== false && $dt !== false && $dt <= $bt) {
+                $dueDate = date('Y-m-d H:i:s', $bt + 86400);
+            }
+
             $new_avail = 'unavailable';
 
             $update_trans = "UPDATE transactions SET request_status = :status, borrowed_at = :borrowed_at, due_date = :due_date WHERE transaction_id = :tid";
@@ -115,7 +152,11 @@ if (!empty($data->transaction_id) && !empty($data->action)) {
             if ($new_status === Database::STATUS_APPROVED) {
                 pushUserNotification($db, $borrowerId, 'Request Approved', 'Your borrowing request was approved and is now active.', 'info', 'ph-check-circle');
             } else {
-                pushUserNotification($db, $borrowerId, 'Request Rejected', 'Your borrowing request was rejected by the lender.', 'danger', 'ph-x-circle');
+                $reasonMsg = 'Your borrowing request was rejected by the lender.';
+                if (!empty($data->remarks)) {
+                    $reasonMsg .= ' Reason: ' . htmlspecialchars(strip_tags((string)$data->remarks));
+                }
+                pushUserNotification($db, $borrowerId, 'Request Rejected', $reasonMsg, 'danger', 'ph-x-circle');
             }
         }
 

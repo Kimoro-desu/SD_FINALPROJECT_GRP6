@@ -176,8 +176,9 @@
             border-radius: 8px;
             font-size: 14px;
             font-weight: 400;
-            transition: all 0.2s;
+            transition: all 0.3s;
             border: 1px solid transparent;
+            position: relative;
         }
 
         .nav-link i {
@@ -201,16 +202,39 @@
             color: var(--gold);
         }
 
+        /* ── NOTIFICATION-STYLE HIGHLIGHT FOR PENDING ITEMS ── */
+        .nav-link.has-notif {
+            background: rgba(239, 68, 68, 0.06);
+            border-color: rgba(239, 68, 68, 0.18);
+            color: var(--text-1);
+        }
+        .nav-link.has-notif i { color: #f87171; }
+        .nav-link.has-notif:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .nav-link.active.has-notif {
+            background: linear-gradient(135deg, var(--gold-dim), rgba(239, 68, 68, 0.06));
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
         .nav-badge {
             margin-left: auto;
             background: var(--danger);
             color: #fff;
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             padding: 2px 8px;
             border-radius: 20px;
             min-width: 18px;
             text-align: center;
+            animation: badgePulse 2s ease-in-out infinite;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 0 14px rgba(239, 68, 68, 0.6); }
         }
 
         .sidebar-footer {
@@ -738,7 +762,7 @@
         <nav class="nav-menu">
             <a href="admin_dashboard.php" class="nav-link"><i class="ph ph-squares-four"></i> Command Center</a>
             <div class="nav-section-title">Operations</div>
-      <a href="pendingrequest_approval.php" class="nav-link"><i class="ph ph-bell-ringing"></i> Pending Requests
+      <a href="pendingrequest_approval.php" class="nav-link" id="pendingNavLink"><i class="ph ph-bell-ringing"></i> Pending Requests
         <span class="nav-badge" id="pendingNavBadge" style="display:none;">0</span>
       </a>
       <a href="active_transactions.php" class="nav-link active"><i class="ph ph-clock-counter-clockwise"></i> All Transactions</a>
@@ -797,6 +821,7 @@
                         <th>Asset Information</th>
                         <th>Borrow Date</th>
                         <th>Expected Return</th>
+                        <th>Time Returned</th>
                         <th>Penalty</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -829,6 +854,7 @@
                     <div class="summary-row"><span>Asset:</span><strong id="modalAsset"></strong></div>
                     <div class="summary-row"><span>Borrow Date:</span><strong id="modalBorrowDate"></strong></div>
                     <div class="summary-row"><span>Due Date:</span><strong id="modalDueDate"></strong></div>
+                    <div class="summary-row"><span>Actual Return:</span><strong id="modalReturnedAt">—</strong></div>
                     <div class="summary-row"><span>Current Penalty:</span><strong id="modalPenalty"></strong></div>
                 </div>
 
@@ -891,17 +917,31 @@
             return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
+        /** DB stores Philippines local wall time; parse without interpreting as UTC. */
+        function parseMysqlDateTimeLocal(s) {
+            if (!s || typeof s !== 'string') return null;
+            const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+            if (!m) return null;
+            return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+        }
+
         function isOverdue(dueDate) {
             if (!dueDate) return false;
-            const d = new Date(dueDate);
+            const d = parseMysqlDateTimeLocal(String(dueDate)) || new Date(dueDate);
             return !Number.isNaN(d.getTime()) && d.getTime() < Date.now();
         }
 
         function fmtDateTime(val) {
             if (!val) return '—';
-            const d = new Date(val);
+            const d = parseMysqlDateTimeLocal(String(val)) || new Date(val);
             if (Number.isNaN(d.getTime())) return String(val);
             return d.toLocaleString();
+        }
+
+        function tsFromDateVal(val) {
+            if (!val) return NaN;
+            const d = parseMysqlDateTimeLocal(String(val)) || new Date(val);
+            return d.getTime();
         }
 
         function renderActiveTransactions() {
@@ -935,13 +975,22 @@
                 
                 const due = fmtDateTime(tx?.dates?.due);
                 const borrowed = fmtDateTime(tx?.dates?.borrowed || tx?.dates?.requested);
+                const returned = fmtDateTime(tx?.dates?.returned);
+                let returnCompareTitle = '';
+                if (tx?.dates?.returned && tx?.dates?.due) {
+                    const rts = tsFromDateVal(tx.dates.returned);
+                    const dts = tsFromDateVal(tx.dates.due);
+                    if (!Number.isNaN(rts) && !Number.isNaN(dts)) {
+                        returnCompareTitle = rts <= dts ? 'Returned on or before the expected return time' : 'Returned after the expected return time (late)';
+                    }
+                }
                 const txNum = tx?.transaction_id ?? '';
                 
                 const dailyPenalty = Number(tx?.asset?.daily_penalty || 0);
                 let penalty = Number(tx?.penalty_amount || 0);
                 if (overdue && dailyPenalty > 0) {
-                    const dueTs = new Date(tx?.dates?.due).getTime();
-                    if (!Number.isNaN(dueTs)) {
+                        const dueTs = tsFromDateVal(tx?.dates?.due);
+                        if (!Number.isNaN(dueTs)) {
                         const lateDays = Math.max(1, Math.ceil((Date.now() - dueTs) / 86400000));
                         penalty = lateDays * dailyPenalty;
                     }
@@ -956,6 +1005,9 @@
                 } else if (isReturnPending) {
                     statusPill = 'return-pending';
                     statusLabel = 'Return Pending';
+                } else if (st === 'return_lender_confirm') {
+                    statusPill = 'return-pending';
+                    statusLabel = 'Lender Confirming';
                 } else if (overdue) {
                     statusPill = 'overdue';
                     statusLabel = 'Overdue';
@@ -983,17 +1035,18 @@
                         <td style="color: var(--text-1);">${esc(tx?.asset?.name || '—')}<br><span style="font-size: 11px; color: var(--text-3);">Asset ID: ${esc(tx?.asset?.id || '—')}</span></td>
                         <td style="white-space: nowrap;">${esc(borrowed)}</td>
                         <td style="white-space: nowrap;"><span style="color: ${overdue ? 'var(--danger)' : 'var(--text-1)'};">${esc(due)}</span></td>
+                        <td style="white-space: nowrap; color: var(--text-2);" title="${esc(returnCompareTitle)}">${esc(returned)}</td>
                         <td style="white-space: nowrap; color: ${penalty > 0 ? 'var(--danger)' : 'var(--text-2)'};">PHP ${penalty.toFixed(2)}</td>
                         <td><span class="status-pill ${statusPill}">${statusLabel}</span></td>
                         <td>
                             <button class="btn-outline btn-primary"
-                                onclick='openReturnModal(${JSON.stringify(txNum)}, ${JSON.stringify(tx?.borrower?.name || '')}, ${JSON.stringify(tx?.asset?.name || '')}, ${JSON.stringify(borrowed)}, ${JSON.stringify(due)}, ${JSON.stringify(`PHP ${penalty.toFixed(2)}`)}, ${returnPhotos.replace(/'/g, "&#39;")}, ${JSON.stringify(isReturnPending)})'>
+                                onclick='openReturnModal(${JSON.stringify(txNum)}, ${JSON.stringify(tx?.borrower?.name || '')}, ${JSON.stringify(tx?.asset?.name || '')}, ${JSON.stringify(borrowed)}, ${JSON.stringify(due)}, ${JSON.stringify(returned)}, ${JSON.stringify(`PHP ${penalty.toFixed(2)}`)}, ${returnPhotos.replace(/'/g, "&#39;")}, ${JSON.stringify(isReturnPending)})'>
                                 <i class="ph ${icon}"></i> ${actionLabel}
                             </button>
                         </td>
                     </tr>
                 `;
-            }).join('') || `<tr><td colspan="8" style="padding: 18px 20px; color: var(--text-3);">No transactions found matching your criteria.</td></tr>`;
+            }).join('') || `<tr><td colspan="9" style="padding: 18px 20px; color: var(--text-3);">No transactions found matching your criteria.</td></tr>`;
         }
 
         async function loadActiveTransactions() {
@@ -1004,17 +1057,19 @@
             } catch (e) {
                 console.error('Failed loading transactions:', e);
                 const tbody = document.getElementById('activeTransactionsBody');
-                if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="padding:18px; color: var(--danger);">Failed to load transactions.</td></tr>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="padding:18px; color: var(--danger);">Failed to load transactions.</td></tr>';
             }
         }
 
-        function openReturnModal(txnId, borrower, asset, borrowDate, dueDate, penalty, returnPhotos, isReturnPending) {
+        function openReturnModal(txnId, borrower, asset, borrowDate, dueDate, actualReturn, penalty, returnPhotos, isReturnPending) {
             document.getElementById('hiddenTxnId').value = txnId;
             document.getElementById('modalTxnId').textContent = `#TXN-${txnId}`;
             document.getElementById('modalBorrower').textContent = borrower;
             document.getElementById('modalAsset').textContent = asset;
             document.getElementById('modalBorrowDate').textContent = borrowDate;
             document.getElementById('modalDueDate').textContent = dueDate;
+            const raEl = document.getElementById('modalReturnedAt');
+            if (raEl) raEl.textContent = actualReturn || '—';
             document.getElementById('modalPenalty').textContent = penalty;
 
             // Display return photos
@@ -1174,9 +1229,17 @@
 
                 // 3. Update the Badge
                 const badge = document.getElementById('pendingNavBadge');
+                const pendingLink = document.getElementById('pendingNavLink');
                 if (badge) {
                     badge.textContent = String(totalPending);
                     badge.style.display = totalPending > 0 ? 'inline-flex' : 'none';
+                }
+                if (pendingLink) {
+                    if (totalPending > 0) {
+                        pendingLink.classList.add('has-notif');
+                    } else {
+                        pendingLink.classList.remove('has-notif');
+                    }
                 }
             } catch (error) {
                 console.error('Failed to update pending badge:', error);

@@ -266,7 +266,7 @@
     .page {
       position: relative;
       z-index: 10;
-      padding: 100px 5% 60px;
+      padding: 140px 5% 60px; /* Increased top padding to 120px to match other pages */
       max-width: 1400px;
       margin: 0 auto;
     }
@@ -391,7 +391,7 @@
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
+      gap: 32px; /* Increased gap from 20px to 32px for breathing room */
       animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
     }
 
@@ -400,7 +400,7 @@
       backdrop-filter: blur(16px);
       border: 1px solid var(--glass-border);
       border-radius: 16px;
-      padding: 28px;
+      padding: 32px; /* Expanded padding inside the cards */
       display: flex;
       flex-direction: column;
       gap: 0;
@@ -705,6 +705,23 @@
     <div class="nav-right">
       <a href="borrower_lender_dashboard.php" class="nav-back"><i class="ph ph-arrow-left"></i> Dashboard</a>
 
+      
+      <div class="notif-wrapper" style="position:relative;">
+          <button class="profile-btn notif-btn" onclick="toggleNotifMenu(event)" style="border-radius: 50%; width: 40px; height: 40px; justify-content: center; padding: 0;">
+              <i class="ph ph-bell" style="font-size: 20px;"></i>
+              <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-2px; right:-2px; background:var(--danger); color:#fff; font-size:10px; padding:2px 6px; border-radius:10px; font-weight:bold;">0</span>
+          </button>
+          <div class="dropdown notif-dropdown" id="notifDropdown" style="width: 320px; right: 0;">
+              <div style="padding: 12px 16px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color:var(--text-1); font-family: 'Cormorant Garamond', serif; font-size: 16px;">Notifications</strong>
+                  <span style="font-size: 12px; cursor: pointer; color: var(--gold);" onclick="markAllNotificationsRead(event)">Mark all read</span>
+              </div>
+              <div id="notifList" style="max-height: 300px; overflow-y: auto;">
+                  <div style="padding: 16px; text-align: center; color: var(--text-3); font-size: 12px;">Loading...</div>
+              </div>
+          </div>
+      </div>
+
       <div class="profile-menu">
         <button class="profile-btn" onclick="toggleDropdown()">
           <div class="profile-avatar" id="navAvatar">UN</div>
@@ -793,6 +810,7 @@
     <div class="borrow-modal">
       <div class="modal-title">Submit Borrow Request</div>
       <div class="modal-sub" id="borrowModalAssetName">Asset: —</div>
+      <div class="modal-sub" id="borrowModalLenderReputation" style="margin-top:6px;color:var(--text-2);font-size:14px;">Lender reputation: —</div>
       <input type="hidden" id="borrowAssetId">
       <div class="form-group">
         <label class="form-label" for="borrowDateInput">Borrow Date & Time</label>
@@ -870,14 +888,26 @@
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
+    /** Build MySQL DATETIME using the picker’s local calendar time (same as borrower chose). */
     function toSqlDateTime(localVal) {
       if (!localVal) return '';
-      return `${localVal.replace('T', ' ')}:00`;
+      const d = new Date(localVal);
+      if (Number.isNaN(d.getTime())) return '';
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    /** Parse API / MySQL "YYYY-MM-DD HH:mm:ss" as local wall-clock (not UTC). */
+    function parseMysqlDateTimeLocal(s) {
+      if (!s || typeof s !== 'string') return null;
+      const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (!m) return null;
+      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
     }
 
     function fmtDateSafe(v) {
       if (!v) return '—';
-      const d = new Date(v);
+      const d = parseMysqlDateTimeLocal(String(v)) || new Date(v);
       return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString();
     }
 
@@ -904,6 +934,8 @@
               description: a.description || '',
               type: a.type || 'General',
               lender: a.lender_name || 'System Default',
+              lender_rating_count: Number(a.lender_rating_count) || 0,
+              lender_rating_average: Number(a.lender_rating_average) || 0,
               status: a.availability,
               meetup_location: a.meetup_location || '',
               daily_penalty: a.daily_penalty || 0,
@@ -978,6 +1010,9 @@
         const locationHtml = a.meetup_location
           ? `<div class="card-meta-row"><i class="ph ph-map-pin"></i> ${a.meetup_location}</div>`
           : '';
+        const lenderRep = (a.lender_rating_count > 0)
+          ? `<div class="card-meta-row"><i class="ph ph-star"></i> Lender ${Number(a.lender_rating_average).toFixed(2)} ★ (${a.lender_rating_count})</div>`
+          : `<div class="card-meta-row" style="opacity:0.85;"><i class="ph ph-star"></i> Lender: no ratings yet</div>`;
         return `
         <div class="asset-card">
           <div class="card-icon"><i class="ph ${a.icon}"></i></div>
@@ -986,6 +1021,7 @@
           <div class="card-meta">
             <div class="card-meta-row"><i class="ph ph-tag"></i> ${a.type}</div>
             <div class="card-meta-row"><i class="ph ph-user"></i> ${a.lender}</div>
+            ${lenderRep}
             ${locationHtml}
             <div class="card-meta-row"><i class="ph ph-warning-circle"></i> ${penaltyLabel}</div>
           </div>
@@ -1000,6 +1036,17 @@
     function openBorrowModal(id, assetName) {
       document.getElementById('borrowAssetId').value = id;
       document.getElementById('borrowModalAssetName').textContent = `Asset: ${assetName || '—'}`;
+      const list = filteredAssets && filteredAssets.length ? filteredAssets : assets;
+      const asset = list.find(x => String(x.id) === String(id));
+      const repEl = document.getElementById('borrowModalLenderReputation');
+      if (repEl) {
+        const cnt = asset ? Number(asset.lender_rating_count) || 0 : 0;
+        const avg = asset ? Number(asset.lender_rating_average) || 0 : 0;
+        const lenderName = asset && asset.lender ? asset.lender : 'Lender';
+        repEl.textContent = cnt > 0
+          ? `${lenderName} — ${avg.toFixed(2)} ★ average from ${cnt} rating${cnt === 1 ? '' : 's'}`
+          : `${lenderName} — no ratings yet (new or unrated lender)`;
+      }
       const now = new Date();
       const plus3 = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000));
       document.getElementById('borrowDateInput').value = toInputDateTimeLocal(now);
@@ -1194,6 +1241,102 @@
         }, 15000);
     });
 
+  </script>
+
+
+  <script>
+  function toggleNotifMenu(e) {
+      if(e) e.stopPropagation();
+      document.getElementById('notifDropdown')?.classList.toggle('active');
+  }
+
+  document.addEventListener('click', function (event) {
+      if (!event.target.closest('.notif-wrapper')) {
+          document.getElementById('notifDropdown')?.classList.remove('active');
+      }
+  });
+
+  async function fetchNotifications() {
+      try {
+          const response = await window.api.authenticatedFetch('/transactions/notifications.php');
+          if (response && response.status === 'success') {
+              const notifs = response.notifications;
+              const notifList = document.getElementById('notifList');
+              const notifBadge = document.getElementById('notifBadge');
+              if(!notifList) return;
+              
+              notifList.innerHTML = '';
+              
+              if (notifs.length > 0) {
+                  const unreadCount = notifs.filter(n => n.notification_id && !n.is_read).length;
+                  notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                  notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                  
+                  notifs.forEach(notif => {
+                      const date = new Date(notif.time_ago.replace(' ', 'T'));
+                      const timeAgo = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                      
+                      const item = document.createElement('div');
+                      item.style.padding = '12px 16px';
+                      item.style.borderBottom = '1px solid var(--glass-border)';
+                      item.style.cursor = notif.is_read ? 'default' : 'pointer';
+                      item.style.opacity = notif.is_read ? '0.6' : '1';
+                      item.innerHTML = `
+                          <div style="display:flex; gap:10px;">
+                              <div style="flex:1;">
+                                  <div style="font-size:13px; font-weight:500; color:var(--text-1);">${notif.title}</div>
+                                  <div style="font-size:12px; color:var(--text-2); margin-top:4px;">${notif.message}</div>
+                                  <div style="font-size:11px; color:var(--text-3); margin-top:6px;">${timeAgo}</div>
+                              </div>
+                          </div>
+                      `;
+                      if (notif.notification_id && !notif.is_read) {
+                          item.addEventListener('click', async (e) => {
+                              e.preventDefault();
+                              await markNotificationRead(notif.notification_id);
+                          });
+                      }
+                      notifList.appendChild(item);
+                  });
+              } else {
+                  notifBadge.style.display = 'none';
+                  notifList.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-3); font-size: 12px;">No new notifications.</div>';
+              }
+          }
+      } catch (error) {
+          console.error("Failed to fetch notifications:", error);
+      }
+  }
+
+  async function markNotificationRead(notificationId) {
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: { notification_id: notificationId }
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark notification read:", error);
+      }
+  }
+
+  async function markAllNotificationsRead(event) {
+      if (event) event.stopPropagation();
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: {}
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark all notifications read:", error);
+      }
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+      fetchNotifications();
+      setInterval(fetchNotifications, 15000);
+  });
   </script>
 
 </body>

@@ -34,11 +34,23 @@ class Database
 
     public function getConnection()
     {
+        // Bootstrap once per request (before strtotime/date on borrow flows). Campus default: Philippines.
+        static $tzBootstrapped = false;
+        if (!$tzBootstrapped && function_exists('date_default_timezone_set')) {
+            date_default_timezone_set('Asia/Manila');
+            $tzBootstrapped = true;
+        }
+
         $this->conn = null;
         try {
             $this->conn = new \PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
             $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             $this->conn->exec("set names utf8");
+            try {
+                $this->conn->exec("SET time_zone = '+08:00'");
+            } catch (\PDOException $e) {
+                // Ignore if server disallows custom time_zone
+            }
         } catch (\PDOException $exception) {
             echo "Connection error: " . $exception->getMessage();
             die();

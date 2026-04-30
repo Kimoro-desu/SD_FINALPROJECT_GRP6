@@ -190,7 +190,7 @@
     .report-container {
       position: relative;
       z-index: 10;
-      padding: 120px 5% 60px;
+      padding: 140px 5% 60px;
       max-width: 900px;
       margin: 0 auto;
       animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -615,6 +615,102 @@
         document.querySelector('.report-panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 1500);
     }
+  </script>
+
+
+  <script>
+  function toggleNotifMenu(e) {
+      if(e) e.stopPropagation();
+      document.getElementById('notifDropdown')?.classList.toggle('active');
+  }
+
+  document.addEventListener('click', function (event) {
+      if (!event.target.closest('.notif-wrapper')) {
+          document.getElementById('notifDropdown')?.classList.remove('active');
+      }
+  });
+
+  async function fetchNotifications() {
+      try {
+          const response = await window.api.authenticatedFetch('/transactions/notifications.php');
+          if (response && response.status === 'success') {
+              const notifs = response.notifications;
+              const notifList = document.getElementById('notifList');
+              const notifBadge = document.getElementById('notifBadge');
+              if(!notifList) return;
+              
+              notifList.innerHTML = '';
+              
+              if (notifs.length > 0) {
+                  const unreadCount = notifs.filter(n => n.notification_id && !n.is_read).length;
+                  notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                  notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                  
+                  notifs.forEach(notif => {
+                      const date = new Date(notif.time_ago.replace(' ', 'T'));
+                      const timeAgo = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                      
+                      const item = document.createElement('div');
+                      item.style.padding = '12px 16px';
+                      item.style.borderBottom = '1px solid var(--glass-border)';
+                      item.style.cursor = notif.is_read ? 'default' : 'pointer';
+                      item.style.opacity = notif.is_read ? '0.6' : '1';
+                      item.innerHTML = `
+                          <div style="display:flex; gap:10px;">
+                              <div style="flex:1;">
+                                  <div style="font-size:13px; font-weight:500; color:var(--text-1);">${notif.title}</div>
+                                  <div style="font-size:12px; color:var(--text-2); margin-top:4px;">${notif.message}</div>
+                                  <div style="font-size:11px; color:var(--text-3); margin-top:6px;">${timeAgo}</div>
+                              </div>
+                          </div>
+                      `;
+                      if (notif.notification_id && !notif.is_read) {
+                          item.addEventListener('click', async (e) => {
+                              e.preventDefault();
+                              await markNotificationRead(notif.notification_id);
+                          });
+                      }
+                      notifList.appendChild(item);
+                  });
+              } else {
+                  notifBadge.style.display = 'none';
+                  notifList.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-3); font-size: 12px;">No new notifications.</div>';
+              }
+          }
+      } catch (error) {
+          console.error("Failed to fetch notifications:", error);
+      }
+  }
+
+  async function markNotificationRead(notificationId) {
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: { notification_id: notificationId }
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark notification read:", error);
+      }
+  }
+
+  async function markAllNotificationsRead(event) {
+      if (event) event.stopPropagation();
+      try {
+          await window.api.authenticatedFetch('/transactions/notifications_mark_read.php', {
+              method: 'PUT',
+              body: {}
+          });
+          await fetchNotifications();
+      } catch (error) {
+          console.error("Failed to mark all notifications read:", error);
+      }
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+      fetchNotifications();
+      setInterval(fetchNotifications, 15000);
+  });
   </script>
 
 </body>

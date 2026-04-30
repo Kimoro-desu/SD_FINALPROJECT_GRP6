@@ -6,9 +6,12 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-W
 
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
+require_once '../../utils/user_account_schema.php';
 
 use Config\Database;
 use Utils\JwtHelper;
+
+use function Utils\ensureUserAccountSchema;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -38,9 +41,11 @@ if ($role !== 'admin') {
 
 $database = new Database();
 $db = $database->getConnection();
+ensureUserAccountSchema($db);
 
 try {
-    $query = "SELECT User_ID, first_name, middle_name, last_name, user_role, plm_email, school_id_number, department
+    $query = "SELECT User_ID, first_name, middle_name, last_name, user_role, plm_email, school_id_number, department,
+                      account_status, account_notes
               FROM users
               ORDER BY last_name ASC, first_name ASC";
     $stmt = $db->prepare($query);
@@ -49,13 +54,19 @@ try {
     $users = [];
     while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
         $fullName = trim($row['first_name'] . ' ' . ($row['middle_name'] ?? '') . ' ' . $row['last_name']);
+        $status = strtolower(trim((string)($row['account_status'] ?? 'active')));
+        if ($status === '') {
+            $status = 'active';
+        }
         $users[] = [
             "id" => $row['User_ID'],
             "school_id" => $row['school_id_number'],
             "name" => $fullName,
             "email" => $row['plm_email'],
             "department" => $row['department'],
-            "role" => $row['user_role']
+            "role" => $row['user_role'],
+            "account_status" => $status,
+            "account_notes" => $row['account_notes'] ?? null,
         ];
     }
 

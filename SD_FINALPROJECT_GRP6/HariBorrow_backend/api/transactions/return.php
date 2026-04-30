@@ -100,17 +100,16 @@ if (!empty($data->transaction_id)) {
             die(json_encode(["message" => "Forbidden. You can only return your own items.", "status" => "error"]));
         }
 
-        $new_status = Database::STATUS_RETURNED;
         $return_date = date('Y-m-d H:i:s');
         $due_date = $trans_row['due_date'] ?? null;
 
-        // Penalty = overdue units * penalty_amount configured by lender on asset.
-        // Supports per_day and per_hour modes. No decimals — always whole PHP amounts.
         $penaltyAmount = 0;
+        $is_overdue = false;
         if (!empty($due_date)) {
             $dueTs = strtotime($due_date);
             $returnTs = strtotime($return_date);
             if ($dueTs !== false && $returnTs !== false && $returnTs > $dueTs) {
+                $is_overdue = true;
                 $secondsLate = $returnTs - $dueTs;
                 $penaltyQ = "SELECT daily_penalty, penalty_type FROM assets WHERE Asset_ID = :asset_id LIMIT 1";
                 $penaltyStmt = $db->prepare($penaltyQ);
@@ -132,8 +131,11 @@ if (!empty($data->transaction_id)) {
             }
         }
 
+        // The lender must always confirm the return first
+        $new_status = 'return_lender_confirm';
+
         $update_trans = "UPDATE transactions
-                         SET request_status = :status, return_date = :return_date, penalty_amount = :penalty_amount, rating_locked = 1
+                         SET request_status = :status, return_date = :return_date, penalty_amount = :penalty_amount
                          WHERE transaction_id = :tid";
         $update_stmt = $db->prepare($update_trans);
         $update_stmt->bindParam(':status', $new_status);
@@ -141,12 +143,6 @@ if (!empty($data->transaction_id)) {
         $update_stmt->bindValue(':penalty_amount', $penaltyAmount);
         $update_stmt->bindParam(':tid', $transaction_id);
         $update_stmt->execute();
-
-        // Release the asset so others can borrow it
-        $update_asset = "UPDATE assets SET availability = 'available' WHERE Asset_ID = :asset_id";
-        $asset_stmt = $db->prepare($update_asset);
-        $asset_stmt->bindParam(':asset_id', $asset_id);
-        $asset_stmt->execute();
 
         // ── Single notification on success ──
         if ((int)$borrower_id > 0) {

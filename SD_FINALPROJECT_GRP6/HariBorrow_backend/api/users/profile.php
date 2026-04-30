@@ -43,7 +43,7 @@ $decodedData = JwtHelper::validateToken($jwt);
 if ($decodedData) {
     try {
         // We fetch the latest user info straight from DB just in case fields have changed
-        $query = "SELECT User_ID, school_id_number, department, first_name, middle_name, last_name, user_role, plm_email, profile_picture, background_picture, reward_points
+        $query = "SELECT User_ID, school_id_number, department, first_name, middle_name, last_name, user_role, plm_email, profile_picture, background_picture
           FROM users 
           WHERE User_ID = :id LIMIT 0,1";
 
@@ -80,7 +80,6 @@ if ($decodedData) {
                     "role" => $row['user_role'],
                     "profile_picture" => $row['profile_picture'],
                     "background_picture" => $row['background_picture'],
-                    "reward_points" => (int)($row['reward_points'] ?? 0),
                     "rating_count" => (int)($ratingRow['rating_count'] ?? 0),
                     "rating_average" => round((float)($ratingRow['rating_average'] ?? 0), 2)
                 ],

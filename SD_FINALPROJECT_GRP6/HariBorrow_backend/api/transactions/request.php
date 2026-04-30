@@ -91,16 +91,35 @@ if (!empty($data->asset_id)) {
             die(json_encode(["message" => "Borrow date and return date are required.", "status" => "error"]));
         }
 
-        $borrowTs = strtotime($borrowDateRaw);
-        $returnTs = strtotime($returnDateRaw);
-        if ($borrowTs === false || $returnTs === false || $returnTs <= $borrowTs) {
+        $tzManila = new \DateTimeZone('Asia/Manila');
+        $parseUserDateTime = static function (string $raw) use ($tzManila): ?\DateTimeImmutable {
+            $raw = trim(str_replace('T', ' ', $raw));
+            if ($raw === '') {
+                return null;
+            }
+            foreach (['Y-m-d H:i:s', 'Y-m-d H:i'] as $fmt) {
+                $dt = \DateTimeImmutable::createFromFormat($fmt, $raw, $tzManila);
+                if ($dt !== false) {
+                    return $dt;
+                }
+            }
+            $ts = strtotime($raw);
+            if ($ts === false) {
+                return null;
+            }
+            return (new \DateTimeImmutable('@' . $ts))->setTimezone($tzManila);
+        };
+
+        $borrowDt = $parseUserDateTime($borrowDateRaw);
+        $returnDt = $parseUserDateTime($returnDateRaw);
+        if ($borrowDt === null || $returnDt === null || $returnDt <= $borrowDt) {
             $db->rollBack();
             http_response_code(400);
             die(json_encode(["message" => "Invalid dates. Return date must be later than borrow date.", "status" => "error"]));
         }
 
-        $borrowDate = date('Y-m-d H:i:s', $borrowTs);
-        $returnDate = date('Y-m-d H:i:s', $returnTs);
+        $borrowDate = $borrowDt->format('Y-m-d H:i:s');
+        $returnDate = $returnDt->format('Y-m-d H:i:s');
 
         // Insert pending transaction with requested schedule
         $borrower_id = $decodedData['id'];

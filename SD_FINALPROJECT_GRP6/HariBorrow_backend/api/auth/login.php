@@ -10,10 +10,13 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
 require_once '../../utils/system_logger.php';
+require_once '../../utils/user_account_schema.php';
 
 use Config\Database;
 use Utils\JwtHelper;
 use Utils\SystemLogger;
+
+use function Utils\ensureUserAccountSchema;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -22,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $database = new Database();
 $db = $database->getConnection();
+ensureUserAccountSchema($db);
 
 $data = json_decode(file_get_contents("php://input"));
 $ip = $_SERVER['REMOTE_ADDR'] ?? null;
@@ -30,7 +34,7 @@ $ip = $_SERVER['REMOTE_ADDR'] ?? null;
 if (!empty($data->email) && !empty($data->password)) {
 
     // Fetch user by email
-    $query = "SELECT User_ID, first_name, last_name, password_hash, user_role, plm_email 
+    $query = "SELECT User_ID, first_name, last_name, password_hash, user_role, plm_email, account_status, account_notes 
               FROM users 
               WHERE plm_email = :email LIMIT 0,1";
 
@@ -46,6 +50,32 @@ if (!empty($data->email) && !empty($data->password)) {
 
         // Verify password hash
         if (password_verify($data->password, $row['password_hash'])) {
+
+            $acct = strtolower(trim((string)($row['account_status'] ?? 'active')));
+            if ($acct === '') {
+                $acct = 'active';
+            }
+            $adminNotes = trim((string)($row['account_notes'] ?? ''));
+            if ($acct === 'restricted') {
+                http_response_code(403);
+                SystemLogger::log($db, 'security', 'Login blocked: account restricted (User_ID: ' . (int)$row['User_ID'] . ').', $row['plm_email'], $ip, 'Failed');
+                $msg = "This account has an administrative hold and cannot log in.";
+                if ($adminNotes !== '') {
+                    $msg .= "\n\nReason from administrator:\n" . $adminNotes;
+                }
+                echo json_encode(["message" => $msg, "admin_reason" => $adminNotes !== '' ? $adminNotes : null, "status" => "error"]);
+                exit();
+            }
+            if ($acct === 'suspended') {
+                http_response_code(403);
+                SystemLogger::log($db, 'security', 'Login blocked: account suspended (User_ID: ' . (int)$row['User_ID'] . ').', $row['plm_email'], $ip, 'Failed');
+                $msg = "This account has been suspended. Contact the administrator.";
+                if ($adminNotes !== '') {
+                    $msg .= "\n\nReason from administrator:\n" . $adminNotes;
+                }
+                echo json_encode(["message" => $msg, "admin_reason" => $adminNotes !== '' ? $adminNotes : null, "status" => "error"]);
+                exit();
+            }
 
             // Block login if registration is still pending (if approvals table exists)
             try {

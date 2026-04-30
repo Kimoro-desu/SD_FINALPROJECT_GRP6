@@ -110,7 +110,8 @@ CREATE TABLE `users` (
   `plm_email` varchar(50) DEFAULT NULL,
   `profile_picture` varchar(255) DEFAULT NULL,
   `background_picture` varchar(255) DEFAULT NULL,
-  `reward_points` int(11) NOT NULL DEFAULT 0,
+  `account_status` varchar(32) NOT NULL DEFAULT 'active',
+  `account_notes` varchar(500) DEFAULT NULL,
   UNIQUE KEY `plm_email` (`plm_email`),
   UNIQUE KEY `school_id_number` (`school_id_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -256,7 +257,6 @@ CREATE TABLE `transaction_ratings` (
   `rater_id` int(11) NOT NULL,
   `ratee_id` int(11) NOT NULL,
   `rating` tinyint(3) UNSIGNED NOT NULL,
-  `points_awarded` int(11) NOT NULL DEFAULT 0,
   `review_text` varchar(500) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`rating_id`),

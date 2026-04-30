@@ -491,6 +491,16 @@
       background: var(--danger);
     }
 
+    .status-suspended {
+      background: rgba(251, 191, 36, 0.12);
+      color: var(--warning);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    .status-suspended::before {
+      background: var(--warning);
+    }
+
     .btn-action {
       background: transparent;
       border: 1px solid var(--glass-border);
@@ -731,27 +741,28 @@
         <h1>Registered Users</h1>
         <p>Manage student and faculty accounts, operational roles, and administrative holds.</p>
       </div>
-      <button class="btn-outline"><i class="ph ph-download-simple"></i> Export User List</button>
+      <button type="button" class="btn-outline" id="exportUsersBtn"><i class="ph ph-download-simple"></i> Export User List</button>
     </div>
 
     <div class="toolbar">
       <div class="filters">
         <div class="search-wrap">
           <i class="ph ph-magnifying-glass"></i>
-          <input class="search-input" type="text" name="search" placeholder="Search by Name, Student ID, or Email...">
+          <input class="search-input" type="text" id="userSearchInput" name="search" placeholder="Search by Name, Student ID, or Email...">
         </div>
 
-        <select class="filter-select" name="dept_filter">
+        <select class="filter-select" id="deptFilter" name="dept_filter">
           <option value="">All Departments</option>
           <option value="coe">College of Engineering (COE)</option>
           <option value="cos">College of Science (COS)</option>
           <option value="cba">College of Business Admin (CBA)</option>
         </select>
 
-        <select class="filter-select" name="status_filter">
+        <select class="filter-select" id="statusFilter" name="status_filter">
           <option value="">All Statuses</option>
           <option value="active">Active</option>
           <option value="restricted">Restricted (Hold)</option>
+          <option value="suspended">Suspended</option>
         </select>
       </div>
     </div>
@@ -783,7 +794,7 @@
         <button class="modal-close" onclick="closeUserModal()"><i class="ph ph-x"></i></button>
       </div>
 
-      <form method="POST" action="update_user_status.php">
+      <form id="userStatusForm">
         <input type="hidden" name="user_id" id="hiddenUserId" value="">
 
         <div class="form-group">
@@ -802,8 +813,8 @@
 
         <div class="form-group" id="remarksGroup">
           <label class="form-label">Reason for Restriction / Admin Notes</label>
-          <textarea class="form-textarea" name="admin_notes"
-            placeholder="Required if applying a restriction. e.g., 'Unpaid late fees from TXN-7988'"></textarea>
+          <textarea class="form-textarea" name="admin_notes" id="modalAdminNotes"
+            placeholder="Required if applying a restriction or suspension."></textarea>
         </div>
 
         <button type="submit" class="btn-submit">
@@ -855,17 +866,54 @@
       }, 300);
     });
 
+    /** In-memory copy of users for filtering / export (set by loadUsers). */
+    let allUsers = [];
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
     // Modal logic
-    function openUserModal(userId, userName, currentStatus) {
-      document.getElementById('hiddenUserId').value = userId;
+    function openUserModal(userId, userName, currentStatus, accountNotes) {
+      document.getElementById('hiddenUserId').value = String(userId);
       document.getElementById('displayUserName').value = userName;
-      document.getElementById('formStatusSelect').value = currentStatus;
+      document.getElementById('formStatusSelect').value = currentStatus === 'restricted' || currentStatus === 'suspended' ? currentStatus : 'active';
+      document.getElementById('modalAdminNotes').value = accountNotes ? String(accountNotes) : '';
       document.getElementById('userModal').classList.add('active');
     }
 
     function closeUserModal() {
       document.getElementById('userModal').classList.remove('active');
+      const form = document.getElementById('userStatusForm');
+      if (form) form.reset();
     }
+
+    document.getElementById('userStatusForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userId = parseInt(document.getElementById('hiddenUserId').value, 10);
+      const account_status = document.getElementById('formStatusSelect').value;
+      const admin_notes = document.getElementById('modalAdminNotes').value.trim();
+
+      try {
+        await window.api.authenticatedFetch('/api/users/update_account_status.php', {
+          method: 'POST',
+          body: { user_id: userId, account_status, admin_notes }
+        });
+        closeUserModal();
+        await loadUsers();
+      } catch (err) {
+        const msg = err?.data?.message || err?.message || 'Unable to update user.';
+        alert(msg);
+      }
+    });
+
+    document.getElementById('userModal').addEventListener('click', (e) => {
+      if (e.target.id === 'userModal') closeUserModal();
+    });
 
     function initials(name) {
       const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -879,49 +927,141 @@
       return s ? (s.charAt(0).toUpperCase() + s.slice(1)) : 'User';
     }
 
+    function statusPillMarkup(status) {
+      const st = String(status || 'active').toLowerCase().trim();
+      let cls = 'status-active';
+      let label = 'Active';
+      if (st === 'restricted') {
+        cls = 'status-restricted';
+        label = 'Restricted';
+      } else if (st === 'suspended') {
+        cls = 'status-suspended';
+        label = 'Suspended';
+      }
+      return `<span class="status-pill ${cls}">${label}</span>`;
+    }
+
+    function matchesDeptFilter(deptFilterVal, deptText) {
+      const v = (deptFilterVal || '').trim();
+      if (!v) return true;
+      const d = String(deptText || '').toLowerCase();
+      if (v === 'coe') return d.includes('engineering');
+      if (v === 'cos') return d.includes('science');
+      if (v === 'cba') return d.includes('business');
+      return true;
+    }
+
+    function filteredUsersFromState() {
+      const q = (document.getElementById('userSearchInput')?.value || '').trim().toLowerCase();
+      const deptF = document.getElementById('deptFilter')?.value || '';
+      const statusF = (document.getElementById('statusFilter')?.value || '').trim().toLowerCase();
+
+      return allUsers.filter((u) => {
+        if (statusF && String(u.account_status || 'active').toLowerCase().trim() !== statusF) {
+          return false;
+        }
+        if (!matchesDeptFilter(deptF, u?.department)) {
+          return false;
+        }
+        if (!q) return true;
+        const name = String(u?.name || '').toLowerCase();
+        const email = String(u?.email || '').toLowerCase();
+        const sid = String(u?.school_id || '').toLowerCase();
+        return name.includes(q) || email.includes(q) || sid.includes(q);
+      });
+    }
+
+    function renderUserRows(users) {
+      const tbody = document.getElementById('usersTbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = users.map((u) => {
+        const name = u?.name || '—';
+        const email = u?.email || '—';
+        const sid = u?.school_id || '—';
+        const dept = u?.department || '—';
+        const role = titleCase(u?.role);
+        const ast = String(u?.account_status || 'active').toLowerCase().trim();
+        const isAdminAcct = String(u?.role || '').trim().toLowerCase() === 'admin';
+        const manageCell = isAdminAcct
+          ? '<span style="color: var(--text-3); font-size: 12px;">—</span>'
+          : `<button type="button" class="btn-action btn-manage" data-user-id="${encodeURIComponent(String(u.id))}">
+                  <i class="ph ph-sliders-horizontal"></i> Manage
+                </button>`;
+        return `
+            <tr>
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar-sm">${escapeHtml(initials(name))}</div>
+                  <div>
+                    <span class="user-name-txt">${escapeHtml(name)}</span>
+                    <span class="user-email-txt">${escapeHtml(email)}</span>
+                  </div>
+                </div>
+              </td>
+              <td style="font-family: monospace; color: var(--text-2);">${escapeHtml(sid)}</td>
+              <td>${escapeHtml(dept)}</td>
+              <td>${escapeHtml(role)}</td>
+              <td>${statusPillMarkup(ast)}</td>
+              <td style="text-align: right;">${manageCell}</td>
+            </tr>
+          `;
+      }).join('') || `
+          <tr>
+            <td colspan="6" style="padding: 18px 20px; color: var(--text-3);">No users match the current filters.</td>
+          </tr>
+        `;
+    }
+
+    function applyFilters() {
+      renderUserRows(filteredUsersFromState());
+    }
+
+    function exportUsersCsv() {
+      const rows = filteredUsersFromState();
+      const header = ['Name', 'Email', 'School ID', 'Department', 'Role', 'Account status'];
+      const lines = [header.join(',')].concat(
+        rows.map((u) => {
+          const line = [
+            u?.name || '',
+            u?.email || '',
+            u?.school_id || '',
+            u?.department || '',
+            u?.role || '',
+            u?.account_status || 'active'
+          ].map((cell) => {
+            const s = String(cell ?? '');
+            const esc = s.includes('"') || s.includes(',') ? `"${s.replace(/"/g, '""')}"` : s;
+            return esc;
+          }).join(',');
+          return line;
+        })
+      );
+      const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `hariborrow-users-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
     async function loadUsers() {
       const tbody = document.getElementById('usersTbody');
       if (!tbody) return;
 
-      try {
-        const res = await window.api.authenticatedFetch('/api/users/list.php');
-        const users = Array.isArray(res?.users) ? res.users : [];
-
-        tbody.innerHTML = users.map(u => {
-          const name = u?.name || '—';
-          const email = u?.email || '—';
-          const sid = u?.school_id || '—';
-          const dept = u?.department || '—';
-          const role = titleCase(u?.role);
-          return `
-            <tr>
-              <td>
-                <div class="user-cell">
-                  <div class="user-avatar-sm">${initials(name)}</div>
-                  <div>
-                    <span class="user-name-txt">${name}</span>
-                    <span class="user-email-txt">${email}</span>
-                  </div>
-                </div>
-              </td>
-              <td style="font-family: monospace; color: var(--text-2);">${sid}</td>
-              <td>${dept}</td>
-              <td>${role}</td>
-              <td><span class="status-pill status-active">Active</span></td>
-              <td style="text-align: right;">
-                <button class="btn-action" onclick="openUserModal('${u?.id ?? ''}', '${name.replace(/'/g, "\\'")}', 'active')">
-                  <i class="ph ph-sliders-horizontal"></i> Manage
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('') || `
+      tbody.innerHTML = `
           <tr>
-            <td colspan="6" style="padding: 18px 20px; color: var(--text-3);">No users found.</td>
+            <td colspan="6" style="padding: 18px 20px; color: var(--text-3);">Loading users…</td>
           </tr>
         `;
+
+      try {
+        const res = await window.api.authenticatedFetch('/api/users/list.php');
+        allUsers = Array.isArray(res?.users) ? res.users : [];
+        applyFilters();
       } catch (e) {
         console.error('Users load failed:', e);
+        allUsers = [];
         tbody.innerHTML = `
           <tr>
             <td colspan="6" style="padding: 18px 20px; color: var(--danger);">Failed to load users.</td>
@@ -930,7 +1070,36 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadUsers);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+
+      ['userSearchInput', 'deptFilter', 'statusFilter'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', applyFilters);
+        el.addEventListener('change', applyFilters);
+      });
+
+      const tbody = document.getElementById('usersTbody');
+      if (tbody) {
+        tbody.addEventListener('click', (e) => {
+          const btn = e.target.closest('.btn-manage');
+          if (!btn) return;
+          const uid = decodeURIComponent(btn.getAttribute('data-user-id') || '');
+          const u = allUsers.find((row) => String(row.id) === String(uid));
+          if (!u) return;
+          openUserModal(
+            u.id,
+            u.name || 'User',
+            u.account_status || 'active',
+            u.account_notes || ''
+          );
+        });
+      }
+
+      const exp = document.getElementById('exportUsersBtn');
+      if (exp) exp.addEventListener('click', exportUsersCsv);
+    });
   </script>
 
   <script>

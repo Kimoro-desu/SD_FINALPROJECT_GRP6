@@ -361,7 +361,7 @@
 
     .alert {
       display: none;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       padding: 14px 18px;
       border-radius: 6px;
@@ -369,6 +369,7 @@
       margin-bottom: 28px;
       letter-spacing: 0.03em;
       font-weight: 500;
+      white-space: pre-line;
     }
 
     .alert.err {
