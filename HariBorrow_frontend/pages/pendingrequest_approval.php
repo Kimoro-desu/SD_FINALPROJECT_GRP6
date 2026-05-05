@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HariBorrow — Pending Requests</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="../js/api.js"></script>
@@ -82,10 +82,10 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+            background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
             z-index: 9999;
             mix-blend-mode: screen;
-            transition: background 0.08s ease-out;
+            transition: background 0.1s;
         }
 
         .sidebar {
@@ -678,56 +678,6 @@
             padding-top: 24px;
         }
 
-        .image-preview-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.78);
-            backdrop-filter: blur(6px);
-            z-index: 250;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-
-        .image-preview-overlay.active {
-            display: flex;
-        }
-
-        .image-preview-card {
-            position: relative;
-            width: min(92vw, 920px);
-            max-height: 90vh;
-            background: rgba(15, 15, 20, 0.95);
-            border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            padding: 14px;
-            box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-        }
-
-        .image-preview-card img {
-            width: 100%;
-            max-height: calc(90vh - 70px);
-            object-fit: contain;
-            border-radius: 10px;
-            display: block;
-            background: #0f0f12;
-        }
-
-        .image-preview-close {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            border: 1px solid var(--glass-border);
-            background: rgba(3, 3, 4, 0.65);
-            color: var(--text-1);
-            font-size: 18px;
-            cursor: pointer;
-        }
-
         .btn-approve {
             flex: 1;
             background: var(--success);
@@ -786,6 +736,8 @@
             color: var(--gold-light);
         }
     </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 
 <body>
@@ -895,13 +847,6 @@
 
     </main>
 
-    <div class="image-preview-overlay" id="imagePreviewOverlay" onclick="closeImagePreview(event)">
-        <div class="image-preview-card">
-            <button class="image-preview-close" type="button" onclick="closeImagePreview(event)"><i class="ph ph-x"></i></button>
-            <img id="imagePreviewImg" src="" alt="Asset preview image">
-        </div>
-    </div>
-
     <div class="modal-overlay" id="reviewModal">
         <div class="modal">
             <div class="modal-header">
@@ -973,14 +918,6 @@
 
         function esc(v) {
             return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        }
-
-        function resolveFileUrl(rawUrl) {
-            const val = String(rawUrl || '').trim();
-            if (!val) return '';
-            if (/^https?:\/\//i.test(val)) return val;
-            if (val.startsWith('/')) return val;
-            return '/' + val.replace(/^\/+/, '');
         }
 
         function fmtDateTime(val) {
@@ -1058,11 +995,8 @@
                 const tbody = document.getElementById('pendingAssetsBody');
                 if (!tbody) return;
                 tbody.innerHTML = pending.map(a => {
-                    const imageUrl = resolveFileUrl(a.asset_image);
-                    const imgHtml = imageUrl
-                        ? `<button type="button" class="btn-outline" onclick="openImagePreview('${esc(imageUrl)}')" style="padding:0;border:none;background:transparent;">
-                             <img src="${esc(imageUrl)}" alt="${esc(a.name)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--glass-border);cursor:pointer;">
-                           </button>`
+                    const imgHtml = a.asset_image
+                        ? `<img src="${esc(a.asset_image)}" alt="${esc(a.name)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--glass-border);">`
                         : `<div style="width:48px;height:48px;border-radius:8px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;border:1px solid rgba(229,192,123,0.15);"><i class="ph ph-image" style="font-size:20px;color:var(--gold-dark);"></i></div>`;
                     return `
                     <tr>
@@ -1088,22 +1022,6 @@
                 const tbody = document.getElementById('pendingAssetsBody');
                 if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="padding:18px; color: var(--danger);">Failed to load pending assets.</td></tr>';
             }
-        }
-
-        function openImagePreview(src) {
-            const overlay = document.getElementById('imagePreviewOverlay');
-            const img = document.getElementById('imagePreviewImg');
-            if (!overlay || !img || !src) return;
-            img.src = src;
-            overlay.classList.add('active');
-        }
-
-        function closeImagePreview(event) {
-            if (event) event.stopPropagation();
-            const overlay = document.getElementById('imagePreviewOverlay');
-            const img = document.getElementById('imagePreviewImg');
-            if (overlay) overlay.classList.remove('active');
-            if (img) img.src = '';
         }
 
         function updatePendingBadge() {
@@ -1285,6 +1203,7 @@
             });
         }
     </script>
+  <script src="../js/theme.js"></script>
 
 </body>
 

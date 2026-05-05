@@ -9,7 +9,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HariBorrow — Return Asset</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,8 +57,8 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
-    z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
   }
 
   /* ── SIDEBAR ── */
@@ -458,6 +458,8 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     border-radius: 8px; border: 1px solid var(--glass-border);
   }
 </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 <body>
 
@@ -651,8 +653,8 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
         <i class="ph-fill ph-clock"></i>
       </div>
       <div class="card-label" style="text-align:center;">Return Submitted</div>
-      <div class="card-title" style="text-align:center; color:var(--gold);">Pending Review</div>
-      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return request has been submitted. The lender will review the return photos and verify the asset condition before finalizing.</div>
+      <div class="card-title" style="text-align:center; color:var(--gold);">Pending Admin Review</div>
+      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return request has been submitted. An administrator will review the return photos and verify the asset condition before finalizing.</div>
 
       <div class="summary-grid">
         <div class="summary-section">
@@ -683,7 +685,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
           </div>
           <div class="summary-row">
             <span>Loan Status</span>
-            <strong id="s-loan-status" style="color:var(--gold);">Pending Review</strong>
+            <strong id="s-loan-status" style="color:var(--gold);">Pending Admin Review</strong>
           </div>
         </div>
       </div>
@@ -1075,7 +1077,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
       returnPhotoFiles = [];
 
       // Show toast
-      showReturnToast('Return Submitted Successfully', 'Your return is in review. You\'ll be notified once approved.');
+      showReturnToast('Return Submitted Successfully', 'Your return is pending admin review. You\'ll be notified once approved.');
     } catch (error) {
       console.error('Error:', error);
       alert('Error submitting return: ' + (error?.message || 'Unknown error'));
@@ -1093,5 +1095,6 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     setTimeout(() => { toast.style.display = 'none'; }, 5000);
   }
 </script>
+  <script src="../js/theme.js"></script>
 </body>
 </html>

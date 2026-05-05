@@ -13,10 +13,4 @@ function ensureUserAccountSchema(\PDO $db): void
     if (!in_array('account_notes', $cols, true)) {
         $db->exec("ALTER TABLE users ADD COLUMN account_notes VARCHAR(500) NULL DEFAULT NULL AFTER account_status");
     }
-    if (!in_array('id_verification_status', $cols, true)) {
-        $db->exec("ALTER TABLE users ADD COLUMN id_verification_status VARCHAR(32) NOT NULL DEFAULT 'unverified' AFTER account_notes");
-    }
-    if (!in_array('id_photo_url', $cols, true)) {
-        $db->exec("ALTER TABLE users ADD COLUMN id_photo_url VARCHAR(500) NULL DEFAULT NULL AFTER id_verification_status");
-    }
 }

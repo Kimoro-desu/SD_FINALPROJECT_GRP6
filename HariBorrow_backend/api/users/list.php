@@ -45,7 +45,7 @@ ensureUserAccountSchema($db);
 
 try {
     $query = "SELECT User_ID, first_name, middle_name, last_name, user_role, plm_email, school_id_number, department,
-                      account_status, account_notes, id_verification_status, id_photo_url
+                      account_status, account_notes
               FROM users
               ORDER BY last_name ASC, first_name ASC";
     $stmt = $db->prepare($query);
@@ -67,8 +67,6 @@ try {
             "role" => $row['user_role'],
             "account_status" => $status,
             "account_notes" => $row['account_notes'] ?? null,
-            "id_verification_status" => $row['id_verification_status'] ?? 'unverified',
-            "id_photo_url" => $row['id_photo_url'] ?? null,
         ];
     }
 

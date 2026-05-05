@@ -7,13 +7,11 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-W
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
 require_once '../../utils/asset_lifecycle_schema.php';
-require_once '../../utils/asset_photos_schema.php';
 require_once '../../utils/user_notifications.php';
 
 use Config\Database;
 use Utils\JwtHelper;
 use function Utils\ensureAssetLifecycleSchema;
-use function Utils\ensureAssetPhotosSchema;
 use function Utils\pushUserNotification;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -45,10 +43,9 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 try {
     ensureAssetLifecycleSchema($db);
-    ensureAssetPhotosSchema($db);
 
     if ($method === 'GET') {
-        $q = "SELECT a.Asset_ID, a.asset_name, a.description, a.asset_type, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.status, a.time_created, a.asset_image,
+        $q = "SELECT a.Asset_ID, a.asset_name, a.description, a.asset_type, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.status, a.time_created,
                      a.Lender_ID, u.first_name, u.last_name, u.plm_email
               FROM assets a
               LEFT JOIN users u ON u.User_ID = a.Lender_ID
@@ -70,7 +67,6 @@ try {
                 "penalty_type" => $row['penalty_type'] ?? 'per_day',
                 "status" => strtolower((string)$row['status']),
                 "availability" => strtolower((string)$row['availability']),
-                "asset_image" => $row['asset_image'] ?? null,
                 "lender_id" => (int)$row['Lender_ID'],
                 "lender_name" => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
                 "lender_email" => $row['plm_email'],

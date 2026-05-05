@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Registered Users</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="../js/api.js"></script>
   <script src="../js/auth_guard.js"></script>
@@ -82,10 +82,10 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
-      transition: background 0.08s ease-out;
+      transition: background 0.1s;
     }
 
     /* ── SIDEBAR NAVIGATION ── */
@@ -677,6 +677,8 @@
       color: var(--gold-light);
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 
 <body>
@@ -811,19 +813,6 @@
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">ID Verification Status</label>
-          <div id="idPhotoContainer" style="margin-bottom: 12px; display: none;">
-             <a id="idPhotoLink" href="#" target="_blank" style="color: var(--gold); font-size: 13px; text-decoration: underline;"><i class="ph ph-image"></i> View Uploaded ID Photo</a>
-          </div>
-          <select class="form-select" name="id_verification_status" id="formIdVerifySelect" required>
-            <option value="unverified">Unverified</option>
-            <option value="pending">Pending Approval</option>
-            <option value="verified">Verified</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
-
         <div class="form-group" id="remarksGroup">
           <label class="form-label">Reason for Restriction / Admin Notes</label>
           <textarea class="form-textarea" name="admin_notes" id="modalAdminNotes"
@@ -891,24 +880,11 @@
     }
 
     // Modal logic
-    function openUserModal(userId, userName, currentStatus, accountNotes, idVerifyStatus, idPhotoUrl) {
+    function openUserModal(userId, userName, currentStatus, accountNotes) {
       document.getElementById('hiddenUserId').value = String(userId);
       document.getElementById('displayUserName').value = userName;
       document.getElementById('formStatusSelect').value = currentStatus === 'restricted' || currentStatus === 'suspended' ? currentStatus : 'active';
       document.getElementById('modalAdminNotes').value = accountNotes ? String(accountNotes) : '';
-      
-      document.getElementById('formIdVerifySelect').value = idVerifyStatus || 'unverified';
-      
-      const photoContainer = document.getElementById('idPhotoContainer');
-      const photoLink = document.getElementById('idPhotoLink');
-      if (idPhotoUrl) {
-         photoContainer.style.display = 'block';
-         photoLink.href = idPhotoUrl;
-      } else {
-         photoContainer.style.display = 'none';
-         photoLink.href = '#';
-      }
-
       document.getElementById('userModal').classList.add('active');
     }
 
@@ -923,12 +899,11 @@
       const userId = parseInt(document.getElementById('hiddenUserId').value, 10);
       const account_status = document.getElementById('formStatusSelect').value;
       const admin_notes = document.getElementById('modalAdminNotes').value.trim();
-      const id_verification_status = document.getElementById('formIdVerifySelect').value;
 
       try {
         await window.api.authenticatedFetch('/api/users/update_account_status.php', {
           method: 'POST',
-          body: { user_id: userId, account_status, admin_notes, id_verification_status }
+          body: { user_id: userId, account_status, admin_notes }
         });
         closeUserModal();
         await loadUsers();
@@ -984,12 +959,6 @@
       const statusF = (document.getElementById('statusFilter')?.value || '').trim().toLowerCase();
 
       return allUsers.filter((u) => {
-        // Hide users that haven't been verified yet (they belong in Registration Approvals)
-        const idv = String(u.id_verification_status || 'unverified').toLowerCase().trim();
-        if (idv === 'unverified' || idv === 'pending') {
-            return false; 
-        }
-
         if (statusF && String(u.account_status || 'active').toLowerCase().trim() !== statusF) {
           return false;
         }
@@ -1015,17 +984,6 @@
         const dept = u?.department || '—';
         const role = titleCase(u?.role);
         const ast = String(u?.account_status || 'active').toLowerCase().trim();
-        const idv = String(u?.id_verification_status || 'unverified').toLowerCase().trim();
-        
-        let idvMarkup = '';
-        if (idv === 'verified') {
-            idvMarkup = '<span style="color: var(--success); font-size: 11px;"><i class="ph ph-check-circle"></i> Verified</span>';
-        } else if (idv === 'pending') {
-            idvMarkup = '<span style="color: var(--gold); font-size: 11px;"><i class="ph ph-hourglass"></i> Pending</span>';
-        } else {
-            idvMarkup = '<span style="color: var(--danger); font-size: 11px;"><i class="ph ph-x-circle"></i> Unverified</span>';
-        }
-
         const isAdminAcct = String(u?.role || '').trim().toLowerCase() === 'admin';
         const manageCell = isAdminAcct
           ? '<span style="color: var(--text-3); font-size: 12px;">—</span>'
@@ -1040,7 +998,6 @@
                   <div>
                     <span class="user-name-txt">${escapeHtml(name)}</span>
                     <span class="user-email-txt">${escapeHtml(email)}</span>
-                    <div style="margin-top: 2px;">${idvMarkup}</div>
                   </div>
                 </div>
               </td>
@@ -1137,9 +1094,7 @@
             u.id,
             u.name || 'User',
             u.account_status || 'active',
-            u.account_notes || '',
-            u.id_verification_status || 'unverified',
-            u.id_photo_url || null
+            u.account_notes || ''
           );
         });
       }
@@ -1184,6 +1139,7 @@
             setInterval(updateGlobalPendingBadge, 15000);
         });
     </script>
+  <script src="../js/theme.js"></script>
 
 </body>
 

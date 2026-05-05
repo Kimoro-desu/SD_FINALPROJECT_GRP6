@@ -7,9 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Register Account</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="../css/theme.css">
   <style>
     *,
     *::before,
@@ -72,9 +73,9 @@
       inset: 0;
       pointer-events: none;
       z-index: 9999;
-      background: radial-gradient(430px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.07), transparent 50%);
       mix-blend-mode: screen;
-      transition: background 0.08s ease-out;
+      transition: background 0.2s ease;
     }
 
     /* texture overlay */
@@ -182,12 +183,13 @@
     }
 
     .left-headline .script {
-      font-family: 'Pinyon Script', cursive;
-      font-size: 1.45em;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1em;
+      font-weight: 700;
       color: var(--gold-light);
       display: block;
-      line-height: 0.85;
-      padding-top: 6px;
+      line-height: 1.1;
+      padding-top: 4px;
       text-shadow: 0 0 28px rgba(229, 192, 123, 0.45);
     }
 
@@ -400,12 +402,13 @@
     }
 
     .form-head h2 .script {
-      font-family: 'Pinyon Script', cursive;
-      font-size: 1.4em;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1em;
+      font-weight: 700;
       color: var(--gold-light);
       display: block;
-      line-height: 0.85;
-      padding-top: 8px;
+      line-height: 1.1;
+      padding-top: 6px;
       text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
     }
 
@@ -1080,7 +1083,7 @@
     }
 
     .success-title .script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
       font-size: 1.3em;
       color: var(--gold-light);
       display: block;
@@ -1267,6 +1270,8 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 
 <body>
@@ -1865,6 +1870,7 @@
       }
     }
   </script>
+  <script src="../js/theme.js"></script>
 </body>
 
 </html>

@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HariBorrow — Lender Confirmations</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth_guard.js"></script>
@@ -53,8 +53,8 @@
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
-    z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
   }
 
   .sidebar {
@@ -236,6 +236,8 @@
   .btn-deny { flex: 1; background: transparent; border: 1px solid rgba(255, 107, 122, 0.4); padding: 14px; border-radius: 10px; color: var(--danger); font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px; }
   .btn-deny:hover { background: rgba(255, 107, 122, 0.1); border-color: var(--danger); }
 </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 <body>
 
@@ -571,6 +573,7 @@
     }
   }
 </script>
+  <script src="../js/theme.js"></script>
 
 </body>
 </html>

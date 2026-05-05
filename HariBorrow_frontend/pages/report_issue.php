@@ -8,7 +8,7 @@
   <title>HariBorrow — Report Issue</title>
 
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="../js/api.js"></script>
@@ -90,10 +90,10 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
-      transition: background 0.08s ease-out;
+      transition: background 0.1s;
     }
 
     /* ── TOP NAVIGATION ── */
@@ -210,10 +210,11 @@
     }
 
     .page-header .aesthetic-script {
-      font-family: 'Pinyon Script', cursive;
-      font-size: 1.3em;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1em;
       color: var(--gold-light);
       text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
+      font-weight: 700;
     }
 
     .page-header p {
@@ -462,6 +463,8 @@
       color: var(--gold-light);
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 
 <body>
@@ -712,6 +715,7 @@
       setInterval(fetchNotifications, 15000);
   });
   </script>
+  <script src="../js/theme.js"></script>
 
 </body>
 

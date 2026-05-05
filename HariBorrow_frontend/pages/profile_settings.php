@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Profile Settings</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
@@ -89,10 +89,10 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
-      transition: background 0.08s ease-out;
+      transition: background 0.1s;
     }
 
     /* ── TOP NAVIGATION ── */
@@ -201,10 +201,11 @@
     }
 
     .page-header .aesthetic-script {
-      font-family: 'Pinyon Script', cursive;
-      font-size: 1.3em;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1em;
       color: var(--gold-light);
       text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
+      font-weight: 700;
     }
 
     .page-header p {
@@ -539,6 +540,8 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 
 <body>
@@ -611,20 +614,11 @@
                 privileges.</p>
               <span class="status-badge unverified" id="verifyBadge">Status: Unverified</span>
             </div>
-            <div class="verify-action" style="display: flex; flex-direction: column; gap: 12px; align-items: flex-end;">
-              <div id="idPreviewContainer" style="display: none; width: 100%; max-width: 200px; border: 1px solid var(--glass-border); border-radius: 8px; overflow: hidden;">
-                <img id="idPreviewImage" src="" alt="ID Preview" style="width: 100%; display: block; object-fit: cover;">
-              </div>
-              
-              <div style="display: flex; gap: 8px;">
-                <input type="file" id="idInput" accept="image/*" style="display: none;" onchange="previewIdUpload(event)">
-                <button class="btn-small" id="verifyBtn" onclick="document.getElementById('idInput').click()">
-                  <i class="ph ph-identification-card"></i> Upload ID
-                </button>
-                <button class="btn-small" id="submitIdBtn" style="display: none; color: var(--gold); border-color: var(--gold);" onclick="submitIdUpload()">
-                  <i class="ph ph-upload-simple"></i> Submit ID
-                </button>
-              </div>
+            <div class="verify-action">
+              <input type="file" id="idInput" accept="image/*" style="display: none;" onchange="handleIdUpload(event)">
+              <button class="btn-small" id="verifyBtn" onclick="document.getElementById('idInput').click()">
+                <i class="ph ph-identification-card"></i> Upload ID
+              </button>
             </div>
           </div>
 
@@ -723,33 +717,6 @@
           if (profile.department) {
             document.getElementById('departmentInput').value = profile.department;
           }
-          
-          // 4. Verification Status
-          const verifyBadge = document.getElementById('verifyBadge');
-          const verifyBtn = document.getElementById('verifyBtn');
-          const vStatus = profile.id_verification_status || 'unverified';
-          
-          if (vStatus === 'verified') {
-            verifyBadge.className = 'status-badge';
-            verifyBadge.style.backgroundColor = 'rgba(74, 222, 128, 0.1)';
-            verifyBadge.style.color = 'var(--green)';
-            verifyBadge.style.borderColor = 'rgba(74, 222, 128, 0.2)';
-            verifyBadge.textContent = 'Status: Verified';
-            verifyBtn.innerHTML = '<i class="ph ph-check-circle"></i> Verified';
-            verifyBtn.style.color = '#4ade80';
-            verifyBtn.style.borderColor = '#4ade80';
-            verifyBtn.disabled = true;
-          } else if (vStatus === 'pending') {
-            verifyBadge.className = 'status-badge pending';
-            verifyBadge.textContent = 'Status: Pending Verification';
-            verifyBtn.innerHTML = '<i class="ph ph-hourglass"></i> Pending Approval';
-            verifyBtn.disabled = true;
-          } else {
-            verifyBadge.className = 'status-badge unverified';
-            verifyBadge.textContent = 'Status: Unverified';
-            verifyBtn.innerHTML = '<i class="ph ph-identification-card"></i> Upload ID';
-            verifyBtn.disabled = false;
-          }
 
         }
       } catch (error) {
@@ -846,77 +813,17 @@
     }
 
     // School ID Upload Logic
-    // School ID Upload Logic
-    let selectedIdFile = null;
-
-    // 1. Preview the image first
-    function previewIdUpload(event) {
+    function handleIdUpload(event) {
       if (event.target.files && event.target.files[0]) {
-        selectedIdFile = event.target.files[0];
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          // Show the image preview
-          document.getElementById('idPreviewImage').src = e.target.result;
-          document.getElementById('idPreviewContainer').style.display = 'block';
-          
-          // Change the "Upload" button to "Change ID"
-          document.getElementById('verifyBtn').innerHTML = '<i class="ph ph-arrows-clockwise"></i> Change ID';
-          
-          // Reveal the Submit button
-          document.getElementById('submitIdBtn').style.display = 'inline-flex';
-          document.getElementById('submitIdBtn').style.alignItems = 'center';
-          document.getElementById('submitIdBtn').style.gap = '6px';
-        };
-        reader.readAsDataURL(selectedIdFile);
-      }
-    }
+        const badge = document.getElementById('verifyBadge');
+        const btn = document.getElementById('verifyBtn');
 
-    // 2. Manually submit the image to the backend
-    async function submitIdUpload() {
-      if (!selectedIdFile) {
-          alert("Please select an ID image first.");
-          return;
-      }
+        badge.className = 'status-badge pending';
+        badge.textContent = 'Status: Pending Verification';
 
-      const submitBtn = document.getElementById('submitIdBtn');
-      const verifyBtn = document.getElementById('verifyBtn');
-      const originalText = submitBtn.innerHTML;
-      
-      submitBtn.innerHTML = 'Submitting...';
-      submitBtn.disabled = true;
-      verifyBtn.disabled = true; // Prevent changing file while uploading
-      
-      try {
-          const formData = new FormData();
-          formData.append('id_picture', selectedIdFile);
-          
-          const token = window.api.getToken();
-          const res = await fetch('/SD_FINALPROJECT_GRP6/HariBorrow_backend/api/users/upload_pictures.php', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}` },
-              body: formData
-          }).then(r => r.json());
-          
-          if (res && res.status === 'success') {
-              const badge = document.getElementById('verifyBadge');
-              badge.className = 'status-badge pending';
-              badge.textContent = 'Status: Pending Verification';
-
-              submitBtn.innerHTML = '<i class="ph ph-check-circle"></i> ID Submitted';
-              submitBtn.style.color = '#4ade80';
-              submitBtn.style.borderColor = '#4ade80';
-              
-              // Hide the Change button since it's already submitted
-              verifyBtn.style.display = 'none'; 
-          } else {
-              throw new Error(res.message || 'Upload failed');
-          }
-      } catch (err) {
-          alert(err.message || 'Error uploading ID');
-          submitBtn.innerHTML = originalText;
-          submitBtn.disabled = false;
-          verifyBtn.disabled = false;
+        btn.innerHTML = '<i class="ph ph-check-circle"></i> ID Submitted';
+        btn.style.color = '#4ade80';
+        btn.style.borderColor = '#4ade80';
       }
     }
   </script>
@@ -1015,6 +922,7 @@
       setInterval(fetchNotifications, 15000);
   });
   </script>
+  <script src="../js/theme.js"></script>
 
 </body>
 

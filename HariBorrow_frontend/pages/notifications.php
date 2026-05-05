@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HariBorrow — Notifications</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,8 +55,8 @@
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
-    z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
   }
 
   /* ── SIDEBAR ── */
@@ -197,6 +197,8 @@
   .notif-desc { font-size: 13px; color: var(--text-2); line-height: 1.5; }
   .notif-time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 <body>
 
@@ -386,5 +388,6 @@
       setInterval(fetchNotifications, 60000);
   });
 </script>
+  <script src="../js/theme.js"></script>
 </body>
 </html>

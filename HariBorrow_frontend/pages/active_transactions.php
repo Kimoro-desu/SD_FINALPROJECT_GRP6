@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HariBorrow — Transactions</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="../js/api.js"></script>
@@ -82,10 +82,10 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+            background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
             z-index: 9999;
             mix-blend-mode: screen;
-            transition: background 0.08s ease-out;
+            transition: background 0.1s;
         }
 
         /* SIDEBAR */
@@ -427,7 +427,7 @@
 
         th {
             text-align: left;
-            padding: 12px 16px; /* Reduced padding */
+            padding: 16px 20px;
             font-size: 10px;
             font-weight: 600;
             letter-spacing: 0.15em;
@@ -435,12 +435,11 @@
             color: var(--text-3);
             border-bottom: 1px solid var(--glass-border);
             background: rgba(0, 0, 0, 0.2);
-            white-space: nowrap; /* Prevents headers from wrapping weirdly */
         }
 
         td {
-            padding: 12px 16px; /* Reduced padding */
-            font-size: 13px; /* Smaller font to fit data */
+            padding: 16px 20px;
+            font-size: 14px;
             color: var(--text-2);
             font-weight: 300;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
@@ -744,6 +743,8 @@
             transform: translateY(-2px);
         }
     </style>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
 </head>
 
 <body>
@@ -767,14 +768,12 @@
         <span class="nav-badge" id="pendingNavBadge" style="display:none;">0</span>
       </a>
       <a href="active_transactions.php" class="nav-link active"><i class="ph ph-clock-counter-clockwise"></i> All Transactions</a>
-            <div class="nav-section-title">Database</div>       
+            <div class="nav-section-title">Database</div>
             <a href="asset_inventory.php" class="nav-link"><i class="ph ph-stack"></i> Asset Inventory</a>
             <a href="registered_users.php" class="nav-link"><i class="ph ph-users"></i> Registered Users</a>
 
             <div class="nav-section-title">System</div>
-            <a href="registration_approval.php" class="nav-link"><i class="ph ph-shield-check"></i> Registration Approvals
-                <span class="nav-badge" id="regBadge" style="display:none;">0</span>
-            </a>
+            <a href="registration_approval.php" class="nav-link"><i class="ph ph-shield-check"></i> Registration Approvals</a>
             <a href="system_logs.php" class="nav-link"><i class="ph ph-file-text"></i> System Logs</a>
         </nav>
 
@@ -816,24 +815,22 @@
         </div>
 
         <div class="data-panel">
-            <div style="width: 100%; overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Transaction ID</th>
-                            <th>Borrower Details</th>
-                            <th>Asset Information</th>
-                            <th>Borrow Date</th>
-                            <th>Expected Return</th>
-                            <th>Time Returned</th>
-                            <th>Penalty</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activeTransactionsBody"></tbody>
-                </table>
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Borrower Details</th>
+                        <th>Asset Information</th>
+                        <th>Borrow Date</th>
+                        <th>Expected Return</th>
+                        <th>Time Returned</th>
+                        <th>Penalty</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="activeTransactionsBody"></tbody>
+            </table>
         </div>
 
     </main>
@@ -1257,6 +1254,7 @@
             setInterval(updateGlobalPendingBadge, 15000);
         });
     </script>
+  <script src="../js/theme.js"></script>
 </body>
 
 </html>

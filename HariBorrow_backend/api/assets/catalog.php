@@ -8,13 +8,11 @@ require_once '../../config/database.php';
 require_once '../../utils/asset_lifecycle_schema.php';
 require_once '../../utils/penalty_schema.php';
 require_once '../../utils/ratings_schema.php';
-require_once '../../utils/asset_photos_schema.php';
 
 use Config\Database;
 use function Utils\ensureAssetLifecycleSchema;
 use function Utils\ensurePenaltySchema;
 use function Utils\ensureRatingsSchema;
-use function Utils\ensureAssetPhotosSchema;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -28,9 +26,8 @@ try {
     ensureAssetLifecycleSchema($db);
     ensurePenaltySchema($db);
     ensureRatingsSchema($db);
-    ensureAssetPhotosSchema($db);
 
-    $q = "SELECT a.Asset_ID, a.asset_name, a.description, a.asset_type, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.status, a.time_created, a.asset_image,
+    $q = "SELECT a.Asset_ID, a.asset_name, a.description, a.asset_type, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.status, a.time_created,
                  a.Lender_ID, u.first_name, u.last_name,
                  COALESCE(lr_stats.cnt, 0) AS lender_rating_count,
                  COALESCE(lr_stats.av, 0) AS lender_rating_average
@@ -62,7 +59,6 @@ try {
             "penalty_type" => $row['penalty_type'] ?? 'per_day',
             "status" => strtolower((string)$row['status']),
             "availability" => strtolower((string)$row['availability']),
-            "asset_image" => $row['asset_image'] ?? null,
             "lender_id" => (int)$row['Lender_ID'],
             "lender_name" => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
             "lender_rating_count" => (int)($row['lender_rating_count'] ?? 0),

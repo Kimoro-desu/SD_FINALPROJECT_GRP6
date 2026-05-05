@@ -48,26 +48,15 @@ $data = json_decode(file_get_contents("php://input")) ?: null;
 $userId = isset($data->user_id) ? (int)$data->user_id : 0;
 $newStatus = isset($data->account_status) ? strtolower(trim((string)$data->account_status)) : '';
 $notes = isset($data->admin_notes) ? trim((string)$data->admin_notes) : '';
-$newIdVerificationStatus = isset($data->id_verification_status) ? strtolower(trim((string)$data->id_verification_status)) : '';
 $allowed = ['active', 'restricted', 'suspended'];
-$allowedIdVerify = ['unverified', 'pending', 'verified', 'rejected'];
 
-if ($userId <= 0) {
+if ($userId <= 0 || !in_array($newStatus, $allowed, true)) {
     http_response_code(400);
-    echo json_encode(["message" => "user_id is required.", "status" => "error"]);
+    echo json_encode(["message" => "user_id and a valid account_status are required.", "status" => "error"]);
     exit();
 }
 
-$hasStatusUpdate = ($newStatus !== '' && in_array($newStatus, $allowed, true));
-$hasIdUpdate = ($newIdVerificationStatus !== '' && in_array($newIdVerificationStatus, $allowedIdVerify, true));
-
-if (!$hasStatusUpdate && !$hasIdUpdate) {
-    http_response_code(400);
-    echo json_encode(["message" => "No valid updates provided.", "status" => "error"]);
-    exit();
-}
-
-if ($hasStatusUpdate && $newStatus !== 'active' && $notes === '') {
+if ($newStatus !== 'active' && $notes === '') {
     http_response_code(400);
     echo json_encode(["message" => "A reason/note is required when restricting or suspending an account.", "status" => "error"]);
     exit();
@@ -79,7 +68,7 @@ if ($newStatus === 'active') {
 }
 
 $adminId = (int)($decodedData['id'] ?? 0);
-if ($userId === $adminId && $hasStatusUpdate && $newStatus !== 'active') {
+if ($userId === $adminId && $newStatus !== 'active') {
     http_response_code(400);
     echo json_encode(["message" => "You cannot restrict or suspend your own admin account.", "status" => "error"]);
     exit();
@@ -100,32 +89,18 @@ try {
         exit();
     }
     $targetRole = strtolower(trim((string)($row['user_role'] ?? '')));
-    if ($targetRole === 'admin' && $hasStatusUpdate && $newStatus !== 'active') {
+    if ($targetRole === 'admin' && $newStatus !== 'active') {
         http_response_code(400);
         echo json_encode(["message" => "Administrative accounts cannot be restricted from this endpoint.", "status" => "error"]);
         exit();
     }
 
-    $queryParts = [];
-    if ($hasStatusUpdate) {
-        $queryParts[] = "account_status = :st";
-        $queryParts[] = "account_notes = :notes";
-    }
-    if ($hasIdUpdate) {
-        $queryParts[] = "id_verification_status = :idv";
-    }
-
-    $querySet = implode(", ", $queryParts);
-    $upd = $db->prepare("UPDATE users SET $querySet WHERE User_ID = :uid");
-    
-    if ($hasStatusUpdate) {
-        $upd->bindValue(':st', $newStatus);
-        $notesParam = $notes !== '' ? $notes : null;
-        $upd->bindValue(':notes', $notesParam, $notesParam === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
-    }
-    if ($hasIdUpdate) {
-        $upd->bindValue(':idv', $newIdVerificationStatus);
-    }
+    $upd = $db->prepare(
+        "UPDATE users SET account_status = :st, account_notes = :notes WHERE User_ID = :uid"
+    );
+    $upd->bindValue(':st', $newStatus);
+    $notesParam = $notes !== '' ? $notes : null;
+    $upd->bindValue(':notes', $notesParam, $notesParam === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
     $upd->bindValue(':uid', $userId, \PDO::PARAM_INT);
     $upd->execute();
 
