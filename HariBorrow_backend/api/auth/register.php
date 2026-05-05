@@ -8,8 +8,10 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 
 // Include database config
 require_once '../../config/database.php';
+require_once '../../utils/system_logger.php';
 
 use Config\Database;
+use Utils\SystemLogger;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -65,8 +67,20 @@ if (
 
         // Execute query
         if ($stmt->execute()) {
+            $newUserId = (int)$db->lastInsertId();
+            if ($newUserId > 0) {
+                SystemLogger::ensureRegistrationRequest($db, $newUserId);
+                SystemLogger::log(
+                    $db,
+                    'admin',
+                    'New user registered and queued for approval (User_ID: ' . $newUserId . ').',
+                    $email,
+                    $_SERVER['REMOTE_ADDR'] ?? null,
+                    'Success'
+                );
+            }
             http_response_code(201);
-            echo json_encode(["message" => "User was successfully registered.", "status" => "success"]);
+            echo json_encode(["message" => "User was successfully registered and is pending approval.", "status" => "success"]);
         } else {
             http_response_code(503);
             echo json_encode(["message" => "Unable to register user.", "status" => "error"]);
