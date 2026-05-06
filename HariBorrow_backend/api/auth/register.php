@@ -55,6 +55,14 @@ if (
     !empty($departmentRaw)
 ) {
     try {
+        if (!empty($contactRaw)) {
+            if (!preg_match('/^[0-9\+\-\s]+$/', (string)$contactRaw)) {
+                http_response_code(400);
+                echo json_encode(["message" => "Invalid contact number format. Only numbers, spaces, plus (+), and minus (-) signs are allowed.", "status" => "error"]);
+                exit();
+            }
+        }
+
         if (!isset($_FILES['id_picture']) || $_FILES['id_picture']['error'] !== UPLOAD_ERR_OK) {
             http_response_code(400);
             echo json_encode(["message" => "School ID image is required during registration.", "status" => "error"]);
