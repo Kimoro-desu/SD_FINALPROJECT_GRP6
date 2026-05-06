@@ -144,8 +144,8 @@
 
   /* Main Layout */
   .main-content {
-    flex-grow: 1; height: 100vh; overflow-y: auto; position: relative; z-index: 10;
-    padding: 40px 48px;
+    flex-grow: 1; height: 100vh; overflow: hidden; position: relative; z-index: 10;
+    padding: 40px 48px; display: flex; flex-direction: column;
   }
 
   .header-area { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
@@ -164,7 +164,7 @@
   /* Data Table Extensions */
   .data-panel {
     background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px;
-    overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    overflow-y: auto; flex: 1; min-height: 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   }
   
   .panel-header {
@@ -177,7 +177,8 @@
   th {
     text-align: left; padding: 16px 24px; font-size: 10px; font-weight: 600;
     letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3);
-    border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--glass-border); background: rgba(15, 15, 20, 0.95);
+    position: sticky; top: 0; z-index: 10;
   }
   td {
     padding: 16px 24px; font-size: 14px; color: var(--text-1); font-weight: 400;

@@ -154,7 +154,7 @@
 
   /* ── MAIN CONTENT ── */
   .main-content {
-    flex-grow: 1; height: 100vh; overflow-y: auto; position: relative; z-index: 10;
+    flex-grow: 1; height: 100vh; overflow: hidden; position: relative; z-index: 10;
     padding: 40px 48px; display: flex; flex-direction: column;
   }
 
@@ -179,10 +179,10 @@
   .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
 
   /* ── DATA TABLE ── */
-  .data-panel { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; backdrop-filter: blur(16px); }
+  .data-panel { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; overflow-y: auto; flex: 1; min-height: 0; backdrop-filter: blur(16px); }
   
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; padding: 16px 20px; font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); }
+  th { text-align: left; padding: 16px 20px; font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); border-bottom: 1px solid var(--glass-border); background: rgba(15, 15, 20, 0.95); position: sticky; top: 0; z-index: 10; }
   td { padding: 16px 20px; font-size: 13px; color: var(--text-2); font-weight: 300; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
   tr:hover td { background: rgba(255,255,255,0.02); }
   

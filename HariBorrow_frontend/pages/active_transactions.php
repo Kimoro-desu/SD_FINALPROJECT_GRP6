@@ -281,10 +281,12 @@
         .main-content {
             flex-grow: 1;
             height: 100vh;
-            overflow-y: auto;
+            overflow: hidden;
             position: relative;
             z-index: 10;
             padding: 40px 48px;
+            display: flex;
+            flex-direction: column;
         }
 
         .header-area {
@@ -382,7 +384,9 @@
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            overflow: hidden;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
         }
@@ -434,8 +438,11 @@
             text-transform: uppercase;
             color: var(--text-3);
             border-bottom: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(15, 15, 20, 0.95);
             white-space: nowrap; /* Prevents headers from wrapping weirdly */
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         td {

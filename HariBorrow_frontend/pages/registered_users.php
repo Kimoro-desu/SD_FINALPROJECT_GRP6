@@ -252,7 +252,7 @@
     .main-content {
       flex-grow: 1;
       height: 100vh;
-      overflow-y: auto;
+      overflow: hidden;
       position: relative;
       z-index: 10;
       padding: 40px 48px;
@@ -383,7 +383,9 @@
       background: var(--glass);
       border: 1px solid var(--glass-border);
       border-radius: 12px;
-      overflow: hidden;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
     }
@@ -402,7 +404,10 @@
       text-transform: uppercase;
       color: var(--text-3);
       border-bottom: 1px solid var(--glass-border);
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(15, 15, 20, 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     td {
@@ -754,9 +759,27 @@
 
         <select class="filter-select" id="deptFilter" name="dept_filter">
           <option value="">All Departments</option>
-          <option value="coe">College of Engineering (COE)</option>
-          <option value="cos">College of Science (COS)</option>
-          <option value="cba">College of Business Admin (CBA)</option>
+          <optgroup label="Engineering & Technology">
+            <option value="College of Engineering">College of Engineering</option>
+            <option value="College of Information Systems and Technology Management">College of Information Systems and Technology Management</option>
+            <option value="College of Architecture">College of Architecture</option>
+          </optgroup>
+          <optgroup label="Health Sciences">
+            <option value="College of Nursing">College of Nursing</option>
+            <option value="College of Medicine">College of Medicine</option>
+            <option value="College of Pharmacy">College of Pharmacy</option>
+          </optgroup>
+          <optgroup label="Sciences">
+            <option value="College of Sciences">College of Sciences</option>
+            <option value="College of Mathematics">College of Mathematics</option>
+          </optgroup>
+          <optgroup label="Arts & Humanities">
+            <option value="College of Arts & Humanities">College of Arts & Humanities</option>
+            <option value="College of Education">College of Education</option>
+            <option value="College of Business Administration">College of Business Administration</option>
+          </optgroup>
+          <option value="Graduate School">Graduate School</option>
+          <option value="Administrative / Non-Academic">Administrative / Non-Academic</option>
         </select>
 
         <select class="filter-select" id="statusFilter" name="status_filter">
@@ -922,11 +945,8 @@
     function matchesDeptFilter(deptFilterVal, deptText) {
       const v = (deptFilterVal || '').trim();
       if (!v) return true;
-      const d = String(deptText || '').toLowerCase();
-      if (v === 'coe') return d.includes('engineering');
-      if (v === 'cos') return d.includes('science');
-      if (v === 'cba') return d.includes('business');
-      return true;
+      const d = String(deptText || '').trim();
+      return d === v;
     }
 
     function filteredUsersFromState() {

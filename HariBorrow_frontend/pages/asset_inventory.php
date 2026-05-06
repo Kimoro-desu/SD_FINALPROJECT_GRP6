@@ -260,7 +260,7 @@
         .main-content {
             flex-grow: 1;
             height: 100vh;
-            overflow-y: auto;
+            overflow: hidden;
             position: relative;
             z-index: 10;
             padding: 40px 48px;
@@ -418,7 +418,9 @@
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            overflow: hidden;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
         }
@@ -437,7 +439,10 @@
             text-transform: uppercase;
             color: var(--text-3);
             border-bottom: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(15, 15, 20, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         td {
@@ -798,10 +803,10 @@
 
                 <select class="filter-select" id="categoryFilter" name="category_filter">
                     <option value="">All Categories</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="computing">Computing</option>
-                    <option value="mechanical">Mechanical</option>
-                    <option value="furniture">Furniture</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Computing">Computing</option>
                 </select>
 
                 <select class="filter-select" id="statusFilter" name="status_filter">
@@ -869,10 +874,10 @@
                         <label class="form-label">Category</label>
                         <select class="form-select" name="asset_category" id="formCategory" required>
                             <option value="">Select Category...</option>
-                            <option value="electronics">Electronics</option>
-                            <option value="computing">Computing</option>
-                            <option value="mechanical">Mechanical</option>
-                            <option value="furniture">Furniture</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical</option>
+                            <option value="Laboratory">Laboratory</option>
+                            <option value="Computing">Computing</option>
                         </select>
                     </div>
                     <div class="form-group">
