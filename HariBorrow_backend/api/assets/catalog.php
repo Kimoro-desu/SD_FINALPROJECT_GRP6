@@ -30,7 +30,33 @@ try {
     ensureRatingsSchema($db);
     ensureAssetPhotosSchema($db);
 
+    // Auto-sync scheduled availability windows:
+    // - past end time => unavailable
+    // - within window => available
+    // This keeps `availability` consistent for request enforcement.
+    try {
+        $db->exec("
+            UPDATE assets
+            SET availability = 'unavailable'
+            WHERE LOWER(status) = 'approved'
+              AND available_until IS NOT NULL
+              AND available_until <= NOW()
+        ");
+        $db->exec("
+            UPDATE assets
+            SET availability = 'available'
+            WHERE LOWER(status) = 'approved'
+              AND (available_from IS NOT NULL OR available_until IS NOT NULL)
+              AND (available_from IS NULL OR available_from <= NOW())
+              AND (available_until IS NULL OR available_until > NOW())
+        ");
+    } catch (\Exception $syncEx) {
+        // Non-fatal: catalog should still load.
+        error_log('catalog availability sync warning: ' . $syncEx->getMessage());
+    }
+
     $q = "SELECT a.Asset_ID, a.asset_name, a.description, a.asset_type, a.meetup_location, a.proposed_penalty_amount, a.daily_penalty, a.penalty_type, a.availability, a.status, a.time_created, a.asset_image,
+                 a.available_from, a.available_until,
                  a.Lender_ID, u.first_name, u.last_name,
                  COALESCE(lr_stats.cnt, 0) AS lender_rating_count,
                  COALESCE(lr_stats.av, 0) AS lender_rating_average
@@ -45,6 +71,8 @@ try {
           ) lr_stats ON lr_stats.ratee_id = a.Lender_ID
           WHERE LOWER(a.status) = 'approved'
             AND LOWER(a.availability) = 'available'
+            AND (a.available_from IS NULL OR a.available_from <= NOW())
+            AND (a.available_until IS NULL OR a.available_until > NOW())
           ORDER BY a.time_created DESC";
     $stmt = $db->prepare($q);
     $stmt->execute();
@@ -63,6 +91,8 @@ try {
             "status" => strtolower((string)$row['status']),
             "availability" => strtolower((string)$row['availability']),
             "asset_image" => $row['asset_image'] ?? null,
+            "available_from" => $row['available_from'] ?? null,
+            "available_until" => $row['available_until'] ?? null,
             "lender_id" => (int)$row['Lender_ID'],
             "lender_name" => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
             "lender_rating_count" => (int)($row['lender_rating_count'] ?? 0),
