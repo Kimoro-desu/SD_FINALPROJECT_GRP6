@@ -5,9 +5,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HariBorrow — Registration Approvals</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="../js/api.js"></script>
-<script src="../js/auth_guard.js"></script>
+<script src="../js/auth_guard.js?v=1778041298"></script>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,7 +52,7 @@
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
     z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
   }
 
@@ -216,6 +216,7 @@
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-2); }
   .empty-state i { font-size: 48px; color: var(--glass-border); margin-bottom: 16px; display: block; }
 </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 <body>
 
@@ -268,7 +269,7 @@
   <div class="header-area">
     <div class="page-title">
       <h1>Registration Approvals</h1>
-      <p>Review and verify identity credentials for new system applicants.</p>
+      <p>Review complete details for new account applications, including uploaded school ID photos.</p>
     </div>
   </div>
 
@@ -287,28 +288,11 @@
           <th>Academic Profile</th>
           <th>Role</th>
           <th>Contact / Email</th>
+          <th>ID Verification</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody id="newAccountsTbody"></tbody>
-    </table>
-  </div>
-
-  <div class="data-panel" style="margin-top: 32px;">
-    <div class="panel-header">
-      <div class="panel-title">ID Verification Queue</div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Applicant</th>
-          <th>Academic Profile</th>
-          <th>Role</th>
-          <th>ID Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="idVerificationTbody"></tbody>
     </table>
   </div>
 
@@ -352,8 +336,8 @@
     const val = String(rawUrl || '').trim();
     if (!val) return '';
     if (/^https?:\/\//i.test(val)) return val;
-    if (val.startsWith('/')) return val;
-    return `/${val.replace(/^\/+/, '')}`;
+    if (val.includes('SD_FINALPROJECT_GRP6/HariBorrow_backend')) return val.startsWith('/') ? val : '/' + val;
+    return `/SD_FINALPROJECT_GRP6/HariBorrow_backend/${val.replace(/^\/+/, '')}`;
   }
 
 async function processRequest(userId, action, requestId = null) {
@@ -366,12 +350,6 @@ async function processRequest(userId, action, requestId = null) {
     } else if (action === 'reject_account') {
         confirmMsg = 'Are you sure you want to completely reject and suspend this user account?';
         bodyData = { user_id: userId, account_status: 'suspended', admin_notes: 'Registration rejected by admin.' };
-    } else if (action === 'verify_id') {
-        confirmMsg = 'Approve this ID photo?';
-        bodyData = { user_id: userId, id_verification_status: 'verified' };
-    } else if (action === 'reject_id') {
-        confirmMsg = 'Reject this ID photo? The user will need to upload a new one.';
-        bodyData = { user_id: userId, id_verification_status: 'rejected' };
     }
 
     if (!confirm(confirmMsg)) return;
@@ -407,8 +385,7 @@ async function processRequest(userId, action, requestId = null) {
 
   async function loadPending() {
     const newAccBody = document.getElementById('newAccountsTbody');
-    const idVerBody = document.getElementById('idVerificationTbody');
-    if (!newAccBody || !idVerBody) return;
+    if (!newAccBody) return;
 
     try {
       const [usersRes, regPendingRes] = await Promise.all([
@@ -428,6 +405,8 @@ async function processRequest(userId, action, requestId = null) {
 
       // 1. New Accounts: source from registration_requests (real pending approvals queue).
       const newAccounts = pendingRegistrations.map(item => {
+        const userId = Number(item?.user?.id);
+        const matchingUser = normalizedUsers.find(u => Number(u.id) === userId) || {};
         const u = item?.user || {};
         return {
           request_id: item?.request_id,
@@ -436,22 +415,13 @@ async function processRequest(userId, action, requestId = null) {
           name: u.name,
           department: u.department,
           role: u.role,
-          email: u.email
+          email: u.email,
+          contact: u.contact || '—',
+          requested_at: item?.requested_at || '',
+          id_photo_url: matchingUser.id_photo_url || '',
+          id_verification_status: matchingUser.id_verification_status || 'pending'
         };
       });
-      const pendingRegistrationUserIds = new Set(
-        newAccounts.map(u => Number(u.id)).filter(id => Number.isFinite(id) && id > 0)
-      );
-
-      // 2. ID Verification Queue:
-      //    - include users awaiting ID review (unverified or pending)
-      //    - keep users with pending account approval out of this queue
-      const idVerifications = normalizedUsers.filter(u =>
-        (u.id_verification_status === 'unverified' || u.id_verification_status === 'pending') &&
-        u.account_status !== 'suspended' &&
-        u.role_normalized !== 'admin' &&
-        !pendingRegistrationUserIds.has(Number(u.id))
-      );
 
       // Render New Accounts Table
       newAccBody.innerHTML = newAccounts.map(u => {
@@ -459,14 +429,39 @@ async function processRequest(userId, action, requestId = null) {
         const schoolId = u.school_id || '—';
         const dept = u.department || '—';
         const email = u.email || '—';
+        const contact = u.contact || '—';
         const role = u.role || '';
+        const idPhotoUrl = resolveFileUrl(u.id_photo_url);
+        const idStatusRaw = String(u.id_verification_status || 'pending').toLowerCase();
+        const idStatusLabel = idStatusRaw === 'verified'
+          ? 'Verified'
+          : idStatusRaw === 'rejected'
+            ? 'Rejected'
+            : idStatusRaw === 'unverified'
+              ? 'Unverified'
+              : 'Pending Review';
 
         return `
           <tr>
             <td>${name}<br><span class="sub-text" style="font-family: monospace; color: var(--gold);">ID: ${schoolId}</span></td>
-            <td>${dept}</td>
+            <td>
+              ${dept}
+              ${u.requested_at ? `<br><span class="sub-text">Requested: ${new Date(u.requested_at).toLocaleString()}</span>` : ''}
+            </td>
             <td>${roleTag(role)}</td>
-            <td>${email}</td>
+            <td>
+              ${contact}
+              <br><span class="sub-text">${email}</span>
+            </td>
+            <td>
+              <span style="color: var(--gold); font-size: 12px;">
+                <i class="ph ph-hourglass"></i> ${idStatusLabel}
+              </span>
+              ${idPhotoUrl
+                ? `<br><a href="${idPhotoUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--success); font-size: 11px; text-decoration: underline; margin-top: 4px; display: inline-block;"><i class="ph ph-image"></i> View Uploaded ID Photo</a>`
+                : `<br><span style="color: var(--text-3); font-size: 11px; margin-top: 4px; display: inline-block;"><i class="ph ph-image-broken"></i> No uploaded ID photo</span>`
+              }
+            </td>
             <td>
               <div class="action-form" style="display: flex; gap: 8px;">
                 <button type="button" class="btn-action btn-approve" onclick="processRequest(${u.id}, 'approve_account', ${u.request_id})">
@@ -479,75 +474,13 @@ async function processRequest(userId, action, requestId = null) {
             </td>
           </tr>
         `;
-      }).join('') || `<tr><td colspan="5" class="empty-state"><i class="ph ph-check-circle"></i> No new account applications!</td></tr>`;
-
-      // Render ID Verifications Table
-      idVerBody.innerHTML = idVerifications.map(u => {
-        const name = u.name || '—';
-        const schoolId = u.school_id || '—';
-        const dept = u.department || '—';
-        const role = u.role || '';
-        
-        const idPhotoUrl = resolveFileUrl(u.id_photo_url);
-        const isPendingReview = String(u.id_verification_status).toLowerCase() === 'pending';
-        const idStatusLabel = isPendingReview ? 'Pending Review' : 'Unverified';
-        let idLink = idPhotoUrl
-            ? `<br><a href="${idPhotoUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--success); font-size: 11px; text-decoration: underline; margin-top: 4px; display: inline-block;"><i class="ph ph-image"></i> View Uploaded ID Photo</a>`
-            : `<br><span style="color: var(--text-3); font-size: 11px; margin-top: 4px; display: inline-block;"><i class="ph ph-image-broken"></i> No uploaded ID photo</span>`;
-
-        return `
-          <tr>
-            <td>${name}<br><span class="sub-text" style="font-family: monospace; color: var(--gold);">ID: ${schoolId}</span></td>
-            <td>${dept}</td>
-            <td>${roleTag(role)}</td>
-            <td>
-                <span style="color: var(--gold); font-size: 12px;"><i class="ph ph-hourglass"></i> ${idStatusLabel}</span>
-                ${idLink}
-            </td>
-            <td>
-              <div class="action-form" style="display: flex; gap: 8px;">
-                <button type="button" class="btn-action btn-approve" onclick="processRequest(${u.id}, 'verify_id')">
-                  <i class="ph ph-identification-card"></i> Verify ID
-                </button>
-                <button type="button" class="btn-action btn-reject" onclick="processRequest(${u.id}, 'reject_id')">
-                  <i class="ph ph-x"></i> Reject ID
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('') || `<tr><td colspan="5" class="empty-state"><i class="ph ph-check-circle"></i> No pending ID verifications!</td></tr>`;
+      }).join('') || `<tr><td colspan="6" class="empty-state"><i class="ph ph-check-circle"></i> No new account applications!</td></tr>`;
 
     } catch (e) {
       console.error('Pending approvals load failed:', e);
-      newAccBody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="ph ph-warning"></i> Failed to load applications.</td></tr>`;
-      idVerBody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="ph ph-warning"></i> Failed to load verifications.</td></tr>`;
+      newAccBody.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="ph ph-warning"></i> Failed to load applications.</td></tr>`;
     }
   }
-
-  // Dynamic Admin Profile Loading (same logic as other admin pages)
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      let user = window.api ? window.api.getUser() : null;
-      if (user && user.name) {
-        const firstName = user.name.split(' ')[0] || 'Admin';
-        const lastName = user.name.split(' ').slice(1).join(' ') || '';
-        const initial = firstName.charAt(0).toUpperCase();
-
-        const avatar = document.getElementById('adminAvatar');
-        if (avatar) avatar.textContent = initial;
-
-        const nameSpan = document.getElementById('adminName');
-        if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
-
-        const roleSpan = document.getElementById('adminRole');
-        if (roleSpan) {
-          const rawRole = (user.role || '').trim().toLowerCase();
-          roleSpan.textContent = rawRole ? (rawRole.charAt(0).toUpperCase() + rawRole.slice(1)) : 'Admin';
-        }
-      }
-    }, 300);
-  });
 
   document.addEventListener('DOMContentLoaded', loadPending);
 </script>
@@ -596,5 +529,6 @@ async function processRequest(userId, action, requestId = null) {
         });
     </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 </html>

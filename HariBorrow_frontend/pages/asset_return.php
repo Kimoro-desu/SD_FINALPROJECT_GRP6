@@ -57,7 +57,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
     z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
   }
 
@@ -458,6 +458,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     border-radius: 8px; border: 1px solid var(--glass-border);
   }
 </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 <body>
 
@@ -620,6 +621,18 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
         <textarea class="form-textarea" id="returnNotes" placeholder="Note any observations about the asset's condition, accessories returned, or other relevant remarks."></textarea>
       </div>
 
+      <div class="form-group" id="specialRequirements" style="display: none; background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: 10px; padding: 12px 16px; margin-top: 10px; margin-bottom: 20px;">
+        <label class="form-label" style="color: var(--danger);"><i class="ph ph-warning"></i> Additional Requirements for Fair/Damaged/Lost Assets</label>
+        <ul style="font-size: 13px; color: var(--danger); padding-left: 20px; margin-top: 8px;">
+          <li style="margin-bottom: 4px;">Agreement Document of Both Parties (With signature of both parties)</li>
+          <li style="margin-bottom: 4px;">Photo of both parties together with the Agreement Document.</li>
+          <li>Other supporting documents (if there are any)</li>
+        </ul>
+        <div style="font-size: 12px; margin-top: 12px; font-weight: 500; color: var(--danger);">
+          * Note: This will be reviewed by the lender, so the information must be correct.
+        </div>
+      </div>
+
       <div class="form-group">
         <label class="form-label"><i class="ph ph-camera"></i> Upload Return Photos <span style="color:var(--text-3); font-weight:300; text-transform:none; letter-spacing:0;">(optional, up to 5)</span></label>
         <label for="returnPhotoInput" class="photo-upload-area">
@@ -718,7 +731,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   </div></main>
 
 <script src="../js/api.js"></script>
-<script src="../js/auth_guard.js"></script>
+<script src="../js/auth_guard.js?v=1778041298"></script>
 <script>
   /* ── GLOW ── */
   const glow = document.getElementById('glow');
@@ -902,6 +915,16 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
       document.getElementById('cond-' + k).classList.remove('selected');
     });
     document.getElementById('cond-' + val.toLowerCase()).classList.add('selected');
+
+    // Toggle special requirements box
+    const reqBox = document.getElementById('specialRequirements');
+    if (reqBox) {
+      if (val.toLowerCase() !== 'good') {
+        reqBox.style.display = 'block';
+      } else {
+        reqBox.style.display = 'none';
+      }
+    }
   }
 
   /* ── STEPPER ── */
@@ -952,6 +975,8 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     ['good', 'fair', 'damaged', 'lost'].forEach(k => {
       document.getElementById('cond-' + k).classList.remove('selected');
     });
+    const reqBox = document.getElementById('specialRequirements');
+    if (reqBox) reqBox.style.display = 'none';
     document.getElementById('terms').checked = false;
     document.getElementById('returnNotes').value = '';
   }
@@ -1003,12 +1028,22 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
 
     const loan  = loans[selectedLoan];
 
-    if (loan.isOverdue) {
-      const validPhotos = returnPhotoFiles.filter(f => f !== null);
-      if (validPhotos.length === 0) {
+    const validPhotos = returnPhotoFiles.filter(f => f !== null);
+    let minPhotosRequired = 0;
+
+    if (String(selectedCondition).toLowerCase() !== 'good') {
+      minPhotosRequired = 2;
+    } else if (loan.isOverdue) {
+      minPhotosRequired = 1;
+    }
+
+    if (minPhotosRequired > 0 && validPhotos.length < minPhotosRequired) {
+      if (String(selectedCondition).toLowerCase() !== 'good') {
+        alert('For Fair, Damaged, or Lost conditions, you must upload at least 2 photos (Agreement Document and Photo of both parties).');
+      } else {
         alert('Photo proof is required for returning overdue assets (e.g., payment proofs & item condition). Please upload at least one photo.');
-        return;
       }
+      return;
     }
 
     const notes = document.getElementById('returnNotes').value.trim() || 'No additional notes provided.';
@@ -1093,5 +1128,6 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     setTimeout(() => { toast.style.display = 'none'; }, 5000);
   }
 </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 </html>

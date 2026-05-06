@@ -7,10 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HariBorrow — Dashboard</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="../js/auth_guard.js"></script>
+    <script src="../js/auth_guard.js?v=1778041298"></script>
     <style>
         *,
         *::before,
@@ -92,7 +92,7 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
             z-index: 9999;
             mix-blend-mode: screen;
             transition: background 0.08s ease-out;
@@ -458,7 +458,8 @@
         }
 
         .welcome .aesthetic-script {
-            font-family: 'Pinyon Script', cursive;
+            font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
             font-size: 1.3em;
             color: var(--gold-light);
             text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
@@ -649,6 +650,7 @@
             }
         }
     </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body data-role="borrower">
@@ -836,15 +838,21 @@
                     // --- LENDER STATS ---
                     const lenderStatsEl = document.getElementById('lenderStats');
                     if (lenderStatsEl) {
-                        // Filter history for transactions where the user is the lender
-                        const lenderHistory = history.filter(tx => tx?.is_current_user_lender === true);
-                        // Count how many are pending
-                        const pendingLender = lenderHistory.filter(tx => String(tx?.status || '').toLowerCase() === 'pending').length;
+                        const pendingReviewsFromApi = Number(stats?.pending_reviews);
 
-                        lenderStatsEl.textContent = `You have ${pendingLender} pending request${pendingLender !== 1 ? 's' : ''} to review.`;
+                        // Fallback: compute from history (pending request + return confirmations)
+                        const lenderHistory = history.filter(tx => tx?.is_current_user_lender === true);
+                        const pendingLender = lenderHistory.filter(tx => {
+                            const st = String(tx?.status || '').toLowerCase();
+                            return st === 'pending' || st === 'return_lender_confirm' || st === 'return_review';
+                        }).length;
+
+                        const apiCount = Number.isFinite(pendingReviewsFromApi) ? pendingReviewsFromApi : 0;
+                        const pendingReviews = Math.max(apiCount, pendingLender);
+                        lenderStatsEl.textContent = `You have ${pendingReviews} pending request${pendingReviews !== 1 ? 's' : ''} to review.`;
                         
                         // Light up the text if there are pending requests
-                        if (pendingLender > 0) {
+                        if (pendingReviews > 0) {
                             lenderStatsEl.style.color = 'var(--gold-light)';
                             lenderStatsEl.style.fontWeight = '500';
                         } else {
@@ -974,6 +982,7 @@
         }
     </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

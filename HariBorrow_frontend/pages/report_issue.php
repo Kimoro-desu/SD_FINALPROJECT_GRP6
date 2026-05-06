@@ -8,11 +8,11 @@
   <title>HariBorrow — Report Issue</title>
 
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="../js/api.js"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <style>
     *,
     *::before,
@@ -90,7 +90,7 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
       transition: background 0.08s ease-out;
@@ -210,7 +210,8 @@
     }
 
     .page-header .aesthetic-script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.3em;
       color: var(--gold-light);
       text-shadow: 0 0 20px rgba(229, 192, 123, 0.4);
@@ -462,6 +463,7 @@
       color: var(--gold-light);
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -713,6 +715,7 @@
   });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>
