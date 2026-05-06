@@ -61,6 +61,19 @@ if (!empty($data->asset_id)) {
             die(json_encode(["message" => "Asset not found.", "status" => "error"]));
         }
 
+        // Check if the user is verified
+        $verify_query = "SELECT id_verification_status FROM users WHERE User_ID = :user_id FOR UPDATE";
+        $verify_stmt = $db->prepare($verify_query);
+        $verify_stmt->bindParam(':user_id', $decodedData['id']);
+        $verify_stmt->execute();
+        $user_row = $verify_stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$user_row || $user_row['id_verification_status'] !== 'verified') {
+            $db->rollBack();
+            http_response_code(403);
+            die(json_encode(["message" => "Your ID must be verified by an admin before you can borrow assets.", "status" => "error"]));
+        }
+
         $asset_row = $check_stmt->fetch(\PDO::FETCH_ASSOC);
         $assetAvailability = strtolower((string)($asset_row['availability'] ?? ''));
         $assetStatus = strtolower((string)($asset_row['status'] ?? 'approved'));

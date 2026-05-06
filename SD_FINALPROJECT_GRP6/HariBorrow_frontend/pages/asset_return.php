@@ -57,8 +57,8 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
-    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
+    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
   }
 
   /* ── SIDEBAR ── */
@@ -458,6 +458,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     border-radius: 8px; border: 1px solid var(--glass-border);
   }
 </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 <body>
 
@@ -651,8 +652,8 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
         <i class="ph-fill ph-clock"></i>
       </div>
       <div class="card-label" style="text-align:center;">Return Submitted</div>
-      <div class="card-title" style="text-align:center; color:var(--gold);">Pending Admin Review</div>
-      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return request has been submitted. An administrator will review the return photos and verify the asset condition before finalizing.</div>
+      <div class="card-title" style="text-align:center; color:var(--gold);">Pending Review</div>
+      <div class="card-desc" style="text-align:center; margin-bottom:28px;">Your return request has been submitted. The lender will review the return photos and verify the asset condition before finalizing.</div>
 
       <div class="summary-grid">
         <div class="summary-section">
@@ -683,7 +684,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
           </div>
           <div class="summary-row">
             <span>Loan Status</span>
-            <strong id="s-loan-status" style="color:var(--gold);">Pending Admin Review</strong>
+            <strong id="s-loan-status" style="color:var(--gold);">Pending Review</strong>
           </div>
         </div>
       </div>
@@ -718,7 +719,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   </div></main>
 
 <script src="../js/api.js"></script>
-<script src="../js/auth_guard.js"></script>
+<script src="../js/auth_guard.js?v=1778041298"></script>
 <script>
   /* ── GLOW ── */
   const glow = document.getElementById('glow');
@@ -1075,7 +1076,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
       returnPhotoFiles = [];
 
       // Show toast
-      showReturnToast('Return Submitted Successfully', 'Your return is pending admin review. You\'ll be notified once approved.');
+      showReturnToast('Return Submitted Successfully', 'Your return is in review. You\'ll be notified once approved.');
     } catch (error) {
       console.error('Error:', error);
       alert('Error submitting return: ' + (error?.message || 'Unknown error'));
@@ -1093,5 +1094,6 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     setTimeout(() => { toast.style.display = 'none'; }, 5000);
   }
 </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="../js/api.js"></script>
-    <script src="../js/auth_guard.js"></script>
+    <script src="../js/auth_guard.js?v=1778041298"></script>
     <style>
         /* ── BASE STYLES ── */
         *,
@@ -84,10 +84,10 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
             z-index: 9999;
             mix-blend-mode: screen;
-            transition: background 0.1s;
+            transition: background 0.08s ease-out;
         }
 
         /* ── SIDEBAR ── */
@@ -730,6 +730,7 @@
             color: var(--text-1);
         }
     </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -1089,10 +1090,10 @@
             if (user && user.name) {
                 const firstName = user.name.split(' ')[0] || 'Admin';
                 const lastName = user.name.split(' ').slice(1).join(' ') || '';
-                const initial = firstName.charAt(0).toUpperCase();
+                const initial = (firstName + (lastName ? ' ' + lastName : '')).trim().split(/\s+/).length > 1 ? (firstName[0] + (lastName ? lastName[0] : firstName[0])).toUpperCase() : (firstName.length > 1 ? firstName.substring(0, 2) : firstName + firstName).toUpperCase();
 
                 const avatar = document.getElementById('sidebarAvatar');
-                if (avatar) avatar.textContent = initial;
+//                 if (avatar) avatar.textContent = initial;
 
                 const nameSpan = document.getElementById('sidebarName');
                 if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
@@ -1183,6 +1184,7 @@
             setInterval(updateGlobalPendingBadge, 15000);
         });
     </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

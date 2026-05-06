@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Register Account</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
@@ -72,9 +72,9 @@
       inset: 0;
       pointer-events: none;
       z-index: 9999;
-      background: radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.07), transparent 50%);
+      background: radial-gradient(430px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       mix-blend-mode: screen;
-      transition: background 0.2s ease;
+      transition: background 0.08s ease-out;
     }
 
     /* texture overlay */
@@ -182,7 +182,8 @@
     }
 
     .left-headline .script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.45em;
       color: var(--gold-light);
       display: block;
@@ -400,7 +401,8 @@
     }
 
     .form-head h2 .script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.4em;
       color: var(--gold-light);
       display: block;
@@ -1080,7 +1082,8 @@
     }
 
     .success-title .script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.3em;
       color: var(--gold-light);
       display: block;
@@ -1267,6 +1270,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -1865,6 +1869,7 @@
       }
     }
   </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const safeName = String(name || 'User').trim();
         const parts = safeName.split(/\s+/).filter(Boolean);
-        const initials = ((parts[0] ? parts[0].charAt(0) : 'U') + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '')).toUpperCase();
+        const initials = (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] ? (parts[0].length > 1 ? parts[0].substring(0, 2) : parts[0] + parts[0]) : 'UN')).toUpperCase();
         targetEl.textContent = initials;
     }
 
@@ -82,6 +82,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sidebarName = document.getElementById('sidebarName');
         const sidebarAvatar = document.getElementById('sidebarAvatar');
         const sidebarRole = document.getElementById('sidebarRole');
+
+        // Admin sidebar elements (admin_dashboard, system_logs, etc.)
+        const adminAvatar = document.getElementById('adminAvatar');
+        const adminName = document.getElementById('adminName');
+        const adminRole = document.getElementById('adminRole');
         
         if (navName) {
             navName.textContent = user.name;
@@ -91,12 +96,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             sidebarName.textContent = user.name;
         }
 
+        if (adminName) {
+            adminName.textContent = user.name;
+        }
+
         if (sidebarRole) {
             const role = String(user.role || '').trim();
             sidebarRole.textContent = role ? (role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()) : 'User';
         }
 
+        if (adminRole) {
+            const role = String(user.role || '').trim();
+            adminRole.textContent = role ? (role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()) : 'Admin';
+        }
+
         renderUserBadge(navAvatar, user.name, user.profile_picture);
         renderUserBadge(sidebarAvatar, user.name, user.profile_picture);
+        renderUserBadge(adminAvatar, user.name, user.profile_picture);
     }
 });

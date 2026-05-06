@@ -10,10 +10,12 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
 require_once '../../utils/ratings_schema.php';
+require_once '../../utils/user_account_schema.php';
 
 use Config\Database;
 use Utils\JwtHelper;
 use function Utils\ensureRatingsSchema;
+use function Utils\ensureUserAccountSchema;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -23,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $database = new Database();
 $db = $database->getConnection();
 ensureRatingsSchema($db);
+ensureUserAccountSchema($db);
 
 // Get the Authorization header
 $authHeader = JwtHelper::getAuthorizationHeader();
@@ -43,7 +46,7 @@ $decodedData = JwtHelper::validateToken($jwt);
 if ($decodedData) {
     try {
         // We fetch the latest user info straight from DB just in case fields have changed
-        $query = "SELECT User_ID, school_id_number, department, first_name, middle_name, last_name, user_role, plm_email, profile_picture, background_picture
+        $query = "SELECT User_ID, school_id_number, department, first_name, middle_name, last_name, user_role, plm_email, profile_picture, background_picture, id_verification_status, id_photo_url
           FROM users 
           WHERE User_ID = :id LIMIT 0,1";
 
@@ -80,6 +83,8 @@ if ($decodedData) {
                     "role" => $row['user_role'],
                     "profile_picture" => $row['profile_picture'],
                     "background_picture" => $row['background_picture'],
+                    "id_verification_status" => $row['id_verification_status'],
+                    "id_photo_url" => $row['id_photo_url'],
                     "rating_count" => (int)($ratingRow['rating_count'] ?? 0),
                     "rating_average" => round((float)($ratingRow['rating_average'] ?? 0), 2)
                 ],

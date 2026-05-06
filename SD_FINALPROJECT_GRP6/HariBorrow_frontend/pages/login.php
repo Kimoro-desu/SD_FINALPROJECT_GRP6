@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — PLM Assets & Borrowing Gateway</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
@@ -89,9 +89,9 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.08), transparent 50%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
-      transition: background 0.15s ease;
+      transition: background 0.08s ease-out;
       mix-blend-mode: screen;
     }
 
@@ -196,7 +196,8 @@
     }
 
     .aesthetic-script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.5em;
       font-weight: 400;
       color: var(--gold-light);
@@ -783,6 +784,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -894,7 +896,7 @@
               <label class="remember">
                 <input type="checkbox"> Keep me signed in
               </label>
-              <a class="link">Reset Password</a>
+              <a class="link" onclick="showView('forgotView')">Forgot Password</a>
             </div>
 
             <button type="submit" class="btn" id="loginBtn">
@@ -911,6 +913,53 @@
           <div class="form-foot">
             Don't have an account? <a href="sign_up.php">Sign Up Here</a><br><br>
             Need support? <a onclick="toggleFaq()">Read the FAQ</a> or <a onclick="toggleContact()">Contact Support</a>
+          </div>
+        </div>
+
+        <div id="forgotView" class="view-section">
+          <div class="form-head">
+            <h2>Forgot<br><span class="aesthetic-script">Password.</span></h2>
+            <p>Verify your account using your PLM email and student/employee ID.</p>
+          </div>
+
+          <form onsubmit="event.preventDefault(); handleForgotPassword(event, 'forgotBtn')">
+            <div class="field">
+              <label>PLM Email</label>
+              <div class="inp-wrap">
+                <input type="email" id="forgotEmail" placeholder="student@plm.edu.ph" autocomplete="email" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Student / Employee ID</label>
+              <div class="inp-wrap">
+                <input type="text" id="forgotSchoolId" placeholder="Enter your ID number" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>New Password</label>
+              <div class="inp-wrap">
+                <input type="password" id="forgotPassword" placeholder="Enter new password" minlength="8" required>
+                <button type="button" class="pw-btn" onclick="togglePw('forgotPassword', this)">Show</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Confirm New Password</label>
+              <div class="inp-wrap">
+                <input type="password" id="forgotConfirmPassword" placeholder="Re-enter new password" minlength="8" required>
+                <button type="button" class="pw-btn" onclick="togglePw('forgotConfirmPassword', this)">Show</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn" id="forgotBtn">
+              <span>Submit</span>
+            </button>
+          </form>
+
+          <div class="form-foot">
+            Back to login? <a onclick="showView('loginView')">Return to Secure Gateway</a>
           </div>
         </div>
 
@@ -1010,6 +1059,21 @@
       el.className = 'alert ' + type;
     }
 
+    function showView(viewId) {
+      document.querySelectorAll('.view-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      const next = document.getElementById(viewId);
+      if (next) next.classList.add('active');
+
+      const alertEl = document.getElementById('alert');
+      if (alertEl) {
+        alertEl.style.display = 'none';
+        alertEl.className = 'alert';
+        alertEl.textContent = '';
+      }
+    }
+
     // Form Submission
     async function handleAuth(e, btnId) {
       e.preventDefault();
@@ -1063,7 +1127,54 @@
       }
     }
 
+    async function handleForgotPassword(e, btnId) {
+      e.preventDefault();
+      const btn = document.getElementById(btnId);
+      const textSpan = btn.querySelector('span');
+      const originalText = textSpan.textContent;
+
+      textSpan.textContent = 'Submitting...';
+      btn.disabled = true;
+
+      const email = document.getElementById('forgotEmail').value.trim();
+      const schoolId = document.getElementById('forgotSchoolId').value.trim();
+      const newPassword = document.getElementById('forgotPassword').value;
+      const confirmPassword = document.getElementById('forgotConfirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showAlert('✦ New password and confirm password do not match.', 'err');
+        textSpan.textContent = originalText;
+        btn.disabled = false;
+        return;
+      }
+
+      try {
+        const response = await window.api.rawFetch('/api/auth/forgot_password.php', {
+          method: 'POST',
+          body: { email, school_id: schoolId, new_password: newPassword }
+        });
+
+        if (response && response.status === 'success') {
+          showAlert('✦ Password updated successfully. You may now log in.', 'ok');
+          document.getElementById('forgotPassword').value = '';
+          document.getElementById('forgotConfirmPassword').value = '';
+          setTimeout(() => showView('loginView'), 900);
+        } else {
+          showAlert('✦ ' + (response?.message || 'Failed to reset password.'), 'err');
+        }
+      } catch (error) {
+        const msg =
+          (error && (error.message || error?.data?.message)) ||
+          'Server error occurred. Please try again later.';
+        showAlert('✦ ' + msg, 'err');
+      } finally {
+        textSpan.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+
   </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

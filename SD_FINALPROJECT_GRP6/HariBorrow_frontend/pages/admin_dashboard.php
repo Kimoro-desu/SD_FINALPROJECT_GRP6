@@ -7,10 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Admin Console</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="../js/api.js"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
     *,
@@ -86,10 +86,10 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
-      transition: background 0.1s;
+      transition: background 0.08s ease-out;
     }
 
     /* ── SIDEBAR NAVIGATION ── */
@@ -486,68 +486,9 @@
       border: 1px solid rgba(96, 165, 250, 0.3);
     }
 
-    @media (max-width: 980px) {
-      html,
-      body {
-        height: auto;
-        min-height: 100vh;
-        width: 100%;
-        overflow: auto;
-        display: block;
-      }
-
-      .sidebar {
-        width: 100%;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--glass-border);
-      }
-
-      .sidebar-header,
-      .sidebar-footer {
-        padding: 16px;
-      }
-
-      .nav-menu {
-        padding: 12px;
-        overflow: visible;
-      }
-
-      .nav-link {
-        padding: 10px 12px;
-        font-size: 13px;
-      }
-
-      .main-content {
-        height: auto;
-        min-height: calc(100vh - 180px);
-        padding: 20px 16px;
-      }
-
-      .header-area {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-
-      .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      .panel-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-
-      table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-      }
-    }
+    
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -617,7 +558,7 @@
         <p>System metrics and recent facility transactions.</p>
       </div>
 
-      <button class="btn-outline" style="border-color: var(--gold); color: var(--gold);"><i
+      <button class="btn-outline" id="exportDailyReportBtn" style="border-color: var(--gold); color: var(--gold);"><i
           class="ph ph-download-simple"></i> Export Daily Report</button>
     </div>
 
@@ -708,31 +649,6 @@
       });
     });
 
-    // Dynamic Admin Profile Loading
-    document.addEventListener('DOMContentLoaded', () => {
-      // Small delay to ensure auth_guard finishes fetching if needed
-      setTimeout(() => {
-        let user = window.api ? window.api.getUser() : null;
-        if (user && user.name) {
-          const firstName = user.name.split(' ')[0] || 'Admin';
-          const lastName = user.name.split(' ').slice(1).join(' ') || '';
-          const initial = firstName.charAt(0).toUpperCase();
-
-          const avatar = document.getElementById('adminAvatar');
-          if (avatar) avatar.textContent = initial;
-
-          const nameSpan = document.getElementById('adminName');
-          if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
-
-          const roleSpan = document.getElementById('adminRole');
-          if (roleSpan) {
-            const rawRole = (user.role || '').trim().toLowerCase();
-            roleSpan.textContent = rawRole ? (rawRole.charAt(0).toUpperCase() + rawRole.slice(1)) : 'Admin';
-          }
-        }
-      }, 300);
-    });
-
     function fmtDate(val) {
       if (!val) return '—';
       const d = new Date(val);
@@ -748,6 +664,126 @@
       if (s.includes('overdue')) return 'overdue';
       if (s.includes('rejected')) return 'overdue';
       return 'pending';
+    }
+
+    function toCsvValue(value) {
+      if (value === null || value === undefined) return '';
+      const text = String(value).replace(/"/g, '""');
+      return /[",\r\n]/.test(text) ? `"${text}"` : text;
+    }
+
+    function dateOnlyValue(value) {
+      if (!value) return '';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = rows.map(cols => cols.map(toCsvValue).join(',')).join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportDailyReport() {
+      const btn = document.getElementById('exportDailyReportBtn');
+      const originalHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Exporting...';
+      }
+
+      try {
+        const [statsRes, histRes, pendingRes] = await Promise.all([
+          window.api.authenticatedFetch('/admin/dashboard_stats.php'),
+          window.api.authenticatedFetch('/transactions/history.php'),
+          window.api.authenticatedFetch('/assets/admin_approval.php')
+        ]);
+
+        const stats = statsRes?.stats || {};
+        const history = Array.isArray(histRes?.history) ? histRes.history : [];
+        const pendingAssets = Array.isArray(pendingRes?.pending_assets) ? pendingRes.pending_assets : [];
+
+        const today = dateOnlyValue(new Date());
+        const dailyTransactions = history.filter(tx => {
+          const source = tx?.dates?.borrowed || tx?.dates?.requested;
+          return dateOnlyValue(source) === today;
+        });
+        const dailyPendingAssets = pendingAssets.filter(a => dateOnlyValue(a?.created_at) === today);
+
+        const now = new Date();
+        const generatedAt = now.toISOString();
+        const rows = [
+          ['HariBorrow Admin Daily Report'],
+          ['Generated At', generatedAt],
+          ['Report Date', today],
+          [],
+          ['Dashboard Summary'],
+          ['Metric', 'Value'],
+          ['Pending Approvals', stats.pending_approvals ?? 0],
+          ['Active Borrowings', stats.active_transactions ?? 0],
+          ['Overdue Assets', stats.overdue_assets ?? 0],
+          ['Total Registered Users', stats.total_users ?? 0],
+          [],
+          ['Transactions Created Today'],
+          ['Transaction ID', 'Borrower', 'Borrower School ID', 'Asset', 'Status', 'Requested Date', 'Borrowed Date', 'Due Date', 'Returned Date', 'Overdue'],
+          ...dailyTransactions.map(tx => [
+            tx?.transaction_id ?? '',
+            tx?.borrower?.name || '',
+            tx?.borrower?.school_id || '',
+            tx?.asset?.name || '',
+            tx?.status || '',
+            tx?.dates?.requested || '',
+            tx?.dates?.borrowed || '',
+            tx?.dates?.due || '',
+            tx?.dates?.returned || '',
+            tx?.is_overdue ? 'Yes' : 'No'
+          ]),
+          []
+        ];
+
+        if (dailyTransactions.length === 0) {
+          rows.push(['No transactions found for today.']);
+          rows.push([]);
+        }
+
+        rows.push(['Pending Asset Submissions Today']);
+        rows.push(['Asset', 'Type', 'Meetup Location', 'Lender', 'Status', 'Submitted']);
+        rows.push(...dailyPendingAssets.map(a => [
+          a?.name || '',
+          a?.type || '',
+          a?.meetup_location || '',
+          a?.lender_name || '',
+          a?.status || '',
+          a?.created_at || ''
+        ]));
+
+        if (dailyPendingAssets.length === 0) {
+          rows.push(['No pending asset submissions found for today.']);
+        }
+
+        downloadCsv(`daily_report_${today}.csv`, rows);
+      } catch (e) {
+        console.error('Daily report export failed:', e);
+        alert(e?.message || 'Failed to export daily report.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.innerHTML = originalHtml;
+        }
+      }
     }
 
     async function loadAdminDashboard() {
@@ -865,12 +901,17 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      const exportBtn = document.getElementById('exportDailyReportBtn');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', exportDailyReport);
+      }
       loadAdminDashboard();
       // Keep sidebar/dashboard counts fresh when new uploads arrive.
       setInterval(loadAdminDashboard, 15000);
     });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

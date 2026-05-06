@@ -7,10 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Asset Management</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <script src="../js/api.js"></script>
   <style>
     *,
@@ -88,7 +88,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
     }
@@ -1356,6 +1356,7 @@
       color: var(--gold-light);
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -1709,7 +1710,7 @@
         const list = Array.isArray(data?.assets) ? data.assets : [];
         assets = list.map(a => {
           const n = (a.name || 'Asset').trim();
-          const initials = n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AS';
+          const _parts = n.split(' ').filter(Boolean); const initials = _parts.length > 1 ? (_parts[0][0] + _parts[_parts.length-1][0]).toUpperCase() : (n.length > 1 ? n.substring(0,2) : n + n).toUpperCase() || 'AS';
           const type = a.type || 'General';
           return {
             id: a.id,
@@ -2238,6 +2239,7 @@
   });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

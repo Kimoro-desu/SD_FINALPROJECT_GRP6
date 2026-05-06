@@ -55,8 +55,8 @@
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.04), transparent 50%);
-    z-index: 9999; mix-blend-mode: screen; transition: background 0.1s;
+    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
+    z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
   }
 
   /* ── SIDEBAR ── */
@@ -197,6 +197,7 @@
   .notif-desc { font-size: 13px; color: var(--text-2); line-height: 1.5; }
   .notif-time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 <body>
 
@@ -265,7 +266,7 @@
 </main>
 
 <script src="../js/api.js"></script>
-<script src="../js/auth_guard.js"></script>
+<script src="../js/auth_guard.js?v=1778041298"></script>
 <script>
   const glow = document.getElementById('glow');
   document.addEventListener('mousemove', e => {
@@ -386,5 +387,6 @@
       setInterval(fetchNotifications, 60000);
   });
 </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 </html>
