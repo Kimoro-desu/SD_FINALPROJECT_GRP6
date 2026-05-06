@@ -43,7 +43,35 @@ try {
     ensurePenaltySchema($db);
 
     if ($method === 'GET') {
-        $q = "SELECT Asset_ID, asset_name, description, meetup_location, proposed_penalty_amount, daily_penalty, penalty_type, Lender_ID, status, availability, asset_type, time_created
+        // Auto-sync scheduled availability for this lender's assets
+        // so the management UI reflects time-based changes without refresh quirks.
+        try {
+            $syncOff = $db->prepare("
+                UPDATE assets
+                SET availability = 'unavailable'
+                WHERE Lender_ID = :uid
+                  AND LOWER(status) = 'approved'
+                  AND available_until IS NOT NULL
+                  AND available_until <= NOW()
+            ");
+            $syncOff->execute([':uid' => $lenderId]);
+
+            $syncOn = $db->prepare("
+                UPDATE assets
+                SET availability = 'available'
+                WHERE Lender_ID = :uid
+                  AND LOWER(status) = 'approved'
+                  AND (available_from IS NOT NULL OR available_until IS NOT NULL)
+                  AND (available_from IS NULL OR available_from <= NOW())
+                  AND (available_until IS NULL OR available_until > NOW())
+            ");
+            $syncOn->execute([':uid' => $lenderId]);
+        } catch (\Exception $syncEx) {
+            error_log('manage_my_assets availability sync warning: ' . $syncEx->getMessage());
+        }
+
+        $q = "SELECT Asset_ID, asset_name, description, meetup_location, proposed_penalty_amount, daily_penalty, penalty_type, Lender_ID, status, availability, asset_type, time_created,
+                     available_from, available_until
             FROM assets
             WHERE Lender_ID = :uid
             ORDER BY time_created DESC";
@@ -64,6 +92,8 @@ try {
                 "lender_id" => (int)$row['Lender_ID'],
                 "status" => strtolower((string)$row['status']),
                 "availability" => strtolower((string)$row['availability']),
+                "available_from" => $row['available_from'] ?? null,
+                "available_until" => $row['available_until'] ?? null,
                 "type" => $row['asset_type'],
                 "created_at" => $row['time_created']
             ];
@@ -84,6 +114,8 @@ try {
     if ($method === 'PUT' || $method === 'PATCH') {
         $availability = strtolower(trim((string)($payload->availability ?? '')));
         $hasAvailability = $availability !== '';
+        $hasAvailableFrom = property_exists($payload, 'available_from');
+        $hasAvailableUntil = property_exists($payload, 'available_until');
         $hasPenalty = isset($payload->daily_penalty);
         $hasProposedPenalty = isset($payload->proposed_penalty_amount);
         $hasMeetupLocation = property_exists($payload, 'meetup_location');
@@ -95,9 +127,18 @@ try {
         $penaltyType = $hasPenaltyType ? $payload->penalty_type : 'per_day';
         $description = $hasDescription ? trim((string)$payload->description) : '';
 
-        if (!$hasAvailability && !$hasPenalty && !$hasProposedPenalty && !$hasMeetupLocation && !$hasPenaltyType && !$hasDescription) {
+        if (
+            !$hasAvailability &&
+            !$hasAvailableFrom &&
+            !$hasAvailableUntil &&
+            !$hasPenalty &&
+            !$hasProposedPenalty &&
+            !$hasMeetupLocation &&
+            !$hasPenaltyType &&
+            !$hasDescription
+        ) {
             http_response_code(400);
-            die(json_encode(["message" => "Provide at least one field to update (availability, daily_penalty, penalty_type, proposed_penalty_amount, meetup_location).", "status" => "error"]));
+            die(json_encode(["message" => "Provide at least one field to update (availability, available_from, available_until, daily_penalty, penalty_type, proposed_penalty_amount, meetup_location).", "status" => "error"]));
         }
         if ($hasAvailability && !in_array($availability, ['available', 'unavailable'], true)) {
             http_response_code(400);
@@ -105,6 +146,7 @@ try {
         }
 
         $isCoreEdit = $hasPenalty || $hasProposedPenalty || $hasMeetupLocation || $hasPenaltyType || $hasDescription;
+        $isScheduleEdit = $hasAvailableFrom || $hasAvailableUntil;
 
         $setParts = [];
         $params = [':id' => $assetId, ':uid' => $lenderId];
@@ -113,9 +155,65 @@ try {
         if ($isCoreEdit) {
             $setParts[] = "status = 'pending'";
             $setParts[] = "availability = 'unavailable'";
+            $setParts[] = "available_from = NULL";
+            $setParts[] = "available_until = NULL";
         } elseif ($hasAvailability) {
             $setParts[] = "availability = :availability";
             $params[':availability'] = $availability;
+            // Manual toggle clears schedule
+            if ($availability === 'unavailable') {
+                $setParts[] = "available_from = NULL";
+                $setParts[] = "available_until = NULL";
+            }
+        } elseif ($isScheduleEdit) {
+            // Scheduled availability update
+            $rawFrom = $hasAvailableFrom ? trim((string)($payload->available_from ?? '')) : '';
+            $rawUntil = $hasAvailableUntil ? trim((string)($payload->available_until ?? '')) : '';
+
+            $tz = new \DateTimeZone('Asia/Manila');
+            $parse = static function (string $raw) use ($tz): ?\DateTimeImmutable {
+                $raw = trim(str_replace('T', ' ', $raw));
+                if ($raw === '') return null;
+                foreach (['Y-m-d H:i:s', 'Y-m-d H:i'] as $fmt) {
+                    $dt = \DateTimeImmutable::createFromFormat($fmt, $raw, $tz);
+                    if ($dt !== false) return $dt;
+                }
+                $ts = strtotime($raw);
+                if ($ts === false) return null;
+                return (new \DateTimeImmutable('@' . $ts))->setTimezone($tz);
+            };
+
+            $fromDt = $hasAvailableFrom ? $parse($rawFrom) : null;
+            $untilDt = $hasAvailableUntil ? $parse($rawUntil) : null;
+
+            // Empty schedule fields from the "Set Available" flow mean:
+            // start immediately with no end time.
+            if (($hasAvailableFrom && $rawFrom === '') && ($hasAvailableUntil && $rawUntil === '')) {
+                $setParts[] = "available_from = NULL";
+                $setParts[] = "available_until = NULL";
+                $setParts[] = "availability = 'available'";
+            } else {
+                // If only "until" provided, default "from" to now
+                if ($fromDt === null && $untilDt !== null) {
+                    $fromDt = new \DateTimeImmutable('now', $tz);
+                }
+                if ($fromDt !== null && $untilDt !== null && $untilDt <= $fromDt) {
+                    http_response_code(400);
+                    die(json_encode(["message" => "available_until must be later than available_from.", "status" => "error"]));
+                }
+
+                $setParts[] = "available_from = :available_from";
+                $setParts[] = "available_until = :available_until";
+                $params[':available_from'] = $fromDt ? $fromDt->format('Y-m-d H:i:s') : null;
+                $params[':available_until'] = $untilDt ? $untilDt->format('Y-m-d H:i:s') : null;
+
+                // Compute effective availability at save time
+                $now = new \DateTimeImmutable('now', $tz);
+                $isActiveNow = true;
+                if ($fromDt !== null && $now < $fromDt) $isActiveNow = false;
+                if ($untilDt !== null && $now >= $untilDt) $isActiveNow = false;
+                $setParts[] = "availability = '" . ($isActiveNow ? "available" : "unavailable") . "'";
+            }
         }
 
         // 2. Add other specific fields to update
@@ -145,8 +243,14 @@ try {
         $stmt->execute($params);
 
         if ($stmt->rowCount() <= 0) {
-            http_response_code(404);
-            die(json_encode(["message" => "Asset not found or not owned by user.", "status" => "error"]));
+            // rowCount can be 0 when values are unchanged.
+            // Verify ownership before returning an error.
+            $existsStmt = $db->prepare("SELECT Asset_ID FROM assets WHERE Asset_ID = :id AND Lender_ID = :uid LIMIT 1");
+            $existsStmt->execute([':id' => $assetId, ':uid' => $lenderId]);
+            if (!$existsStmt->fetch(\PDO::FETCH_ASSOC)) {
+                http_response_code(404);
+                die(json_encode(["message" => "Asset not found or not owned by user.", "status" => "error"]));
+            }
         }
 
         http_response_code(200);

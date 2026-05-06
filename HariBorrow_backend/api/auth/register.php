@@ -21,39 +21,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $database = new Database();
 $db = $database->getConnection();
 
-// Get posted data
-$data = json_decode(file_get_contents("php://input"));
+// Accept both JSON and multipart payloads.
+$rawInput = file_get_contents("php://input");
+$data = json_decode($rawInput);
+
+$getField = function (string $key) use ($data) {
+    if (isset($_POST[$key])) {
+        return $_POST[$key];
+    }
+    if (is_object($data) && isset($data->{$key})) {
+        return $data->{$key};
+    }
+    return null;
+};
+
+$idNumber = $getField('idNumber');
+$emailRaw = $getField('email');
+$passwordRaw = $getField('password');
+$firstNameRaw = $getField('firstName');
+$lastNameRaw = $getField('lastName');
+$roleRaw = $getField('role');
+$departmentRaw = $getField('department');
+$contactRaw = $getField('contact');
 
 // Ensure the essential fields from sign_up.html are present
 if (
-    !empty($data->idNumber) && 
-    !empty($data->email) &&
-    !empty($data->password) &&
-    !empty($data->firstName) &&
-    !empty($data->lastName) &&
-    !empty($data->role) &&
-    !empty($data->department)
+    !empty($idNumber) &&
+    !empty($emailRaw) &&
+    !empty($passwordRaw) &&
+    !empty($firstNameRaw) &&
+    !empty($lastNameRaw) &&
+    !empty($roleRaw) &&
+    !empty($departmentRaw)
 ) {
     try {
+        if (!isset($_FILES['id_picture']) || $_FILES['id_picture']['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(["message" => "School ID image is required during registration.", "status" => "error"]);
+            exit();
+        }
+
+        $idFile = $_FILES['id_picture'];
+        $fileNameCmps = explode(".", $idFile['name']);
+        $fileExtension = strtolower(end($fileNameCmps));
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        if (!in_array($fileExtension, $allowedExtensions, true)) {
+            http_response_code(400);
+            echo json_encode(["message" => "Invalid ID image type. Allowed: jpg, jpeg, png, gif, webp.", "status" => "error"]);
+            exit();
+        }
+
+        $uploadDir = '../../uploads/profiles/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $newIdFileName = "id_reg_" . uniqid('', true) . "." . $fileExtension;
+        $destPath = $uploadDir . $newIdFileName;
+        if (!move_uploaded_file($idFile['tmp_name'], $destPath)) {
+            http_response_code(500);
+            echo json_encode(["message" => "Unable to upload ID image.", "status" => "error"]);
+            exit();
+        }
+        $idPhotoDbPath = "/SD_FINALPROJECT_GRP6/HariBorrow_backend/uploads/profiles/" . $newIdFileName;
+
         // We omit User_ID so the database auto-increments it
         $query = "INSERT INTO users 
-                  (first_name, last_name, password_hash, user_role, plm_email, school_id_number, department, contact_number)
+                  (first_name, last_name, password_hash, user_role, plm_email, school_id_number, department, contact_number, id_verification_status, id_photo_url)
                   VALUES
-                  (:first_name, :last_name, :password_hash, :user_role, :plm_email, :school_id, :department, :contact)";
+                  (:first_name, :last_name, :password_hash, :user_role, :plm_email, :school_id, :department, :contact, :id_verification_status, :id_photo_url)";
 
         $stmt = $db->prepare($query);
 
         // Sanitize incoming data matching the frontend's JSON keys
-        $first_name = htmlspecialchars(strip_tags($data->firstName));
-        $last_name = htmlspecialchars(strip_tags($data->lastName));
-        $email = htmlspecialchars(strip_tags($data->email));
-        $role = htmlspecialchars(strip_tags($data->role)); 
-        $school_id = htmlspecialchars(strip_tags($data->idNumber));
-        $department = htmlspecialchars(strip_tags($data->department));
-        $contact = isset($data->contact) ? htmlspecialchars(strip_tags($data->contact)) : null;
+        $first_name = htmlspecialchars(strip_tags((string)$firstNameRaw));
+        $last_name = htmlspecialchars(strip_tags((string)$lastNameRaw));
+        $email = htmlspecialchars(strip_tags((string)$emailRaw));
+        $role = htmlspecialchars(strip_tags((string)$roleRaw));
+        $school_id = htmlspecialchars(strip_tags((string)$idNumber));
+        $department = htmlspecialchars(strip_tags((string)$departmentRaw));
+        $contact = !empty($contactRaw) ? htmlspecialchars(strip_tags((string)$contactRaw)) : null;
+        $idVerificationStatus = 'pending';
 
         // Hash the password securely
-        $password_hash = password_hash($data->password, PASSWORD_BCRYPT);
+        $password_hash = password_hash((string)$passwordRaw, PASSWORD_BCRYPT);
 
         // Bind data
         $stmt->bindParam(":first_name", $first_name);
@@ -64,6 +115,8 @@ if (
         $stmt->bindParam(":school_id", $school_id);
         $stmt->bindParam(":department", $department);
         $stmt->bindParam(":contact", $contact);
+        $stmt->bindParam(":id_verification_status", $idVerificationStatus);
+        $stmt->bindParam(":id_photo_url", $idPhotoDbPath);
 
         // Execute query
         if ($stmt->execute()) {
@@ -82,10 +135,16 @@ if (
             http_response_code(201);
             echo json_encode(["message" => "User was successfully registered and is pending approval.", "status" => "success"]);
         } else {
+            if (is_file($destPath)) {
+                @unlink($destPath);
+            }
             http_response_code(503);
             echo json_encode(["message" => "Unable to register user.", "status" => "error"]);
         }
     } catch (PDOException $e) {
+        if (isset($destPath) && is_file($destPath)) {
+            @unlink($destPath);
+        }
         // Catch duplicate entry errors (e.g., if User_ID already exists)
         if ($e->errorInfo[1] == 1062) {
             http_response_code(409);

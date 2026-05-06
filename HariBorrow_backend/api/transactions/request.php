@@ -48,9 +48,11 @@ if (!empty($data->asset_id)) {
     try {
         $db->beginTransaction();
 
-        // Check if the asset exists and is strictly 'Available'
+        // Check if the asset exists and is requestable (available now OR scheduled upcoming)
         $asset_id = htmlspecialchars(strip_tags($data->asset_id));
-        $check_query = "SELECT availability, status, Lender_ID FROM assets WHERE Asset_ID = :asset_id FOR UPDATE";
+        $check_query = "SELECT availability, status, Lender_ID, available_from, available_until
+                        FROM assets
+                        WHERE Asset_ID = :asset_id FOR UPDATE";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(':asset_id', $asset_id);
         $check_stmt->execute();
@@ -59,19 +61,6 @@ if (!empty($data->asset_id)) {
             $db->rollBack();
             http_response_code(404);
             die(json_encode(["message" => "Asset not found.", "status" => "error"]));
-        }
-
-        // Check if the user is verified
-        $verify_query = "SELECT id_verification_status FROM users WHERE User_ID = :user_id FOR UPDATE";
-        $verify_stmt = $db->prepare($verify_query);
-        $verify_stmt->bindParam(':user_id', $decodedData['id']);
-        $verify_stmt->execute();
-        $user_row = $verify_stmt->fetch(\PDO::FETCH_ASSOC);
-
-        if (!$user_row || $user_row['id_verification_status'] !== 'verified') {
-            $db->rollBack();
-            http_response_code(403);
-            die(json_encode(["message" => "Your ID must be verified by an admin before you can borrow assets.", "status" => "error"]));
         }
 
         $asset_row = $check_stmt->fetch(\PDO::FETCH_ASSOC);
@@ -90,7 +79,40 @@ if (!empty($data->asset_id)) {
             die(json_encode(["message" => "You cannot borrow your own asset.", "status" => "error"]));
         }
 
-        if ($assetAvailability !== 'available' && $asset_row['availability'] !== Database::AVAILABILITY_AVAILABLE) {
+        // Availability rules:
+        // - Allow if currently available
+        // - Also allow if scheduled for the future (upcoming), so borrowers can request ahead.
+        $tzManila = new \DateTimeZone('Asia/Manila');
+        $now = new \DateTimeImmutable('now', $tzManila);
+
+        $availableFromRaw = $asset_row['available_from'] ?? null;
+        $availableUntilRaw = $asset_row['available_until'] ?? null;
+
+        $parseDbDateTime = static function ($raw) use ($tzManila): ?\DateTimeImmutable {
+            if ($raw === null || $raw === '') return null;
+            $raw = trim((string)$raw);
+            foreach (['Y-m-d H:i:s', 'Y-m-d H:i'] as $fmt) {
+                $dt = \DateTimeImmutable::createFromFormat($fmt, $raw, $tzManila);
+                if ($dt !== false) return $dt;
+            }
+            $ts = strtotime($raw);
+            if ($ts === false) return null;
+            return (new \DateTimeImmutable('@' . $ts))->setTimezone($tzManila);
+        };
+
+        $availableFrom = $parseDbDateTime($availableFromRaw);
+        $availableUntil = $parseDbDateTime($availableUntilRaw);
+
+        $isCurrentlyAvailable = ($assetAvailability === 'available' || $asset_row['availability'] === Database::AVAILABILITY_AVAILABLE);
+        $isUpcomingScheduled = ($availableFrom !== null && $availableFrom > $now && ($availableUntil === null || $availableUntil > $availableFrom));
+
+        // If schedule already ended, treat as unavailable.
+        if ($availableUntil !== null && $availableUntil <= $now) {
+            $isCurrentlyAvailable = false;
+            $isUpcomingScheduled = false;
+        }
+
+        if (!$isCurrentlyAvailable && !$isUpcomingScheduled) {
             $db->rollBack();
             http_response_code(409);
             die(json_encode(["message" => "Asset is not currently available for borrowing.", "status" => "error"]));
@@ -104,7 +126,6 @@ if (!empty($data->asset_id)) {
             die(json_encode(["message" => "Borrow date and return date are required.", "status" => "error"]));
         }
 
-        $tzManila = new \DateTimeZone('Asia/Manila');
         $parseUserDateTime = static function (string $raw) use ($tzManila): ?\DateTimeImmutable {
             $raw = trim(str_replace('T', ' ', $raw));
             if ($raw === '') {

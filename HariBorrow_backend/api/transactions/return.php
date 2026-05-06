@@ -85,8 +85,11 @@ if (!empty($data->transaction_id)) {
         $lender_id = $trans_row['Lender_ID'] ?? 0;
         $asset_name = $trans_row['asset_name'] ?? 'Asset';
 
-        // If the item hasn't been approved yet or is already returned, ignore request
-        if ($trans_row['request_status'] !== Database::STATUS_APPROVED) {
+        // If the item hasn't been approved yet or is already returned, ignore request.
+        // NOTE: request_status values in this project are sometimes stored as lowercase strings
+        // (e.g. 'approved') while legacy constants are Title Case ('Approved').
+        $curStatus = strtolower(trim((string)($trans_row['request_status'] ?? '')));
+        if ($curStatus !== 'approved') {
             $db->rollBack();
             http_response_code(400);
             die(json_encode(["message" => "Cannot return an item that isn't actively borrowed.", "status" => "error"]));
@@ -144,17 +147,13 @@ if (!empty($data->transaction_id)) {
         $update_stmt->bindParam(':tid', $transaction_id);
         $update_stmt->execute();
 
-        // ── Single notification on success ──
+        // ── Single notifications on success ──
         if ((int)$borrower_id > 0) {
-            if ($penaltyAmount > 0) {
-                pushUserNotification($db, (int)$borrower_id, 'Return Processed with Penalty', 'Your return was completed. Penalty due: PHP ' . number_format($penaltyAmount, 0) . '.', 'warning', 'ph-warning-circle');
-            } else {
-                pushUserNotification($db, (int)$borrower_id, 'Return Completed', 'Your borrowing was returned successfully with no penalty.', 'info', 'ph-check-circle');
-            }
+            pushUserNotification($db, (int)$borrower_id, 'Return Submitted', 'Your return has been submitted and is awaiting lender confirmation.', 'info', 'ph-clock');
         }
         
         if ((int)$lender_id > 0) {
-            pushUserNotification($db, (int)$lender_id, 'Asset Returned', 'Your asset "' . $asset_name . '" has been returned.', 'info', 'ph-check-circle');
+            pushUserNotification($db, (int)$lender_id, 'Return Awaiting Your Review', 'Borrower submitted a return for "' . $asset_name . '". Please review and confirm.', 'warning', 'ph-clipboard-text');
         }
 
         $db->commit();

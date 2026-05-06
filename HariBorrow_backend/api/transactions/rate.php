@@ -69,7 +69,7 @@ try {
         exit();
     }
 
-    if ($tx['request_status'] !== Database::STATUS_RETURNED) {
+    if (strtolower($tx['request_status']) !== strtolower(Database::STATUS_RETURNED)) {
         $db->rollBack();
         http_response_code(400);
         echo json_encode(["message" => "Rating is only allowed after return completion.", "status" => "error"]);
