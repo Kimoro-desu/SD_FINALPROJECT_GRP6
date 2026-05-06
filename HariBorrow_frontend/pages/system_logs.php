@@ -7,7 +7,7 @@
 <title>HariBorrow — System Logs</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="../js/api.js"></script>
-<script src="../js/auth_guard.js"></script>
+<script src="../js/auth_guard.js?v=1778041298"></script>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <style>
   /* ── BASE STYLES ── */
@@ -56,7 +56,7 @@
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
     z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
   }
 
@@ -213,6 +213,7 @@
   }
 
 </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 <body>
 
@@ -406,30 +407,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // Dynamic Admin Profile Loading (same logic as other admin pages)
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      let user = window.api ? window.api.getUser() : null;
-      if (user && user.name) {
-        const firstName = user.name.split(' ')[0] || 'Admin';
-        const lastName = user.name.split(' ').slice(1).join(' ') || '';
-        const initial = firstName.charAt(0).toUpperCase();
-
-        const avatar = document.getElementById('adminAvatar');
-        if (avatar) avatar.textContent = initial;
-
-        const nameSpan = document.getElementById('adminName');
-        if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
-
-        const roleSpan = document.getElementById('adminRole');
-        if (roleSpan) {
-          const rawRole = (user.role || '').trim().toLowerCase();
-          roleSpan.textContent = rawRole ? (rawRole.charAt(0).toUpperCase() + rawRole.slice(1)) : 'Admin';
-        }
-      }
-    }, 300);
-  });
-
   document.addEventListener('DOMContentLoaded', loadLogs);
 </script>
 
@@ -477,5 +454,6 @@
         });
     </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 </html>

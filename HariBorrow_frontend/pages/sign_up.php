@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Register Account</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
@@ -72,7 +72,7 @@
       inset: 0;
       pointer-events: none;
       z-index: 9999;
-      background: radial-gradient(430px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(430px circle at var(--mx, 50%) var(--my, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       mix-blend-mode: screen;
       transition: background 0.08s ease-out;
     }
@@ -182,7 +182,8 @@
     }
 
     .left-headline .script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.45em;
       color: var(--gold-light);
       display: block;
@@ -400,7 +401,8 @@
     }
 
     .form-head h2 .script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.4em;
       color: var(--gold-light);
       display: block;
@@ -564,6 +566,77 @@
 
     .field-hint.err {
       color: #ff9090;
+    }
+
+    .field-hint.ok {
+      color: var(--success);
+    }
+
+    /* School ID uploader */
+    .upload-card {
+      border: 1px dashed rgba(229, 192, 123, 0.35);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 14px;
+      transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .upload-card:hover {
+      border-color: var(--gold);
+      background: rgba(229, 192, 123, 0.04);
+      box-shadow: inset 0 0 10px rgba(229, 192, 123, 0.07);
+    }
+
+    .upload-card.selected {
+      border-style: solid;
+      border-color: rgba(82, 196, 138, 0.5);
+      background: rgba(82, 196, 138, 0.04);
+    }
+
+    .upload-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      color: var(--gold);
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .upload-btn:hover {
+      background: var(--gold);
+      color: var(--bg-deep);
+      box-shadow: 0 6px 18px rgba(229, 192, 123, 0.22);
+    }
+
+    .upload-file-name {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-2);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+
+    .upload-file-name.empty {
+      color: var(--text-3);
+      font-style: italic;
     }
 
     /* Icons inside inputs */
@@ -1080,7 +1153,8 @@
     }
 
     .success-title .script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.3em;
       color: var(--gold-light);
       display: block;
@@ -1267,6 +1341,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -1430,6 +1505,23 @@
                 maxlength="12">
             </div>
             <div class="field-hint" id="idHint">Format: YYYY-NNNNN (e.g. 2024-00123)</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label"><span class="required-dot"></span> Upload School ID Image</label>
+            <div class="upload-card" id="idUploadCard">
+              <div class="upload-actions">
+                <label for="idPictureInput" class="upload-btn">
+                  <i class="ph ph-upload-simple"></i> Choose ID Image
+                </label>
+                <span class="upload-file-name empty" id="idPictureFileName">No file selected</span>
+              </div>
+              <input type="file" id="idPictureInput" accept="image/*" onchange="handleIdPictureUpload(event)" style="display:none;">
+            </div>
+            <div class="field-hint" id="idPictureHint">Required: upload a clear image of your school ID (JPG, PNG, GIF, WEBP).</div>
+            <div id="idPicturePreviewWrap" style="display:none; margin-top:10px; max-width:220px; border:1px solid var(--glass-border); border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.02);">
+              <img id="idPicturePreview" src="" alt="School ID preview" style="width:100%; display:block; object-fit:cover;">
+            </div>
           </div>
 
           <div class="btn-row">
@@ -1610,7 +1702,8 @@
     let formData = {
       role: '', firstName: '', lastName: '',
       department: '', idNumber: '',
-      email: '', password: '', contact: ''
+      email: '', password: '', contact: '',
+      idPictureFile: null
     };
     let currentStep = 1;
 
@@ -1636,6 +1729,51 @@
       const hint = document.getElementById('idHint');
       if (v.length > 0 && !ok) { hint.textContent = 'Use format YYYY-NNNNN (e.g. 2024-00123)'; hint.classList.add('err'); }
       else { hint.textContent = 'Format: YYYY-NNNNN (e.g. 2024-00123)'; hint.classList.remove('err'); }
+    }
+
+    function handleIdPictureUpload(event) {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      const hint = document.getElementById('idPictureHint');
+      const preview = document.getElementById('idPicturePreview');
+      const previewWrap = document.getElementById('idPicturePreviewWrap');
+      const uploadCard = document.getElementById('idUploadCard');
+      const fileNameEl = document.getElementById('idPictureFileName');
+
+      formData.idPictureFile = null;
+      preview.src = '';
+      previewWrap.style.display = 'none';
+      uploadCard.classList.remove('selected');
+      fileNameEl.textContent = 'No file selected';
+      fileNameEl.classList.add('empty');
+      hint.classList.remove('ok');
+
+      if (!file) {
+        hint.textContent = 'Required: upload a clear image of your school ID (JPG, PNG, GIF, WEBP).';
+        hint.classList.add('err');
+        return;
+      }
+
+      const okType = /^image\/(jpeg|jpg|png|gif|webp)$/i.test(file.type);
+      if (!okType) {
+        hint.textContent = 'Invalid file type. Please upload JPG, PNG, GIF, or WEBP.';
+        hint.classList.add('err');
+        return;
+      }
+
+      formData.idPictureFile = file;
+      fileNameEl.textContent = file.name;
+      fileNameEl.classList.remove('empty');
+      uploadCard.classList.add('selected');
+      hint.textContent = 'ID image selected and ready for submission.';
+      hint.classList.add('ok');
+      hint.classList.remove('err');
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        previewWrap.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
     }
 
     function validateEmail(el) {
@@ -1774,6 +1912,7 @@
         if (!ln || ln.length < 2) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please enter your last name.', 'err'); return false; }
         if (!dept) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please select your college or department.', 'err'); return false; }
         if (!/^\d{4}-\d{5}$/.test(id)) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please enter a valid ID number in the format YYYY-NNNNN.', 'err'); return false; }
+        if (!formData.idPictureFile) { showAlert('<i class="ph ph-warning-circle"></i> &nbsp;Please upload your school ID image to continue.', 'err'); return false; }
       }
       if (step === 2) {
         const em = document.getElementById('email').value.trim();
@@ -1809,6 +1948,7 @@
       <div class="review-item"><div class="review-key">Full Name</div><div class="review-val">${formData.firstName} ${formData.lastName}</div></div>
       <div class="review-item full"><div class="review-key">Department</div><div class="review-val">${formData.department}</div></div>
       <div class="review-item"><div class="review-key">ID Number</div><div class="review-val">${formData.idNumber}</div></div>
+      <div class="review-item"><div class="review-key">ID Image</div><div class="review-val">${formData.idPictureFile ? formData.idPictureFile.name : 'Not uploaded'}</div></div>
     `;
       document.getElementById('reviewCredentials').innerHTML = `
       <div class="review-item full"><div class="review-key">Email</div><div class="review-val">${formData.email}</div></div>
@@ -1835,9 +1975,26 @@
       btn.disabled = true;
 
       try {
-        const response = await window.api.rawFetch('/auth/register.php', {
+        const requestBody = new FormData();
+        requestBody.append('role', formData.role);
+        requestBody.append('firstName', formData.firstName);
+        requestBody.append('lastName', formData.lastName);
+        requestBody.append('department', formData.department);
+        requestBody.append('idNumber', formData.idNumber);
+        requestBody.append('email', formData.email);
+        requestBody.append('password', formData.password);
+        requestBody.append('contact', formData.contact || '');
+        requestBody.append('id_picture', formData.idPictureFile);
+
+        const response = await fetch('/SD_FINALPROJECT_GRP6/HariBorrow_backend/api/auth/register.php', {
           method: 'POST',
-          body: formData
+          body: requestBody
+        }).then(async (r) => {
+          const data = await r.json().catch(() => null);
+          if (!r.ok || !data || data.status !== 'success') {
+            throw new Error((data && data.message) ? data.message : 'Registration failed.');
+          }
+          return data;
         });
 
         // Added a safety check here! 
@@ -1865,6 +2022,7 @@
       }
     }
   </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

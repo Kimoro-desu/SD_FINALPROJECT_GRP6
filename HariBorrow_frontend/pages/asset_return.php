@@ -57,7 +57,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   .ambient-glow {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     pointer-events: none;
-    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+    background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
     z-index: 9999; mix-blend-mode: screen; transition: background 0.08s ease-out;
   }
 
@@ -458,6 +458,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     border-radius: 8px; border: 1px solid var(--glass-border);
   }
 </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 <body>
 
@@ -718,7 +719,7 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
   </div></main>
 
 <script src="../js/api.js"></script>
-<script src="../js/auth_guard.js"></script>
+<script src="../js/auth_guard.js?v=1778041298"></script>
 <script>
   /* ── GLOW ── */
   const glow = document.getElementById('glow');
@@ -1093,5 +1094,6 @@ $loansForJs = []; // We now use the JWT API in JS to populate loans securely
     setTimeout(() => { toast.style.display = 'none'; }, 5000);
   }
 </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 </html>

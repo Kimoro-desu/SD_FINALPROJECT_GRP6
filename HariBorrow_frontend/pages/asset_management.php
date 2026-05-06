@@ -7,10 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Asset Management</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <script src="../js/api.js"></script>
   <style>
     *,
@@ -88,7 +88,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
     }
@@ -393,6 +393,47 @@
 
     .view-section.active {
       display: block;
+    }
+
+    /* Availability schedule tab */
+    .schedule-wrap {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      max-width: 760px;
+    }
+
+    .schedule-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-1);
+      margin-bottom: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .schedule-sub {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .schedule-selected {
+      padding: 12px 14px;
+      border: 1px dashed var(--glass-border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      margin-bottom: 16px;
+      color: var(--text-2);
+      font-size: 13px;
+    }
+
+    .schedule-selected strong {
+      color: var(--gold-light);
+      font-weight: 600;
     }
 
     /* ── STATS BAR ── */
@@ -1356,6 +1397,7 @@
       color: var(--gold-light);
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -1427,6 +1469,7 @@
 
     <div class="page-nav">
       <button class="page-nav-btn active" id="tabAssets" onclick="switchMainTab('assets')">My Assets</button>
+      <button class="page-nav-btn" id="tabSchedule" onclick="switchMainTab('schedule')">Availability Schedule</button>
       <button class="page-nav-btn" id="tabHistory" onclick="switchMainTab('history')">Lending History</button>
     </div>
 
@@ -1538,6 +1581,42 @@
               <tr><td colspan="8" style="padding:16px;color:var(--text-3);text-align:center;">Loading your lending history...</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="scheduleView" class="view-section">
+      <div class="schedule-wrap">
+        <div class="schedule-title">Schedule Asset Availability</div>
+        <div class="schedule-sub">
+          Set when an asset should be visible as <strong>Available</strong> in the borrower catalog.
+          It will automatically become unavailable after the end time.
+        </div>
+
+        <div class="schedule-selected" id="scheduleSelected">
+          Selected asset: <strong id="scheduleAssetName">—</strong>
+          <span style="color:var(--text-3);">(#<span id="scheduleAssetId">—</span>)</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Available From</label>
+            <input class="form-input" id="scheduleFrom" type="datetime-local">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Available Until</label>
+            <input class="form-input" id="scheduleUntil" type="datetime-local">
+          </div>
+        </div>
+
+        <div class="form-timestamp">
+          <i class="ph ph-info"></i>
+          <span style="color:var(--text-3);">Tip: leave “From” empty to start immediately. Leave “Until” empty for no end time.</span>
+        </div>
+
+        <div class="form-footer" style="margin-top: 18px;">
+          <button class="btn-ghost" type="button" onclick="clearScheduleInputs()">Clear</button>
+          <button class="btn-submit" type="button" onclick="saveAvailabilitySchedule()">Save Schedule</button>
         </div>
       </div>
     </div>
@@ -1709,7 +1788,7 @@
         const list = Array.isArray(data?.assets) ? data.assets : [];
         assets = list.map(a => {
           const n = (a.name || 'Asset').trim();
-          const initials = n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AS';
+          const _parts = n.split(' ').filter(Boolean); const initials = _parts.length > 1 ? (_parts[0][0] + _parts[_parts.length-1][0]).toUpperCase() : (n.length > 1 ? n.substring(0,2) : n + n).toUpperCase() || 'AS';
           const type = a.type || 'General';
           return {
             id: a.id,
@@ -1724,6 +1803,8 @@
             lenderInitials: initials,
             status: (a.status || 'pending').toLowerCase(),
             availability: (a.availability || 'unavailable').toLowerCase(),
+            availableFrom: a.available_from || null,
+            availableUntil: a.available_until || null,
             icon: iconMap[String(type).toLowerCase()] || 'ph-stack'
           };
         });
@@ -1767,8 +1848,8 @@
             <td><span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span></td>
             <td>
               <div class="action-btns">
-                <button class="action-btn toggle-btn" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
-                  ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
+                <button class="action-btn toggle-btn" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="${a.availability === 'available' ? `toggleAvailability(${a.id})` : `openAvailabilityScheduler(${a.id})`}">
+                  ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available (Schedule)'}
                 </button>
                 <button class="action-btn danger" onclick="openDeleteModal(${a.id})"><i class="ph ph-trash"></i></button>
               </div>
@@ -1792,8 +1873,8 @@
             <div class="grid-card-meta">${`<span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span>`}</div>
             <div style="font-size:11px;color:var(--text-3);margin-bottom:16px;">${esc(a.created)}</div>
             <div class="grid-card-actions">
-              <button class="action-btn toggle-btn" style="flex:1;justify-content:center" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
-                ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
+              <button class="action-btn toggle-btn" style="flex:1;justify-content:center" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="${a.availability === 'available' ? `toggleAvailability(${a.id})` : `openAvailabilityScheduler(${a.id})`}">
+                ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available (Schedule)'}
               </button>
               <button class="action-btn danger" onclick="openDeleteModal(${a.id})"><i class="ph ph-trash"></i></button>
             </div>
@@ -1960,10 +2041,79 @@
         document.getElementById('historyView').classList.add('active');
         document.getElementById('btnAddAsset').style.display = 'none';
         renderHistoryPanel();
+      } else if (tab === 'schedule') {
+        document.getElementById('tabSchedule').classList.add('active');
+        document.getElementById('scheduleView').classList.add('active');
+        document.getElementById('btnAddAsset').style.display = 'none';
       } else {
         document.getElementById('tabAssets').classList.add('active');
         document.getElementById('assetsView').classList.add('active');
         document.getElementById('btnAddAsset').style.display = 'flex';
+      }
+    }
+
+    function toInputDateTimeLocal(d) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function parseMysqlDateTimeLocal(s) {
+      if (!s || typeof s !== 'string') return null;
+      const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (!m) return null;
+      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+    }
+
+    function openAvailabilityScheduler(assetId) {
+      const a = assets.find(x => Number(x.id) === Number(assetId));
+      if (!a) return;
+
+      document.getElementById('scheduleAssetName').textContent = a.name || '—';
+      document.getElementById('scheduleAssetId').textContent = String(a.id);
+
+      const fromDt = parseMysqlDateTimeLocal(a.availableFrom);
+      const untilDt = parseMysqlDateTimeLocal(a.availableUntil);
+      document.getElementById('scheduleFrom').value = fromDt ? toInputDateTimeLocal(fromDt) : '';
+      document.getElementById('scheduleUntil').value = untilDt ? toInputDateTimeLocal(untilDt) : '';
+
+      switchMainTab('schedule');
+      document.getElementById('scheduleSelected')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function clearScheduleInputs() {
+      document.getElementById('scheduleFrom').value = '';
+      document.getElementById('scheduleUntil').value = '';
+    }
+
+    async function saveAvailabilitySchedule() {
+      const id = Number(document.getElementById('scheduleAssetId').textContent || 0);
+      if (!id) { alert('Select an asset first.'); return; }
+
+      const fromRaw = document.getElementById('scheduleFrom').value || '';
+      const untilRaw = document.getElementById('scheduleUntil').value || '';
+
+      if (fromRaw && untilRaw) {
+        const fromD = new Date(fromRaw);
+        const untilD = new Date(untilRaw);
+        if (!fromD.getTime() || !untilD.getTime() || untilD <= fromD) {
+          alert('Invalid schedule. "Available Until" must be later than "Available From".');
+          return;
+        }
+      }
+
+      try {
+        await window.api.authenticatedFetch('/assets/manage_my_assets.php', {
+          method: 'PUT',
+          body: {
+            id,
+            available_from: fromRaw,
+            available_until: untilRaw
+          }
+        });
+        showToast('Availability schedule saved.');
+        await loadAssets();
+      } catch (error) {
+        alert('Failed to save schedule: ' + (error?.message || 'Server error'));
       }
     }
 
@@ -2238,6 +2388,7 @@
   });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

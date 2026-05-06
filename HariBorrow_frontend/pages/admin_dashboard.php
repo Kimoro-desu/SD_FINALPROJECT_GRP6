@@ -7,10 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Admin Console</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="../js/api.js"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
     *,
@@ -86,7 +86,7 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
       transition: background 0.08s ease-out;
@@ -486,68 +486,9 @@
       border: 1px solid rgba(96, 165, 250, 0.3);
     }
 
-    @media (max-width: 980px) {
-      html,
-      body {
-        height: auto;
-        min-height: 100vh;
-        width: 100%;
-        overflow: auto;
-        display: block;
-      }
-
-      .sidebar {
-        width: 100%;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--glass-border);
-      }
-
-      .sidebar-header,
-      .sidebar-footer {
-        padding: 16px;
-      }
-
-      .nav-menu {
-        padding: 12px;
-        overflow: visible;
-      }
-
-      .nav-link {
-        padding: 10px 12px;
-        font-size: 13px;
-      }
-
-      .main-content {
-        height: auto;
-        min-height: calc(100vh - 180px);
-        padding: 20px 16px;
-      }
-
-      .header-area {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-
-      .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      .panel-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-
-      table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-      }
-    }
+    
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -706,31 +647,6 @@
         if (href && path.endsWith(href)) a.classList.add('active');
         else a.classList.remove('active');
       });
-    });
-
-    // Dynamic Admin Profile Loading
-    document.addEventListener('DOMContentLoaded', () => {
-      // Small delay to ensure auth_guard finishes fetching if needed
-      setTimeout(() => {
-        let user = window.api ? window.api.getUser() : null;
-        if (user && user.name) {
-          const firstName = user.name.split(' ')[0] || 'Admin';
-          const lastName = user.name.split(' ').slice(1).join(' ') || '';
-          const initial = firstName.charAt(0).toUpperCase();
-
-          const avatar = document.getElementById('adminAvatar');
-          if (avatar) avatar.textContent = initial;
-
-          const nameSpan = document.getElementById('adminName');
-          if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
-
-          const roleSpan = document.getElementById('adminRole');
-          if (roleSpan) {
-            const rawRole = (user.role || '').trim().toLowerCase();
-            roleSpan.textContent = rawRole ? (rawRole.charAt(0).toUpperCase() + rawRole.slice(1)) : 'Admin';
-          }
-        }
-      }, 300);
     });
 
     function fmtDate(val) {
@@ -995,6 +911,7 @@
     });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>
