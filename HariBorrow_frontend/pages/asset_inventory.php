@@ -11,7 +11,7 @@
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="../js/api.js"></script>
-    <script src="../js/auth_guard.js"></script>
+    <script src="../js/auth_guard.js?v=1778041298"></script>
     <style>
         /* ── BASE STYLES ── */
         *,
@@ -84,7 +84,7 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
             z-index: 9999;
             mix-blend-mode: screen;
             transition: background 0.08s ease-out;
@@ -260,7 +260,7 @@
         .main-content {
             flex-grow: 1;
             height: 100vh;
-            overflow-y: auto;
+            overflow: hidden;
             position: relative;
             z-index: 10;
             padding: 40px 48px;
@@ -418,7 +418,9 @@
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            overflow: hidden;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
         }
@@ -437,7 +439,10 @@
             text-transform: uppercase;
             color: var(--text-3);
             border-bottom: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(15, 15, 20, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         td {
@@ -730,6 +735,7 @@
             color: var(--text-1);
         }
     </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -797,10 +803,10 @@
 
                 <select class="filter-select" id="categoryFilter" name="category_filter">
                     <option value="">All Categories</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="computing">Computing</option>
-                    <option value="mechanical">Mechanical</option>
-                    <option value="furniture">Furniture</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Computing">Computing</option>
                 </select>
 
                 <select class="filter-select" id="statusFilter" name="status_filter">
@@ -868,10 +874,10 @@
                         <label class="form-label">Category</label>
                         <select class="form-select" name="asset_category" id="formCategory" required>
                             <option value="">Select Category...</option>
-                            <option value="electronics">Electronics</option>
-                            <option value="computing">Computing</option>
-                            <option value="mechanical">Mechanical</option>
-                            <option value="furniture">Furniture</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical</option>
+                            <option value="Laboratory">Laboratory</option>
+                            <option value="Computing">Computing</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1089,10 +1095,10 @@
             if (user && user.name) {
                 const firstName = user.name.split(' ')[0] || 'Admin';
                 const lastName = user.name.split(' ').slice(1).join(' ') || '';
-                const initial = firstName.charAt(0).toUpperCase();
+                const initial = (firstName + (lastName ? ' ' + lastName : '')).trim().split(/\s+/).length > 1 ? (firstName[0] + (lastName ? lastName[0] : firstName[0])).toUpperCase() : (firstName.length > 1 ? firstName.substring(0, 2) : firstName + firstName).toUpperCase();
 
                 const avatar = document.getElementById('sidebarAvatar');
-                if (avatar) avatar.textContent = initial;
+//                 if (avatar) avatar.textContent = initial;
 
                 const nameSpan = document.getElementById('sidebarName');
                 if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
@@ -1183,6 +1189,7 @@
             setInterval(updateGlobalPendingBadge, 15000);
         });
     </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — PLM Assets & Borrowing Gateway</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
@@ -89,7 +89,7 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       transition: background 0.08s ease-out;
       mix-blend-mode: screen;
@@ -196,7 +196,8 @@
     }
 
     .aesthetic-script {
-      font-family: 'Pinyon Script', cursive;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
       font-size: 1.5em;
       font-weight: 400;
       color: var(--gold-light);
@@ -783,6 +784,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -1172,6 +1174,7 @@
     }
 
   </script>
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

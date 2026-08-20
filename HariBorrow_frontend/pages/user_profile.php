@@ -7,11 +7,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — User Profile</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Outfit:wght@300;400;500;600;700&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Outfit:wght@300;400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="../js/api.js"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
 
   <style>
     *, *::before, *::after {
@@ -210,6 +210,7 @@
       text-align: center;
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -283,7 +284,7 @@
 
           const fi = (p.first_name || '').charAt(0);
           const li = (p.last_name || '').charAt(0);
-          document.getElementById('avatarInitials').textContent = (fi + li).toUpperCase() || 'U';
+          document.getElementById('avatarInitials').textContent = li ? (fi + li).toUpperCase() : (fName && fName.length > 1 ? fName.substring(0, 2) : fi + fi).toUpperCase();
 
           if (p.profile_picture) {
             const img = document.getElementById('profileImg');
@@ -417,5 +418,6 @@
   });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 </html>
