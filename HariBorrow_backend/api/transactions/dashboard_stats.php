@@ -36,6 +36,8 @@ $db = $database->getConnection();
 try {
     $active_borrowings = 0;
     $pending_requests = 0;
+    $pending_returns = 0;
+    $pending_reviews = 0;
 
     $user_id = $decodedData['id'];
     $role = $decodedData['role'];
@@ -51,23 +53,43 @@ try {
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
     $active_borrowings = $row['active_count'];
 
-    // If user is admin/staff/lender, count pending requests waiting for approval
-    $allowed_roles = [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF, Database::ROLE_STUDENT, Database::ROLE_FACULTY, Database::ROLE_RESEARCHER];
-    if (in_array($role, $allowed_roles)) {
-        if ($role === Database::ROLE_ADMIN) {
+    // Lender/Admin stats: count pending requests & pending return reviews
+    if (in_array($role, [Database::ROLE_ADMIN, Database::ROLE_LENDER, Database::ROLE_STAFF], true)) {
+        // Pending borrow requests
+        if ($role === Database::ROLE_ADMIN || $role === Database::ROLE_STAFF) {
             $query2 = "SELECT COUNT(*) as pending_count FROM transactions WHERE request_status = :status";
             $stmt2 = $db->prepare($query2);
         } else {
-            $query2 = "SELECT COUNT(t.transaction_id) as pending_count FROM transactions t JOIN assets a ON t.asset_id = a.Asset_ID WHERE t.request_status = :status AND a.Lender_ID = :uid";
+            $query2 = "SELECT COUNT(t.transaction_id) as pending_count
+                       FROM transactions t
+                       JOIN assets a ON t.asset_id = a.Asset_ID
+                       WHERE t.request_status = :status
+                         AND a.Lender_ID = :uid";
             $stmt2 = $db->prepare($query2);
             $stmt2->bindParam(':uid', $user_id);
         }
-        
         $status2 = Database::STATUS_PENDING;
         $stmt2->bindParam(':status', $status2);
         $stmt2->execute();
         $row2 = $stmt2->fetch(\PDO::FETCH_ASSOC);
-        $pending_requests = $row2['pending_count'];
+        $pending_requests = (int)($row2['pending_count'] ?? 0);
+
+        // Pending return confirmations (lender only; admins handle return_pending elsewhere)
+        if ($role === Database::ROLE_LENDER) {
+            $stmt3 = $db->prepare("
+                SELECT COUNT(t.transaction_id) as pending_count
+                FROM transactions t
+                JOIN assets a ON t.asset_id = a.Asset_ID
+                WHERE t.request_status = 'return_lender_confirm'
+                  AND a.Lender_ID = :uid
+            ");
+            $stmt3->bindParam(':uid', $user_id);
+            $stmt3->execute();
+            $row3 = $stmt3->fetch(\PDO::FETCH_ASSOC);
+            $pending_returns = (int)($row3['pending_count'] ?? 0);
+        }
+
+        $pending_reviews = $pending_requests + $pending_returns;
     }
 
     http_response_code(200);
@@ -75,7 +97,9 @@ try {
         "message" => "Dashboard stats fetched successfully.",
         "stats" => [
             "active_borrowings" => $active_borrowings,
-            "pending_requests" => $pending_requests
+            "pending_requests" => $pending_requests,
+            "pending_returns" => $pending_returns,
+            "pending_reviews" => $pending_reviews
         ],
         "status" => "success"
     ]);

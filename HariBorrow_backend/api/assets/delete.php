@@ -6,9 +6,11 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-W
 
 require_once '../../config/database.php';
 require_once '../../utils/jwt_helper.php';
+require_once '../../utils/asset_delete_cascade.php';
 
 use Config\Database;
 use Utils\JwtHelper;
+use function Utils\deleteAssetWithDependents;
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -45,36 +47,28 @@ $asset_id = isset($_GET['id']) ? htmlspecialchars(strip_tags($_GET['id'])) : nul
 
 if (!empty($asset_id)) {
     try {
-        // Delete the asset where the ID matches
-        $query = "DELETE FROM assets WHERE Asset_ID = :id";
-        
-        if ($decodedData['role'] !== Database::ROLE_ADMIN) {
-            $query .= " AND Lender_ID = :lender_id";
+        $aid = (int)$asset_id;
+        if ($aid <= 0) {
+            http_response_code(400);
+            die(json_encode(["message" => "Invalid asset ID.", "status" => "error"]));
         }
-        
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":id", $asset_id);
-        
-        if ($decodedData['role'] !== Database::ROLE_ADMIN) {
-            $stmt->bindParam(":lender_id", $decodedData['id']);
-        }
-
-        if ($stmt->execute() && $stmt->rowCount() > 0) {
-            http_response_code(200);
-            echo json_encode(["message" => "Asset deleted successfully.", "status" => "success"]);
-        } else {
+        $lenderFilter = ($decodedData['role'] !== Database::ROLE_ADMIN) ? (int)$decodedData['id'] : null;
+        deleteAssetWithDependents($db, $aid, $lenderFilter);
+        http_response_code(200);
+        echo json_encode(["message" => "Asset deleted successfully.", "status" => "success"]);
+    } catch (\RuntimeException $e) {
+        $code = (int)$e->getCode();
+        if ($code === 403) {
+            http_response_code(403);
+        } elseif ($code === 404) {
             http_response_code(404);
-            echo json_encode(["message" => "Asset not found or already deleted.", "status" => "error"]);
-        }
-    } catch (\PDOException $e) {
-        // Prevent deletion if an asset is currently tied to open transactions
-        if ($e->errorInfo[1] == 1451) {
-            http_response_code(409);
-            echo json_encode(["message" => "Cannot delete asset. It is currently tied to a transaction or a penalty.", "status" => "error"]);
         } else {
             http_response_code(500);
-            echo json_encode(["message" => "Database error: " . $e->getMessage(), "status" => "error"]);
         }
+        echo json_encode(["message" => $e->getMessage(), "status" => "error"]);
+    } catch (\PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["message" => "Database error: " . $e->getMessage(), "status" => "error"]);
     }
 } else {
     http_response_code(400);
