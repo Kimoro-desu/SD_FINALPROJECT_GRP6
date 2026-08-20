@@ -1,0 +1,954 @@
+/* ══════════════════════════════════════════════════
+   HariBorrow Theme System — Light / Dark Overrides
+   ══════════════════════════════════════════════════ */
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-toggle-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 10001;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-heavy, var(--glass));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--gold);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.1) rotate(15deg);
+  border-color: var(--gold);
+  box-shadow: 0 6px 30px var(--gold-glow, rgba(229, 192, 123, 0.25));
+}
+
+.theme-toggle-btn .toggle-icon {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── LIGHT MODE VARIABLE OVERRIDES ── */
+[data-theme="light"] {
+  --bg-deep: #F5F0E8;
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-heavy: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(166, 138, 72, 0.18);
+  --gold: #A68A48;
+  --gold-light: #7A6530;
+  --gold-dark: #5C4B22;
+  --gold-dim: rgba(166, 138, 72, 0.1);
+  --gold-glow: rgba(166, 138, 72, 0.2);
+  --text-1: #1A1A1A;
+  --text-2: #5A5548;
+  --text-3: #8A8478;
+
+  /* Extra colors that some pages define */
+  --green: #16a34a;
+  --green-dim: rgba(22, 163, 74, 0.1);
+  --red: #dc2626;
+  --red-dim: rgba(220, 38, 38, 0.1);
+  --blue: #2563eb;
+  --blue-dim: rgba(37, 99, 235, 0.1);
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --warning-dim: rgba(217, 119, 6, 0.1);
+  --info: #2563eb;
+  --info-dim: rgba(37, 99, 235, 0.1);
+}
+
+/* ── Background mesh — soften for light mode ── */
+[data-theme="light"] .bg-mesh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 50%, rgba(229, 192, 123, 0.05), transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(166, 138, 72, 0.07), transparent 50%),
+    var(--bg-deep);
+  animation: pulseBg 15s ease-in-out infinite alternate;
+}
+
+
+/* High contrast for Find People text/icon */
+[data-theme="light"] .hari-gs-brand {
+  color: #A68A48;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(229, 192, 123, 0.4);
+}
+[data-theme="dark"] .hari-gs-brand {
+  color: var(--gold);
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(255,255,255,0.5);
+}
+
+/* ── Background mesh base ── */
+.bg-mesh {
+  pointer-events: none;
+}
+
+body {
+  background-color: var(--bg-deep) !important;
+}
+
+/* ── Ambient glow — warm golden for light mode ── */
+[data-theme="light"] .ambient-glow {
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(166, 138, 72, 0.12), transparent 50%) !important;
+  mix-blend-mode: multiply !important;
+  opacity: 0.85;
+}
+
+/* ── Top Nav ── */
+[data-theme="light"] .top-nav {
+  background: var(--glass-heavy) !important;
+  border-bottom-color: var(--glass-border) !important;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .nav-title {
+  background: linear-gradient(135deg, #3D3422 0%, var(--gold) 50%, var(--gold-dark) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ── Brand name ── */
+[data-theme="light"] .brand-name {
+  background: linear-gradient(135deg, #3D3422 0%, var(--gold) 40%, var(--gold-dark) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: none !important;
+}
+
+/* ── Glass panels & cards ── */
+[data-theme="light"] .left,
+[data-theme="light"] .sidebar {
+  background: var(--glass) !important;
+  border-right-color: var(--glass-border) !important;
+}
+
+[data-theme="light"] .left::after,
+[data-theme="light"] .sidebar::after {
+  background: linear-gradient(90deg, transparent, var(--gold), transparent) !important;
+  opacity: 0.3 !important;
+}
+
+[data-theme="light"] .sidebar-header,
+[data-theme="light"] .sidebar-footer {
+  border-color: var(--glass-border) !important;
+}
+
+[data-theme="light"] .right {
+  background: rgba(245, 240, 232, 0.6) !important;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ── Form inputs ── */
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] input[type="text"],
+[data-theme="light"] textarea,
+[data-theme="light"] .form-input,
+[data-theme="light"] .search-input {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--text-1) !important;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] .form-input:focus,
+[data-theme="light"] .search-input:focus {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 15px rgba(166, 138, 72, 0.12), inset 0 0 6px rgba(166, 138, 72, 0.05) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder,
+[data-theme="light"] .search-input::placeholder {
+  color: #4A4A4A !important;
+  font-weight: 500 !important;
+}
+
+/* ── Buttons ── */
+[data-theme="light"] .btn,
+[data-theme="light"] .btn-outline,
+[data-theme="light"] .filter-btn,
+[data-theme="light"] .action-btn,
+[data-theme="light"] .view-btn,
+[data-theme="light"] .btn-small {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+}
+
+[data-theme="light"] .btn:hover,
+[data-theme="light"] .btn-outline:hover,
+[data-theme="light"] .filter-btn:hover,
+[data-theme="light"] .action-btn:hover,
+[data-theme="light"] .view-btn:hover,
+[data-theme="light"] .btn-small:hover {
+  background: var(--gold) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 30px rgba(166, 138, 72, 0.2) !important;
+}
+
+[data-theme="light"] .btn:hover span,
+[data-theme="light"] .btn-outline:hover span,
+[data-theme="light"] .btn-small:hover span,
+[data-theme="light"] .action-btn:hover i {
+  color: #fff !important;
+}
+
+[data-theme="light"] .btn-primary,
+[data-theme="light"] .submit-btn,
+[data-theme="light"] .save-btn {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
+  border-color: var(--gold-dark) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(166, 138, 72, 0.25) !important;
+}
+
+/* ── Dropdowns ── */
+[data-theme="light"] .dropdown {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .notif-dropdown {
+  background: linear-gradient(135deg, rgba(252, 235, 175, 0.98), rgba(229, 192, 123, 0.98)) !important;
+  border-color: #C9A84C !important;
+  box-shadow: 0 10px 40px rgba(166, 138, 72, 0.25) !important;
+  color: #2c2922 !important;
+}
+
+[data-theme="light"] .notif-dropdown .notif-header,
+[data-theme="light"] .notif-dropdown .notif-title,
+[data-theme="light"] .notif-dropdown .notif-desc,
+[data-theme="light"] .notif-dropdown .notif-time {
+  color: #1a1814 !important;
+}
+
+[data-theme="light"] .notif-dropdown .notif-header {
+  border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .notif-dropdown .notif-item {
+  border-bottom-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .notif-dropdown .notif-item:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .drop-item:hover {
+  background: var(--gold-dim) !important;
+}
+
+/* ── Cards ── */
+[data-theme="light"] .module-card,
+[data-theme="light"] .asset-card,
+[data-theme="light"] .asset-card-grid,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .data-panel,
+[data-theme="light"] .asset-table-wrap {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .module-card:hover,
+[data-theme="light"] .asset-card:hover,
+[data-theme="light"] .asset-card-grid:hover {
+  border-color: rgba(166, 138, 72, 0.4) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ── Tables ── */
+[data-theme="light"] thead th,
+[data-theme="light"] th {
+  background: rgba(166, 138, 72, 0.06) !important;
+  color: var(--text-1) !important;
+  border-bottom-color: var(--glass-border) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] tbody tr:hover td,
+[data-theme="light"] tr:hover td {
+  background: rgba(166, 138, 72, 0.04) !important;
+}
+
+[data-theme="light"] td {
+  border-bottom-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ── Selects ── */
+[data-theme="light"] select,
+[data-theme="light"] .filter-select,
+[data-theme="light"] select.form-input {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  color: var(--text-1) !important;
+}
+
+[data-theme="light"] select option,
+[data-theme="light"] .filter-select option,
+[data-theme="light"] select.form-input option {
+  background-color: #fff !important;
+  color: var(--text-1) !important;
+}
+
+/* ── Modals ── */
+[data-theme="light"] .modal-overlay,
+[data-theme="light"] .tc-modal {
+  background: rgba(245, 240, 232, 0.85) !important;
+}
+
+[data-theme="light"] .modal-content,
+[data-theme="light"] .borrow-modal,
+[data-theme="light"] .modal,
+[data-theme="light"] .tc-modal-content {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12) !important;
+  color: var(--text-1) !important;
+}
+
+[data-theme="light"] .modal-header,
+[data-theme="light"] .tc-modal-header {
+  border-bottom-color: var(--glass-border) !important;
+}
+
+[data-theme="light"] .modal-footer,
+[data-theme="light"] .tc-modal-footer {
+  border-top-color: var(--glass-border) !important;
+  background: rgba(166, 138, 72, 0.05) !important;
+}
+
+[data-theme="light"] .modal-close {
+  color: var(--text-2) !important;
+}
+
+[data-theme="light"] .modal-close:hover {
+  color: var(--text-1) !important;
+  background: rgba(166, 138, 72, 0.1) !important;
+}
+
+/* ── Typography & Headers ── */
+[data-theme="light"] .modal-title,
+[data-theme="light"] .panel-title,
+[data-theme="light"] .card-title,
+[data-theme="light"] .section-title,
+[data-theme="light"] .nav-section-title,
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4 {
+  color: var(--text-1) !important;
+}
+
+[data-theme="light"] .notif-header {
+  color: var(--gold-dark) !important;
+}
+
+/* Make headers bolder across ALL modes as requested */
+.card-title,
+.panel-title,
+.modal-title,
+.section-title,
+.nav-section-title,
+h1, h2, h3 {
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+}
+
+.nav-section-title {
+  font-weight: 800 !important;
+  letter-spacing: 0.15em !important;
+}
+
+/* ── Scrollbar ── */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(166, 138, 72, 0.3) !important;
+}
+
+/* ── Sidebar (admin pages) ── */
+[data-theme="light"] .sidebar,
+[data-theme="light"] .side-nav {
+  background: var(--glass-heavy) !important;
+  border-right-color: var(--glass-border) !important;
+}
+
+[data-theme="light"] .sidebar-item:hover,
+[data-theme="light"] .side-link:hover {
+  background: var(--gold-dim) !important;
+}
+
+/* ── Alert boxes ── */
+[data-theme="light"] .alert.ok {
+  background: rgba(166, 138, 72, 0.1) !important;
+  border-left-color: var(--gold) !important;
+  color: var(--gold-dark) !important;
+}
+
+[data-theme="light"] .alert.err {
+  background: rgba(220, 38, 38, 0.08) !important;
+  border-left-color: var(--red) !important;
+  color: var(--red) !important;
+}
+
+/* ── Profile Avatar ── */
+[data-theme="light"] .profile-avatar {
+  background: var(--gold) !important;
+  color: #fff !important;
+}
+
+/* ── Eagle mark / logos ── */
+[data-theme="light"] .eagle-mark,
+[data-theme="light"] .nav-logo {
+  filter: drop-shadow(0 0 8px rgba(166, 138, 72, 0.3)) brightness(0.9) contrast(1.1) saturate(1.2) !important;
+}
+
+/* ── Fredoka bold script classes — both modes ── */
+.aesthetic-script,
+.script {
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1.15em !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Dark mode: keep gold glow */
+[data-theme="dark"] .aesthetic-script,
+[data-theme="dark"] .script {
+  color: var(--gold-light) !important;
+  text-shadow: 0 0 24px rgba(229, 192, 123, 0.5) !important;
+}
+
+/* Light mode: warm amber glow */
+[data-theme="light"] .aesthetic-script,
+[data-theme="light"] .script {
+  color: var(--gold) !important;
+  text-shadow: 0 0 18px rgba(166, 138, 72, 0.35) !important;
+}
+
+/* ── Catalog item hover ── */
+[data-theme="light"] .catalog-item:hover {
+  background: var(--gold-dim) !important;
+  border-color: rgba(166, 138, 72, 0.2) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ── Role toggle ── */
+[data-theme="light"] .role-toggle {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-color: var(--glass-border) !important;
+}
+
+[data-theme="light"] .role-indicator {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
+  box-shadow: 0 4px 12px rgba(166, 138, 72, 0.3) !important;
+}
+
+[data-theme="light"] .role-btn.active {
+  color: #fff !important;
+}
+
+/* ── Badges ── */
+[data-theme="light"] .badge-available {
+  background: rgba(22, 163, 74, 0.08) !important;
+  color: var(--green) !important;
+  border-color: rgba(22, 163, 74, 0.2) !important;
+}
+
+/* ── Mobile brand ── */
+[data-theme="light"] .mobile-name {
+  background: linear-gradient(135deg, #3D3422 0%, var(--gold) 50%, var(--gold-dark) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ── Profile buttons & nav-back ── */
+[data-theme="light"] .profile-btn,
+[data-theme="light"] .nav-back,
+[data-theme="light"] .notif-btn {
+  border-color: var(--glass-border) !important;
+}
+
+[data-theme="light"] .profile-btn:hover,
+[data-theme="light"] .nav-back:hover,
+[data-theme="light"] .notif-btn:hover {
+  border-color: var(--gold) !important;
+  background: var(--gold-dim) !important;
+}
+
+/* ── Terms section ── */
+[data-theme="light"] .terms-section {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* ── Theme toggle in light mode ── */
+[data-theme="light"] .theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: var(--glass-border) !important;
+  color: var(--gold) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .theme-toggle-btn:hover {
+  box-shadow: 0 6px 30px rgba(166, 138, 72, 0.2) !important;
+}
+
+/* ── Toast notifications ── */
+[data-theme="light"] .toast,
+[data-theme="light"] .toast-notification {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: var(--text-1) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ── FAQ items ── */
+[data-theme="light"] .faq-q {
+  color: var(--gold) !important;
+}
+
+/* ── Tab buttons ── */
+[data-theme="light"] .page-nav-btn.active {
+  color: var(--gold) !important;
+}
+
+[data-theme="light"] .page-nav-btn::after {
+  background: var(--gold) !important;
+}
+
+/* ── Smooth transition on theme switch ── */
+html[data-theme],
+html[data-theme] * {
+  transition: background-color 0.4s ease,
+              color 0.3s ease,
+              border-color 0.3s ease,
+              box-shadow 0.3s ease,
+              text-shadow 0.3s ease !important;
+}
+
+/* Disable transition on background to avoid flicker */
+html[data-theme] .bg-mesh {
+  transition: none !important;
+}
+
+/* ── Ensure brand-name gradient also glows in light mode ── */
+[data-theme="light"] .brand-name,
+[data-theme="light"] .nav-title {
+  filter: drop-shadow(0 0 8px rgba(166, 138, 72, 0.3)) !important;
+}
+
+/* ── Light mode nav-link active glow ── */
+[data-theme="light"] .nav-link.active {
+  background: rgba(166, 138, 72, 0.1) !important;
+  border-color: rgba(166, 138, 72, 0.3) !important;
+  color: var(--gold) !important;
+  box-shadow: inset 0 0 8px rgba(166, 138, 72, 0.08) !important;
+}
+
+[data-theme="light"] .nav-link.active i {
+  color: var(--gold) !important;
+  filter: drop-shadow(0 0 4px rgba(166, 138, 72, 0.4)) !important;
+}
+
+/* ── Light mode card icon glow ── */
+[data-theme="light"] .card-icon,
+[data-theme="light"] .stat-icon.gold {
+  background: rgba(166, 138, 72, 0.12) !important;
+  box-shadow: 0 0 12px rgba(166, 138, 72, 0.15) !important;
+}
+
+/* ── Light mode request button ── */
+[data-theme="light"] .request-btn {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(166, 138, 72, 0.3) !important;
+}
+
+/* ── Light mode sidebar card ── */
+[data-theme="light"] .card,
+[data-theme="light"] .loan-card,
+[data-theme="light"] .summary-section {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border-color: rgba(166, 138, 72, 0.18) !important;
+}
+
+[data-theme="light"] .loan-card.selected {
+  background: rgba(166, 138, 72, 0.1) !important;
+  border-color: rgba(166, 138, 72, 0.4) !important;
+}
+
+/* ── Light mode pill badges ── */
+[data-theme="light"] .status-pill.active {
+  background: rgba(22, 163, 74, 0.1) !important;
+  color: #16a34a !important;
+  border-color: rgba(22, 163, 74, 0.25) !important;
+}
+
+[data-theme="light"] .status-pill.pending {
+  background: rgba(166, 138, 72, 0.1) !important;
+  color: var(--gold) !important;
+  border-color: rgba(166, 138, 72, 0.3) !important;
+}
+
+[data-theme="light"] .status-pill.overdue {
+  background: rgba(220, 38, 38, 0.08) !important;
+  color: #dc2626 !important;
+  border-color: rgba(220, 38, 38, 0.2) !important;
+}
+
+/* ── Global Scrollbar for Webkit ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-3);
+  border-radius: 4px;
+}
+
+/* ── Table & Overflow Responsiveness ── */
+table {
+  min-width: 700px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-panel,
+.asset-table-wrap,
+.table-responsive,
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* ══════════════════════════════════════════════════
+   MOBILE RESPONSIVE — All Layout Types
+   ══════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+
+  /* ── 1. AUTH PAGES (left + right grid) ── */
+  .page {
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .left {
+    position: relative !important;
+    height: auto !important;
+    min-height: unset !important;
+    padding: 32px 20px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--glass-border);
+    overflow-y: visible !important;
+  }
+
+  .right {
+    height: auto !important;
+    min-height: unset !important;
+    overflow-y: visible !important;
+    padding: 24px 20px !important;
+    box-shadow: none !important;
+  }
+
+  /* ── 2. ADMIN PAGES (sidebar + main-content) ── */
+  html, body {
+    height: auto !important;
+    min-height: 100vh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  /* Override body display:flex from page styles */
+  body {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .sidebar-header {
+    padding: 16px 20px !important;
+    cursor: pointer;
+  }
+
+  /* Hamburger toggle for mobile sidebar */
+  .sidebar-header::after {
+    content: '☰';
+    margin-left: auto;
+    font-size: 20px;
+    color: var(--gold);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.nav-open .sidebar-header::after {
+    content: '✕';
+  }
+
+  .sidebar-footer {
+    padding: 12px 20px !important;
+  }
+
+  /* Collapse nav-menu by default on mobile */
+  .nav-menu {
+    padding: 0 12px !important;
+    flex-grow: 0 !important;
+    overflow: hidden !important;
+    max-height: 0 !important;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+  }
+
+  .sidebar.nav-open .nav-menu {
+    max-height: 600px !important;
+    opacity: 1;
+    padding: 12px !important;
+  }
+
+  .nav-link {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+
+  .nav-section-title {
+    margin: 10px 0 6px 12px !important;
+  }
+
+  .main-content {
+    flex-grow: 1 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    padding: 20px 16px !important;
+  }
+
+  /* ── 3. TOP-NAV PAGES (borrower/lender) ── */
+  .top-nav {
+    padding: 12px 16px !important;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .nav-brand {
+    flex-shrink: 0;
+  }
+
+  .nav-controls {
+    gap: 8px !important;
+  }
+
+  .profile-btn {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .profile-btn span {
+    display: none;
+  }
+
+  .dashboard {
+    padding: 100px 16px 40px !important;
+  }
+
+  .notif-dropdown {
+    right: -10px !important;
+    width: min(300px, 90vw) !important;
+  }
+
+  .dropdown {
+    right: 0 !important;
+    width: min(220px, 85vw) !important;
+  }
+
+  /* ── 4. COMMON GRID FIXES ── */
+  .module-grid,
+  .dashboard-grid,
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .dash-header,
+  .header-area {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .panel-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 16px !important;
+  }
+
+  /* ── 5. HEADINGS ── */
+  .page-title h1,
+  .welcome h1 {
+    font-size: 28px !important;
+  }
+
+  .headline {
+    font-size: 32px !important;
+  }
+
+  /* ── 6. TABLES: horizontal scroll ── */
+  table {
+    min-width: 600px;
+  }
+
+  th, td {
+    padding: 12px 14px !important;
+    font-size: 12px !important;
+  }
+
+  /* ── 7. ROLE TOGGLE ── */
+  .role-toggle {
+    width: 100% !important;
+  }
+
+  /* ── 8. BG + GLOW: hide decorative layers on mobile to save perf ── */
+  .ambient-glow {
+    display: none !important;
+  }
+
+  .bg-mesh {
+    animation: none !important;
+  }
+
+  /* ── STEPPER ── */
+  .stepper {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .step-item {
+    font-size: 11px !important;
+  }
+  
+  .step-line {
+    display: none !important;
+  }
+
+  /* ── 9. THEME TOGGLE POSITION ── */
+  .theme-toggle-btn {
+    bottom: 16px !important;
+    right: 16px !important;
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 18px !important;
+  }
+
+  /* ── 10. FORM LAYOUTS (profile settings, etc.) ── */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .content-wrapper,
+  .content-area {
+    padding: 20px 16px !important;
+  }
+
+  /* ── 11. CARDS ── */
+  .module-card {
+    min-height: 180px !important;
+    padding: 24px !important;
+  }
+
+  .stat-card {
+    padding: 16px !important;
+  }
+
+  /* ── 12. ACTION BUTTONS ── */
+  .action-form {
+    flex-wrap: wrap !important;
+  }
+
+  .btn-action {
+    font-size: 10px !important;
+    padding: 6px 10px !important;
+  }
+
+  /* ── 13. FILTERS / TOOLBAR ── */
+  .toolbar {
+    flex-direction: column !important;
+  }
+
+  .filters {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .search-wrap {
+    max-width: 100% !important;
+  }
+}
+
+/* Extra-small screens */
+@media (max-width: 480px) {
+  .page-title h1,
+  .welcome h1 {
+    font-size: 24px !important;
+  }
+
+  .form-head h2 {
+    font-size: 28px !important;
+  }
+
+  .sidebar-header {
+    gap: 8px !important;
+  }
+
+  .nav-logo {
+    height: 36px !important;
+  }
+
+  .nav-title {
+    font-size: 18px !important;
+  }
+
+  .module-card {
+    min-height: 150px !important;
+    padding: 20px !important;
+  }
+
+  .card-title {
+    font-size: 20px !important;
+  }
+}

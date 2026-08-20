@@ -10,7 +10,7 @@
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap"
     rel="stylesheet">
   <script src="../js/api.js"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
     *,
@@ -82,7 +82,7 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
       transition: background 0.08s ease-out;
@@ -252,7 +252,7 @@
     .main-content {
       flex-grow: 1;
       height: 100vh;
-      overflow-y: auto;
+      overflow: hidden;
       position: relative;
       z-index: 10;
       padding: 40px 48px;
@@ -383,7 +383,9 @@
       background: var(--glass);
       border: 1px solid var(--glass-border);
       border-radius: 12px;
-      overflow: hidden;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
     }
@@ -402,7 +404,10 @@
       text-transform: uppercase;
       color: var(--text-3);
       border-bottom: 1px solid var(--glass-border);
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(15, 15, 20, 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     td {
@@ -677,6 +682,7 @@
       color: var(--gold-light);
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -753,9 +759,27 @@
 
         <select class="filter-select" id="deptFilter" name="dept_filter">
           <option value="">All Departments</option>
-          <option value="coe">College of Engineering (COE)</option>
-          <option value="cos">College of Science (COS)</option>
-          <option value="cba">College of Business Admin (CBA)</option>
+          <optgroup label="Engineering & Technology">
+            <option value="College of Engineering">College of Engineering</option>
+            <option value="College of Information Systems and Technology Management">College of Information Systems and Technology Management</option>
+            <option value="College of Architecture">College of Architecture</option>
+          </optgroup>
+          <optgroup label="Health Sciences">
+            <option value="College of Nursing">College of Nursing</option>
+            <option value="College of Medicine">College of Medicine</option>
+            <option value="College of Pharmacy">College of Pharmacy</option>
+          </optgroup>
+          <optgroup label="Sciences">
+            <option value="College of Sciences">College of Sciences</option>
+            <option value="College of Mathematics">College of Mathematics</option>
+          </optgroup>
+          <optgroup label="Arts & Humanities">
+            <option value="College of Arts & Humanities">College of Arts & Humanities</option>
+            <option value="College of Education">College of Education</option>
+            <option value="College of Business Administration">College of Business Administration</option>
+          </optgroup>
+          <option value="Graduate School">Graduate School</option>
+          <option value="Administrative / Non-Academic">Administrative / Non-Academic</option>
         </select>
 
         <select class="filter-select" id="statusFilter" name="status_filter">
@@ -811,19 +835,6 @@
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">ID Verification Status</label>
-          <div id="idPhotoContainer" style="margin-bottom: 12px; display: none;">
-             <a id="idPhotoLink" href="#" target="_blank" style="color: var(--gold); font-size: 13px; text-decoration: underline;"><i class="ph ph-image"></i> View Uploaded ID Photo</a>
-          </div>
-          <select class="form-select" name="id_verification_status" id="formIdVerifySelect" required>
-            <option value="unverified">Unverified</option>
-            <option value="pending">Pending Approval</option>
-            <option value="verified">Verified</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
-
         <div class="form-group" id="remarksGroup">
           <label class="form-label">Reason for Restriction / Admin Notes</label>
           <textarea class="form-textarea" name="admin_notes" id="modalAdminNotes"
@@ -855,30 +866,6 @@
       });
     });
 
-    // Dynamic Admin Profile Loading (same logic as admin_dashboard.php)
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        let user = window.api ? window.api.getUser() : null;
-        if (user && user.name) {
-          const firstName = user.name.split(' ')[0] || 'Admin';
-          const lastName = user.name.split(' ').slice(1).join(' ') || '';
-          const initial = firstName.charAt(0).toUpperCase();
-
-          const avatar = document.getElementById('adminAvatar');
-          if (avatar) avatar.textContent = initial;
-
-          const nameSpan = document.getElementById('adminName');
-          if (nameSpan) nameSpan.textContent = `${firstName} ${lastName}`.trim();
-
-          const roleSpan = document.getElementById('adminRole');
-          if (roleSpan) {
-            const rawRole = (user.role || '').trim().toLowerCase();
-            roleSpan.textContent = rawRole ? (rawRole.charAt(0).toUpperCase() + rawRole.slice(1)) : 'Admin';
-          }
-        }
-      }, 300);
-    });
-
     /** In-memory copy of users for filtering / export (set by loadUsers). */
     let allUsers = [];
 
@@ -891,23 +878,11 @@
     }
 
     // Modal logic
-    function openUserModal(userId, userName, currentStatus, accountNotes, idVerifyStatus, idPhotoUrl) {
+    function openUserModal(userId, userName, currentStatus, accountNotes) {
       document.getElementById('hiddenUserId').value = String(userId);
       document.getElementById('displayUserName').value = userName;
       document.getElementById('formStatusSelect').value = currentStatus === 'restricted' || currentStatus === 'suspended' ? currentStatus : 'active';
       document.getElementById('modalAdminNotes').value = accountNotes ? String(accountNotes) : '';
-      
-      document.getElementById('formIdVerifySelect').value = idVerifyStatus || 'unverified';
-      
-      const photoContainer = document.getElementById('idPhotoContainer');
-      const photoLink = document.getElementById('idPhotoLink');
-      if (idPhotoUrl) {
-         photoContainer.style.display = 'block';
-         photoLink.href = idPhotoUrl;
-      } else {
-         photoContainer.style.display = 'none';
-         photoLink.href = '#';
-      }
 
       document.getElementById('userModal').classList.add('active');
     }
@@ -923,12 +898,11 @@
       const userId = parseInt(document.getElementById('hiddenUserId').value, 10);
       const account_status = document.getElementById('formStatusSelect').value;
       const admin_notes = document.getElementById('modalAdminNotes').value.trim();
-      const id_verification_status = document.getElementById('formIdVerifySelect').value;
 
       try {
         await window.api.authenticatedFetch('/api/users/update_account_status.php', {
           method: 'POST',
-          body: { user_id: userId, account_status, admin_notes, id_verification_status }
+          body: { user_id: userId, account_status, admin_notes }
         });
         closeUserModal();
         await loadUsers();
@@ -971,11 +945,8 @@
     function matchesDeptFilter(deptFilterVal, deptText) {
       const v = (deptFilterVal || '').trim();
       if (!v) return true;
-      const d = String(deptText || '').toLowerCase();
-      if (v === 'coe') return d.includes('engineering');
-      if (v === 'cos') return d.includes('science');
-      if (v === 'cba') return d.includes('business');
-      return true;
+      const d = String(deptText || '').trim();
+      return d === v;
     }
 
     function filteredUsersFromState() {
@@ -984,12 +955,6 @@
       const statusF = (document.getElementById('statusFilter')?.value || '').trim().toLowerCase();
 
       return allUsers.filter((u) => {
-        // Hide users that haven't been verified yet (they belong in Registration Approvals)
-        const idv = String(u.id_verification_status || 'unverified').toLowerCase().trim();
-        if (idv === 'unverified' || idv === 'pending') {
-            return false; 
-        }
-
         if (statusF && String(u.account_status || 'active').toLowerCase().trim() !== statusF) {
           return false;
         }
@@ -1015,16 +980,6 @@
         const dept = u?.department || '—';
         const role = titleCase(u?.role);
         const ast = String(u?.account_status || 'active').toLowerCase().trim();
-        const idv = String(u?.id_verification_status || 'unverified').toLowerCase().trim();
-        
-        let idvMarkup = '';
-        if (idv === 'verified') {
-            idvMarkup = '<span style="color: var(--success); font-size: 11px;"><i class="ph ph-check-circle"></i> Verified</span>';
-        } else if (idv === 'pending') {
-            idvMarkup = '<span style="color: var(--gold); font-size: 11px;"><i class="ph ph-hourglass"></i> Pending</span>';
-        } else {
-            idvMarkup = '<span style="color: var(--danger); font-size: 11px;"><i class="ph ph-x-circle"></i> Unverified</span>';
-        }
 
         const isAdminAcct = String(u?.role || '').trim().toLowerCase() === 'admin';
         const manageCell = isAdminAcct
@@ -1040,7 +995,6 @@
                   <div>
                     <span class="user-name-txt">${escapeHtml(name)}</span>
                     <span class="user-email-txt">${escapeHtml(email)}</span>
-                    <div style="margin-top: 2px;">${idvMarkup}</div>
                   </div>
                 </div>
               </td>
@@ -1137,9 +1091,7 @@
             u.id,
             u.name || 'User',
             u.account_status || 'active',
-            u.account_notes || '',
-            u.id_verification_status || 'unverified',
-            u.id_photo_url || null
+            u.account_notes || ''
           );
         });
       }
@@ -1185,6 +1137,7 @@
         });
     </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

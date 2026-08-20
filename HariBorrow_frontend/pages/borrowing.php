@@ -7,11 +7,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Asset Catalog</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="../js/api.js"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <style>
     *,
     *::before,
@@ -84,7 +84,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
     }
@@ -511,6 +511,12 @@
       border: 1px solid rgba(74, 222, 128, 0.2);
     }
 
+    .badge-upcoming {
+      background: rgba(96, 165, 250, 0.12);
+      color: #93c5fd;
+      border: 1px solid rgba(96, 165, 250, 0.28);
+    }
+
     .badge-dot {
       width: 6px;
       height: 6px;
@@ -710,6 +716,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -778,14 +785,6 @@
       </button>
     </div>
 
-    <div id="unverifiedBanner" style="display: none; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px; color: var(--red); font-size: 14px; align-items: center; gap: 12px;">
-      <i class="ph ph-warning-circle" style="font-size: 24px;"></i>
-      <div style="flex: 1;">
-        <strong style="display: block; margin-bottom: 4px;">ID Verification Required</strong>
-        <span>You must upload your ID and have it verified by an admin before you can borrow any assets. <a href="profile_settings.php" style="color: var(--gold); text-decoration: underline;">Verify now</a>.</span>
-      </div>
-    </div>
-
     <div class="toolbar" id="catalogToolbar">
       <div class="search-wrap">
         <i class="ph ph-magnifying-glass"></i>
@@ -797,6 +796,7 @@
         <option>Electronics</option>
         <option>Mechanical</option>
         <option>Computing</option>
+        <option>Laboratory</option>
       </select>
     </div>
 
@@ -838,13 +838,16 @@
       <div class="modal-title">Submit Borrow Request</div>
       <div class="modal-sub" id="borrowModalAssetName">Asset: —</div>
       <div class="modal-sub" id="borrowModalLenderReputation" style="margin-top:6px;color:var(--text-2);font-size:14px;">Lender reputation: —</div>
+      <div class="modal-sub" style="margin-top:6px;color:var(--text-3);font-size:12px;line-height:1.5;">
+        By submitting a request, you confirm you’ll follow campus borrowing rules upon approval.
+      </div>
       <input type="hidden" id="borrowAssetId">
       <div class="form-group">
-        <label class="form-label" for="borrowDateInput">Borrow Date & Time</label>
+        <label class="form-label" for="borrowDateInput">Suggested Borrow Date & Time</label>
         <input class="form-input" id="borrowDateInput" type="datetime-local">
       </div>
       <div class="form-group">
-        <label class="form-label" for="returnDateInput">Return Date & Time</label>
+        <label class="form-label" for="returnDateInput">Suggested Return Date & Time</label>
         <input class="form-input" id="returnDateInput" type="datetime-local">
       </div>
       <div class="modal-actions">
@@ -942,8 +945,8 @@
       const val = String(rawUrl || '').trim();
       if (!val) return '';
       if (/^https?:\/\//i.test(val)) return val;
-      if (val.startsWith('/')) return val;
-      return '/' + val.replace(/^\/+/, '');
+      if (val.includes('SD_FINALPROJECT_GRP6/HariBorrow_backend')) return val.startsWith('/') ? val : '/' + val;
+      return '/SD_FINALPROJECT_GRP6/HariBorrow_backend/' + val.replace(/^\/+/, '');
     }
 
     // New logic to match admin status pills
@@ -972,10 +975,13 @@
               lender_rating_count: Number(a.lender_rating_count) || 0,
               lender_rating_average: Number(a.lender_rating_average) || 0,
               status: a.availability,
+              catalog_state: a.catalog_state || 'available',
               meetup_location: a.meetup_location || '',
               daily_penalty: a.daily_penalty || 0,
               penalty_type: a.penalty_type || 'per_day',
               asset_image: a.asset_image || '',
+              available_from: a.available_from || null,
+              available_until: a.available_until || null,
               icon: iconMap[a.type] || 'ph-stack'
             };
           });
@@ -985,20 +991,6 @@
       } catch (error) {
         console.error("Failed to load catalog:", error);
       }
-    }
-
-    async function checkVerificationStatus() {
-        try {
-            const res = await window.api.authenticatedFetch('/api/users/profile.php');
-            if (res && res.profile) {
-                const status = res.profile.id_verification_status || 'unverified';
-                if (status !== 'verified') {
-                    document.getElementById('unverifiedBanner').style.display = 'flex';
-                }
-            }
-        } catch (error) {
-            console.error("Failed to check verification status:", error);
-        }
     }
 
     async function loadMyBorrowings() {
@@ -1060,29 +1052,43 @@
         const locationHtml = a.meetup_location
           ? `<div class="card-meta-row"><i class="ph ph-map-pin"></i> ${a.meetup_location}</div>`
           : '';
+        const schedLabel = (() => {
+          const from = a.available_from ? fmtDateSafe(a.available_from) : '';
+          const until = a.available_until ? fmtDateSafe(a.available_until) : '';
+          if (!from && !until) return '';
+          if (from && until) return `<div class="card-meta-row"><i class="ph ph-calendar"></i> Available: ${from} → ${until}</div>`;
+          if (from) return `<div class="card-meta-row"><i class="ph ph-calendar"></i> Available from: ${from}</div>`;
+          return `<div class="card-meta-row"><i class="ph ph-calendar"></i> Available until: ${until}</div>`;
+        })();
         const lenderRep = (a.lender_rating_count > 0)
           ? `<div class="card-meta-row"><i class="ph ph-star"></i> Lender ${Number(a.lender_rating_average).toFixed(2)} ★ (${a.lender_rating_count})</div>`
           : `<div class="card-meta-row" style="opacity:0.85;"><i class="ph ph-star"></i> Lender: no ratings yet</div>`;
         const imageUrl = resolveAssetImageUrl(a.asset_image);
         const imageHtml = imageUrl
           ? `<div class="card-image-wrap"><img src="${imageUrl}" alt="${a.name}" class="card-image" loading="lazy"></div>`
-          : '';
+          : `<div class="card-image-wrap" aria-label="No asset photo"><div class="card-icon" style="margin:0;"><i class="ph ${a.icon}"></i></div></div>`;
+
+        const isUpcoming = String(a.catalog_state || '').toLowerCase() === 'upcoming';
+        const canRequest = String(a.catalog_state || '').toLowerCase() === 'available' || isUpcoming;
+        const badgeClass = isUpcoming ? 'badge-upcoming' : (a.status === 'available' ? 'badge-available' : 'badge-borrowed');
+        const badgeLabel = isUpcoming ? 'Upcoming' : (a.status === 'available' ? 'Available' : 'Unavailable');
+
         return `
         <div class="asset-card">
           ${imageHtml}
-          <div class="card-icon"><i class="ph ${a.icon}"></i></div>
           <div class="card-name">${a.name}</div>
           <div class="card-id">ID: ${a.id}</div>
           <div class="card-meta">
             <div class="card-meta-row"><i class="ph ph-tag"></i> ${a.type}</div>
             <div class="card-meta-row"><i class="ph ph-user"></i> ${a.lender}</div>
             ${lenderRep}
+            ${schedLabel}
             ${locationHtml}
             <div class="card-meta-row"><i class="ph ph-warning-circle"></i> ${penaltyLabel}</div>
           </div>
           <div class="card-footer">
-            <span class="badge ${a.status === 'available' ? 'badge-available' : 'badge-borrowed'}"><span class="badge-dot"></span>${a.status === 'available' ? 'Available' : 'Unavailable'}</span>
-            <button class="request-btn" ${a.status !== 'available' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''} onclick='openBorrowModal(${JSON.stringify(String(a.id))}, ${JSON.stringify(String(a.name))})'><i class="ph ph-paper-plane-tilt"></i> Request</button>
+            <span class="badge ${badgeClass}"><span class="badge-dot"></span>${badgeLabel}</span>
+            <button class="request-btn" ${!canRequest ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''} onclick='openBorrowModal(${JSON.stringify(String(a.id))}, ${JSON.stringify(String(a.name))})'><i class="ph ph-paper-plane-tilt"></i> Request</button>
           </div>
         </div>
       `}).join('');
@@ -1278,7 +1284,6 @@
           if (e.target.id === 'ratingModal') closeRatingModal();
         });
         
-        await checkVerificationStatus();
         await loadCatalog();
         await loadMyBorrowings();
         
@@ -1395,6 +1400,7 @@
   });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

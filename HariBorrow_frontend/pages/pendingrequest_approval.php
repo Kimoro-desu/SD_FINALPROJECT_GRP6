@@ -7,11 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HariBorrow — Pending Requests</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="../js/api.js"></script>
-    <script src="../js/auth_guard.js"></script>
+    <script src="../js/auth_guard.js?v=1778041298"></script>
     <style>
         *,
         *::before,
@@ -82,7 +82,7 @@
             width: 100vw;
             height: 100vh;
             pointer-events: none;
-            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+            background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
             z-index: 9999;
             mix-blend-mode: screen;
             transition: background 0.08s ease-out;
@@ -279,10 +279,12 @@
         .main-content {
             flex-grow: 1;
             height: 100vh;
-            overflow-y: auto;
+            overflow: hidden;
             position: relative;
             z-index: 10;
             padding: 40px 48px;
+            display: flex;
+            flex-direction: column;
         }
 
         .header-area {
@@ -379,7 +381,9 @@
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            overflow: hidden;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
         }
@@ -431,7 +435,10 @@
             text-transform: uppercase;
             color: var(--text-3);
             border-bottom: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(15, 15, 20, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         td {
@@ -786,6 +793,7 @@
             color: var(--gold-light);
         }
     </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -979,8 +987,8 @@
             const val = String(rawUrl || '').trim();
             if (!val) return '';
             if (/^https?:\/\//i.test(val)) return val;
-            if (val.startsWith('/')) return val;
-            return '/' + val.replace(/^\/+/, '');
+            if (val.includes('SD_FINALPROJECT_GRP6/HariBorrow_backend')) return val.startsWith('/') ? val : '/' + val;
+            return '/SD_FINALPROJECT_GRP6/HariBorrow_backend/' + val.replace(/^\/+/, '');
         }
 
         function fmtDateTime(val) {
@@ -1178,8 +1186,8 @@
                         avatarEl.innerHTML = `<img src="${user.profile_picture}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
                     } else {
                         const parts = safeName.split(/\s+/).filter(Boolean);
-                        const initials = ((parts[0] ? parts[0][0] : 'A') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
-                        avatarEl.textContent = initials;
+                        const initials = (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] ? (parts[0].length > 1 ? parts[0].substring(0, 2) : parts[0] + parts[0]) : 'UN')).toUpperCase();
+//                         avatarEl.textContent = initials;
                     }
                 }
             }
@@ -1286,6 +1294,7 @@
         }
     </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

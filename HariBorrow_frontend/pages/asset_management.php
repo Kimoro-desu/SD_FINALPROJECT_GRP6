@@ -7,10 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariBorrow — Asset Management</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Fredoka:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="../js/auth_guard.js"></script>
+  <script src="../js/auth_guard.js?v=1778041298"></script>
   <script src="../js/api.js"></script>
   <style>
     *,
@@ -88,7 +88,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.1), rgba(229, 192, 123, 0.03) 38%, transparent 68%);
+      background: radial-gradient(480px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(229, 192, 123, 0.06), transparent 50%);
       z-index: 9999;
       mix-blend-mode: screen;
     }
@@ -395,6 +395,25 @@
       display: block;
     }
 
+    /* Availability schedule modal */
+    .schedule-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(229, 192, 123, 0.25);
+      background: rgba(229, 192, 123, 0.06);
+      color: var(--text-2);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    .schedule-chip strong {
+      color: var(--gold-light);
+      font-weight: 600;
+    }
+
     /* ── STATS BAR ── */
     .stats-bar {
       display: grid;
@@ -681,6 +700,12 @@
       background: rgba(251, 191, 36, 0.1);
       color: #fbbf24;
       border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    .badge-upcoming {
+      background: rgba(229, 192, 123, 0.14);
+      color: var(--gold-light);
+      border: 1px solid rgba(229, 192, 123, 0.25);
     }
 
     .badge-dot {
@@ -1356,6 +1381,7 @@
       color: var(--gold-light);
     }
   </style>
+  <link rel="stylesheet" href="../css/theme.css?v=1778041298">
 </head>
 
 <body>
@@ -1632,6 +1658,45 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="scheduleModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Schedule Availability</div>
+        <button class="modal-close" onclick="closeModal('scheduleModal')"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="schedule-chip">
+          <i class="ph ph-calendar" style="color: var(--gold);"></i>
+          <span>Asset: <strong id="schedAssetName">—</strong> <span style="color:var(--text-3);">(#<span id="schedAssetId">—</span>)</span></span>
+        </div>
+
+        <div style="color: var(--text-2); font-size: 13px; line-height: 1.6; margin-bottom: 18px;">
+          This asset will appear in the borrower catalog as <strong style="color: var(--gold-light);">Upcoming</strong> before the start time,
+          and automatically become unavailable after the end time.
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Available From</label>
+            <input class="form-input" id="schedFrom" type="datetime-local">
+            <div class="form-timestamp"><i class="ph ph-info"></i><span>Leave empty to start immediately.</span></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Available Until</label>
+            <input class="form-input" id="schedUntil" type="datetime-local">
+            <div class="form-timestamp"><i class="ph ph-info"></i><span>Leave empty for no end time.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="form-footer">
+          <button class="btn-ghost" type="button" onclick="clearScheduleInputs()">Clear</button>
+          <button class="btn-submit" type="button" onclick="saveAvailabilitySchedule()">Save Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="deleteModal">
     <div class="modal delete-modal">
       <div class="delete-icon"><i class="ph ph-trash"></i></div>
@@ -1694,10 +1759,32 @@
       return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    function parseMysqlDateTimeLocal(s) {
+      if (!s || typeof s !== 'string') return null;
+      const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (!m) return null;
+      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+    }
+
+    function getScheduleState(asset) {
+      const fromDt = parseMysqlDateTimeLocal(asset?.availableFrom);
+      const untilDt = parseMysqlDateTimeLocal(asset?.availableUntil);
+      const hasSchedule = Boolean(fromDt || untilDt);
+      if (!hasSchedule) return { hasSchedule: false, isUpcoming: false, isActive: false };
+
+      const now = new Date();
+      const isUpcoming = Boolean(fromDt && now < fromDt);
+      const isExpired = Boolean(untilDt && now >= untilDt);
+      const isActive = !isUpcoming && !isExpired;
+      return { hasSchedule: true, isUpcoming, isActive };
+    }
+
     function badgeText(asset) {
       const status = (asset.status || '').toLowerCase();
       if (status === 'pending') return ['badge-pending', 'Pending Approval'];
       if (status === 'rejected') return ['badge-borrowed', 'Rejected'];
+      const sched = getScheduleState(asset);
+      if (status === 'approved' && sched.isUpcoming) return ['badge-upcoming', 'Approved • Upcoming'];
       return asset.availability === 'available'
         ? ['badge-available', 'Approved • Available']
         : ['badge-maintenance', 'Approved • Unavailable'];
@@ -1709,7 +1796,7 @@
         const list = Array.isArray(data?.assets) ? data.assets : [];
         assets = list.map(a => {
           const n = (a.name || 'Asset').trim();
-          const initials = n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AS';
+          const _parts = n.split(' ').filter(Boolean); const initials = _parts.length > 1 ? (_parts[0][0] + _parts[_parts.length-1][0]).toUpperCase() : (n.length > 1 ? n.substring(0,2) : n + n).toUpperCase() || 'AS';
           const type = a.type || 'General';
           return {
             id: a.id,
@@ -1724,6 +1811,8 @@
             lenderInitials: initials,
             status: (a.status || 'pending').toLowerCase(),
             availability: (a.availability || 'unavailable').toLowerCase(),
+            availableFrom: a.available_from || null,
+            availableUntil: a.available_until || null,
             icon: iconMap[String(type).toLowerCase()] || 'ph-stack'
           };
         });
@@ -1745,6 +1834,11 @@
       tbody.innerHTML = filteredAssets.map(a => {
         const [badgeClass, badgeLabel] = badgeText(a);
         const canToggle = a.status === 'approved';
+        const sched = getScheduleState(a);
+        const actionOnClick = a.availability === 'available' ? `toggleAvailability(${a.id})` : `openAvailabilityScheduler(${a.id})`;
+        const actionLabel = a.availability === 'available'
+          ? 'Set Unavailable'
+          : (sched.isUpcoming ? 'Edit Availability' : 'Set Available');
         return `
           <tr>
             <td>
@@ -1767,8 +1861,8 @@
             <td><span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span></td>
             <td>
               <div class="action-btns">
-                <button class="action-btn toggle-btn" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
-                  ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
+                <button class="action-btn toggle-btn" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="${actionOnClick}">
+                  ${actionLabel}
                 </button>
                 <button class="action-btn danger" onclick="openDeleteModal(${a.id})"><i class="ph ph-trash"></i></button>
               </div>
@@ -1784,6 +1878,11 @@
       grid.innerHTML = filteredAssets.map(a => {
         const [badgeClass, badgeLabel] = badgeText(a);
         const canToggle = a.status === 'approved';
+        const sched = getScheduleState(a);
+        const actionOnClick = a.availability === 'available' ? `toggleAvailability(${a.id})` : `openAvailabilityScheduler(${a.id})`;
+        const actionLabel = a.availability === 'available'
+          ? 'Set Unavailable'
+          : (sched.isUpcoming ? 'Edit Availability' : 'Set Available');
         return `
           <div class="asset-card-grid">
             <div class="grid-card-icon"><i class="ph ${a.icon}"></i></div>
@@ -1792,8 +1891,8 @@
             <div class="grid-card-meta">${`<span class="badge ${badgeClass}"><span class="badge-dot"></span>${esc(badgeLabel)}</span>`}</div>
             <div style="font-size:11px;color:var(--text-3);margin-bottom:16px;">${esc(a.created)}</div>
             <div class="grid-card-actions">
-              <button class="action-btn toggle-btn" style="flex:1;justify-content:center" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="toggleAvailability(${a.id})">
-                ${a.availability === 'available' ? 'Set Unavailable' : 'Set Available'}
+              <button class="action-btn toggle-btn" style="flex:1;justify-content:center" ${canToggle ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="${actionOnClick}">
+                ${actionLabel}
               </button>
               <button class="action-btn danger" onclick="openDeleteModal(${a.id})"><i class="ph ph-trash"></i></button>
             </div>
@@ -1814,7 +1913,10 @@
         const q = searchQ.toLowerCase();
         const matchQ = !q || a.name.toLowerCase().includes(q) || a.type.toLowerCase().includes(q) || String(a.id).toLowerCase().includes(q);
         const matchT = !typeFilter || String(a.type).toLowerCase() === String(typeFilter).toLowerCase();
-        const lifecycleStatus = a.status === 'approved' ? (a.availability === 'available' ? 'Available' : 'Borrowed') : (a.status === 'pending' ? 'Pending' : 'Maintenance');
+        const sched = getScheduleState(a);
+        const lifecycleStatus = a.status === 'approved'
+          ? (sched.isUpcoming ? 'Upcoming' : (a.availability === 'available' ? 'Available' : 'Borrowed'))
+          : (a.status === 'pending' ? 'Pending' : 'Maintenance');
         const matchS = !statusFilter || lifecycleStatus === statusFilter;
         return matchQ && matchT && matchS;
       });
@@ -1844,9 +1946,8 @@
           method: 'PUT',
           body: { id, availability: newAvailability }
         });
-        a.availability = newAvailability;
-        applyFilters();
         showToast(`"${a.name}" availability updated.`);
+        await loadAssets();
       } catch (error) {
         alert('Failed to update availability: ' + (error.message || 'Server error'));
       }
@@ -1964,6 +2065,64 @@
         document.getElementById('tabAssets').classList.add('active');
         document.getElementById('assetsView').classList.add('active');
         document.getElementById('btnAddAsset').style.display = 'flex';
+      }
+    }
+
+    function toInputDateTimeLocal(d) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function openAvailabilityScheduler(assetId) {
+      const a = assets.find(x => Number(x.id) === Number(assetId));
+      if (!a) return;
+
+      document.getElementById('schedAssetName').textContent = a.name || '—';
+      document.getElementById('schedAssetId').textContent = String(a.id);
+
+      const fromDt = parseMysqlDateTimeLocal(a.availableFrom);
+      const untilDt = parseMysqlDateTimeLocal(a.availableUntil);
+      document.getElementById('schedFrom').value = fromDt ? toInputDateTimeLocal(fromDt) : '';
+      document.getElementById('schedUntil').value = untilDt ? toInputDateTimeLocal(untilDt) : '';
+
+      document.getElementById('scheduleModal').classList.add('active');
+    }
+
+    function clearScheduleInputs() {
+      document.getElementById('schedFrom').value = '';
+      document.getElementById('schedUntil').value = '';
+    }
+
+    async function saveAvailabilitySchedule() {
+      const id = Number(document.getElementById('schedAssetId').textContent || 0);
+      if (!id) { alert('Select an asset first.'); return; }
+
+      const fromRaw = document.getElementById('schedFrom').value || '';
+      const untilRaw = document.getElementById('schedUntil').value || '';
+
+      if (fromRaw && untilRaw) {
+        const fromD = new Date(fromRaw);
+        const untilD = new Date(untilRaw);
+        if (!fromD.getTime() || !untilD.getTime() || untilD <= fromD) {
+          alert('Invalid schedule. "Available Until" must be later than "Available From".');
+          return;
+        }
+      }
+
+      try {
+        await window.api.authenticatedFetch('/assets/manage_my_assets.php', {
+          method: 'PUT',
+          body: {
+            id,
+            available_from: fromRaw,
+            available_until: untilRaw
+          }
+        });
+        showToast('Availability schedule saved.');
+        closeModal('scheduleModal');
+        await loadAssets();
+      } catch (error) {
+        alert('Failed to save schedule: ' + (error?.message || 'Server error'));
       }
     }
 
@@ -2238,6 +2397,7 @@
   });
   </script>
 
+  <script src="../js/theme.js?v=1778041298"></script>
 </body>
 
 </html>

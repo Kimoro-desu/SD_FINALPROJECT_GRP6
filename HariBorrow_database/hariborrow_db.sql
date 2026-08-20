@@ -112,6 +112,8 @@ CREATE TABLE `users` (
   `background_picture` varchar(255) DEFAULT NULL,
   `account_status` varchar(32) NOT NULL DEFAULT 'active',
   `account_notes` varchar(500) DEFAULT NULL,
+  `id_verification_status` varchar(32) NOT NULL DEFAULT 'unverified',
+  `id_photo_url` varchar(500) DEFAULT NULL,
   UNIQUE KEY `plm_email` (`plm_email`),
   UNIQUE KEY `school_id_number` (`school_id_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
