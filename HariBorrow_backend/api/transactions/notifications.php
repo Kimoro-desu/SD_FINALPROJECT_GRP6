@@ -41,17 +41,23 @@ try {
     $user_id = $decodedData['id'];
     $role = strtolower(trim((string)$decodedData['role']));
 
-    // Admin/Lender operational feed: pending requests queue
+    // Admin/Lender operational feed:
+    // - Admin/Staff: show global pending borrowing requests
+    // - Lender: show requests AND return confirmations relevant to their assets
     if (in_array($role, ['admin', 'lender', 'staff'], true)) {
-        $query = "SELECT t.transaction_id, t.request_status, t.time_created, a.asset_name, u.first_name, u.last_name 
+        $isLender = $role === 'lender';
+
+        // 1) Borrow requests pending approval
+        $pendingStatus = Database::STATUS_PENDING; // usually 'Pending'
+        $query = "SELECT t.transaction_id, t.request_status, t.time_created, a.asset_name, a.Lender_ID, u.first_name, u.last_name
                   FROM transactions t
                   JOIN assets a ON t.asset_id = a.Asset_ID
                   JOIN users u ON t.borrower_id = u.User_ID
-                  WHERE t.request_status = :status
+                  WHERE t.request_status = :status" . ($isLender ? " AND a.Lender_ID = :uid" : "") . "
                   ORDER BY t.time_created DESC LIMIT 10";
         $stmt = $db->prepare($query);
-        $status = Database::STATUS_PENDING;
-        $stmt->bindParam(':status', $status);
+        $stmt->bindValue(':status', $pendingStatus);
+        if ($isLender) $stmt->bindValue(':uid', (int)$user_id, \PDO::PARAM_INT);
         $stmt->execute();
 
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
@@ -65,6 +71,34 @@ try {
                 "time_ago" => $row['time_created'],
                 "is_read" => true
             ];
+        }
+
+        // 2) Returns awaiting lender confirmation (lender only)
+        if ($isLender) {
+            $query2 = "SELECT t.transaction_id, t.request_status, t.return_date, t.time_created, a.asset_name, u.first_name, u.last_name
+                       FROM transactions t
+                       JOIN assets a ON t.asset_id = a.Asset_ID
+                       JOIN users u ON t.borrower_id = u.User_ID
+                       WHERE t.request_status = 'return_lender_confirm'
+                         AND a.Lender_ID = :uid
+                       ORDER BY COALESCE(t.return_date, t.time_created) DESC
+                       LIMIT 10";
+            $stmt2 = $db->prepare($query2);
+            $stmt2->bindValue(':uid', (int)$user_id, \PDO::PARAM_INT);
+            $stmt2->execute();
+
+            while ($row = $stmt2->fetch(\PDO::FETCH_ASSOC)) {
+                $notifications[] = [
+                    "transaction_id" => $row['transaction_id'],
+                    "notification_id" => null,
+                    "title" => "Return Awaiting Your Review",
+                    "message" => "{$row['first_name']} submitted a return for {$row['asset_name']}",
+                    "severity" => "warning",
+                    "icon_class" => "ph-clipboard-text",
+                    "time_ago" => $row['return_date'] ?: $row['time_created'],
+                    "is_read" => true
+                ];
+            }
         }
     } else {
         // Borrower notifications are handled via user_notifications table

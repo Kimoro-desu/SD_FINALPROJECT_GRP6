@@ -20,6 +20,14 @@ function ensureAssetLifecycleSchema(\PDO $db): void
         $db->exec("ALTER TABLE assets ADD COLUMN availability VARCHAR(50) DEFAULT 'unavailable'");
     }
 
+    // Scheduled availability window (optional)
+    if (!isset($columns['available_from'])) {
+        $db->exec("ALTER TABLE assets ADD COLUMN available_from DATETIME NULL DEFAULT NULL");
+    }
+    if (!isset($columns['available_until'])) {
+        $db->exec("ALTER TABLE assets ADD COLUMN available_until DATETIME NULL DEFAULT NULL");
+    }
+
     // Optional workflow metadata fields requested by product flow
     if (!isset($columns['meetup_location'])) {
         $db->exec("ALTER TABLE assets ADD COLUMN meetup_location VARCHAR(255) NULL DEFAULT NULL");

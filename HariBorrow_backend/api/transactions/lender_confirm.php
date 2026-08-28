@@ -128,7 +128,9 @@ if (!empty($data->transaction_id) && !empty($data->action)) {
             $stmt->bindParam(':tid', $transaction_id);
             $stmt->execute();
 
-            $asset_stmt = $db->prepare("UPDATE assets SET availability = :avail WHERE Asset_ID = :aid");
+            // Once borrowed is approved by lender, force asset out of catalog:
+            // clear schedule so time-sync jobs cannot flip it back to available.
+            $asset_stmt = $db->prepare("UPDATE assets SET availability = :avail, available_from = NULL, available_until = NULL WHERE Asset_ID = :aid");
             $asset_stmt->execute([':avail' => $new_avail, ':aid' => $asset_id]);
 
         } elseif ($action === 'reject') {
